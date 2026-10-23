@@ -1,0 +1,86 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://game/ui/ui_controller.gd" id="1_ui"]
+[ext_resource type="Script" path="res://game/input/mobile_input_controller.gd" id="2_input"]
+[ext_resource type="Script" path="res://game/input/touch_look_area.gd" id="3_look"]
+[ext_resource type="Script" path="res://game/input/touch_button.gd" id="5_button"]
+
+[node name="HUD" type="CanvasLayer"]
+script = ExtResource("1_ui")
+
+[node name="SafeArea" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Controls" type="Control" parent="SafeArea" node_paths=PackedStringArray("joystick", "look_area", "run_button")]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("2_input")
+joystick = NodePath("Joystick")
+look_area = NodePath("LookArea")
+run_button = NodePath("RunButton")
+
+[node name="LookArea" type="Control" parent="SafeArea/Controls"]
+layout_mode = 1
+anchor_left = 0.42
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 0
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("3_look")
+
+[node name="Joystick" type="VirtualJoystick" parent="SafeArea/Controls"]
+layout_mode = 1
+anchor_right = 0.42
+anchor_bottom = 1.0
+grow_vertical = 2
+joystick_mode = 1
+joystick_size = 220.0
+tip_size = 92.0
+initial_offset_ratio = Vector2(0.32, 0.76)
+action_left = &"move_left"
+action_right = &"move_right"
+action_up = &"move_forward"
+action_down = &"move_back"
+
+[node name="RunButton" type="Control" parent="SafeArea/Controls"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -212.0
+offset_top = -222.0
+offset_right = -88.0
+offset_bottom = -98.0
+grow_horizontal = 0
+grow_vertical = 0
+mouse_filter = 2
+script = ExtResource("5_button")
+mode = 1
+label = "»"
+
+[node name="DebugLabel" type="Label" parent="SafeArea"]
+layout_mode = 0
+offset_right = 420.0
+offset_bottom = 40.0
+mouse_filter = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.8)
+theme_override_constants/outline_size = 6
+theme_override_font_sizes/font_size = 22
+text = "FPS"
+
+[node name="DebugTimer" type="Timer" parent="."]
+wait_time = 0.5

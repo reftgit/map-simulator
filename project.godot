@@ -3,21 +3,54 @@ config_version=5
 
 [application]
 config/name="İstanbul • Haliç"
-run/main_scene="res://main.tscn"
-config/features=PackedStringArray("4.4", "GL Compatibility")
+run/main_scene="res://game/main.tscn"
+config/features=PackedStringArray("4.7", "Mobile")
 config/description="OSM tabanlı, stilize İstanbul çevresi. © OpenStreetMap contributors."
 
 [display]
 window/size/viewport_width=1440
 window/size/viewport_height=900
 window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+window/handheld/orientation=4
+
+[input]
+
+move_forward={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"physical_keycode":87), Object(InputEventKey,"physical_keycode":4194320)]
+}
+move_back={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"physical_keycode":83), Object(InputEventKey,"physical_keycode":4194322)]
+}
+move_left={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"physical_keycode":65), Object(InputEventKey,"physical_keycode":4194319)]
+}
+move_right={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"physical_keycode":68), Object(InputEventKey,"physical_keycode":4194321)]
+}
+run={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"physical_keycode":4194325)]
+}
+
+[input_devices]
+pointing/emulate_touch_from_mouse=true
+
+[layer_names]
+3d_physics/layer_1="world"
+3d_physics/layer_2="player"
 
 [rendering]
-renderer/rendering_method="gl_compatibility"
-renderer/rendering_method.mobile="gl_compatibility"
+renderer/rendering_method="mobile"
+renderer/rendering_method.mobile="mobile"
 textures/default_filters/use_nearest_mipmap_filter=false
 anti_aliasing/quality/msaa_3d=2
 environment/defaults/default_clear_color=Color(0.63, 0.76, 0.79, 1)
 
 [physics]
 common/physics_ticks_per_second=60
+common/physics_interpolation=true

@@ -1,0 +1,64 @@
+[gd_scene load_steps=12 format=3]
+
+[ext_resource type="Script" path="res://game/player/player_controller.gd" id="1_controller"]
+[ext_resource type="Script" path="res://game/player/state_machine/player_state_machine.gd" id="2_machine"]
+[ext_resource type="Script" path="res://game/player/state_machine/idle_state.gd" id="3_idle"]
+[ext_resource type="Script" path="res://game/player/state_machine/walk_state.gd" id="4_walk"]
+[ext_resource type="Script" path="res://game/player/state_machine/run_state.gd" id="5_run"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
+radius = 0.35
+height = 1.8
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_body"]
+albedo_color = Color(0.85, 0.42, 0.22, 1)
+roughness = 0.8
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_body"]
+material = SubResource("StandardMaterial3D_body")
+radius = 0.35
+height = 1.8
+radial_segments = 16
+rings = 4
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_visor"]
+albedo_color = Color(0.12, 0.16, 0.2, 1)
+roughness = 0.4
+
+[sub_resource type="BoxMesh" id="BoxMesh_visor"]
+material = SubResource("StandardMaterial3D_visor")
+size = Vector3(0.42, 0.14, 0.2)
+
+[node name="Player" type="CharacterBody3D"]
+collision_layer = 2
+collision_mask = 1
+floor_max_angle = 0.872665
+floor_snap_length = 0.5
+script = ExtResource("1_controller")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+shape = SubResource("CapsuleShape3D_body")
+
+[node name="Visual" type="Node3D" parent="."]
+
+[node name="Body" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+mesh = SubResource("CapsuleMesh_body")
+
+[node name="Visor" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, -0.28)
+mesh = SubResource("BoxMesh_visor")
+
+[node name="StateMachine" type="Node" parent="." node_paths=PackedStringArray("initial_state")]
+script = ExtResource("2_machine")
+initial_state = NodePath("Idle")
+
+[node name="Idle" type="Node" parent="StateMachine"]
+script = ExtResource("3_idle")
+
+[node name="Walk" type="Node" parent="StateMachine"]
+script = ExtResource("4_walk")
+
+[node name="Run" type="Node" parent="StateMachine"]
+script = ExtResource("5_run")

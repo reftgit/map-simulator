@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="MapDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/world/map_definition.gd" id="1_definition"]
+
+[resource]
+script = ExtResource("1_definition")
+display_name = "İstanbul • Haliç"
+scene_path = "res://maps/istanbul_halic/istanbul_halic.tscn"
+player_spawn_position = Vector3(-109.0365, 6.5477, 204.2572)
+player_spawn_yaw_degrees = -27.0
+bounds = Rect2(-1931.65, -1558.48, 2687.51, 2671.68)
+kill_height = -5.0

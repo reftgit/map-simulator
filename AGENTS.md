@@ -10,6 +10,7 @@ These rules apply to every coding agent working in this repository (Claude Code,
 | `CLAUDE.md` | Claude Code entry point; imports this file. |
 | `PROJECT_STATE.md` | WHAT has actually been implemented and verified. |
 | `PROJECT_CONTEXT.md` | WHY decisions were made and WHAT is planned. |
+| `docs/ARCHITECTURE.md` | Code structure, extension points, and test commands. |
 
 Git history and the actual source code are the implementation evidence. Documentation describes them; it does not replace them.
 

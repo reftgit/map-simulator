@@ -1,0 +1,37 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://maps/istanbul_halic/istanbul_halic_map.gd" id="1_map"]
+[ext_resource type="PackedScene" path="res://assets/istanbul_halic.glb" id="2_model"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_sky"]
+sky_top_color = Color(0.45098, 0.623529, 0.666667, 1)
+sky_horizon_color = Color(0.843137, 0.866667, 0.815686, 1)
+ground_bottom_color = Color(0.392157, 0.490196, 0.501961, 1)
+ground_horizon_color = Color(0.843137, 0.866667, 0.815686, 1)
+
+[sub_resource type="Sky" id="Sky_main"]
+sky_material = SubResource("ProceduralSkyMaterial_sky")
+
+[sub_resource type="Environment" id="Environment_main"]
+background_mode = 2
+sky = SubResource("Sky_main")
+ambient_light_source = 2
+ambient_light_color = Color(0.705882, 0.772549, 0.792157, 1)
+ambient_light_energy = 0.65
+tonemap_mode = 2
+
+[node name="IstanbulHalic" type="Node3D"]
+script = ExtResource("1_map")
+
+[node name="Model" parent="." instance=ExtResource("2_model")]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_main")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+rotation_degrees = Vector3(-43, -32, 0)
+light_color = Color(1, 0.901961, 0.741176, 1)
+light_energy = 1.65
+shadow_enabled = true
+directional_shadow_mode = 1
+directional_shadow_max_distance = 60.0

@@ -2,7 +2,7 @@
 
 Planning context and decision rationale. This file does not describe implemented functionality; see `PROJECT_STATE.md` for that.
 
-Last updated: 2026-10-24 (Phase 0, Claude Code)
+Last updated: 2026-10-24 (Phase 1, Claude Code)
 
 ## Product vision and goals
 
@@ -128,7 +128,63 @@ PlayerController, PlayerStateMachine, PlayerCombat, PlayerAnimation, ThirdPerson
 
 ## Application technical decisions
 
-Phase 1 technical decisions are recorded with the Phase 1 implementation.
+Phase 1 decisions made by the implementing agent (Claude Code, 2026-10-24). None was specified by the user; each can be revisited. Code structure: `docs/ARCHITECTURE.md`.
+
+### T1 — Mobile renderer
+
+- **Decision:** Mobile renderer for desktop and mobile; the map project used GL Compatibility.
+- **Rationale:** The specification asks for a mobile renderer suited to the Godot version. Mobile is Godot 4's renderer for phones (Vulkan on Android, Metal on iOS) and supports occlusion culling, which Compatibility lacks and the city may need in Phase 4. Desktop measurement at the spawn view gave the same draw calls in both renderers (1330 vs 1335).
+- **Revisit:** Phase 4, after device measurements. Weak Android GPUs may favor Compatibility.
+
+### T2 — Native VirtualJoystick plus a touch router
+
+- **Decision:** Movement uses Godot 4.7's built-in `VirtualJoystick` (dynamic mode), which writes the `move_*` input actions. Camera drag and buttons go through `MobileInputController`, which routes each finger to one control by priority and keeps it until release.
+- **Rationale:** The engine control covers analog movement, dead zone, and multi-touch, and keyboard and touch share one input path. A custom joystick was written first and dropped once the native class turned up (its class name collided). The router guarantees that camera drags and buttons never take each other's fingers.
+
+### T3 — Intent-based character control
+
+- **Decision:** `PlayerController` reads a device-independent `PlayerIntent` (world direction, run) from a `PlayerInputSource` every physics tick. `TouchPlayerInput` is the touch implementation. Behavior lives in child-node states of `PlayerStateMachine` (Idle, Walk, Run).
+- **Rationale:** NPCs and bots can drive the same character with another input source, and Phase 2 actions become new states instead of conditionals.
+
+### T4 — Camera
+
+- **Decision:** Top-level orbit rig with a `SpringArm3D` (0.2 m sphere, world layer, player excluded); framing in swappable `CameraProfile` resources; physics interpolation on, and the camera follows the interpolated target in `_process`.
+- **Rationale:** Covers "camera must not go inside walls", lets Phase 3 switch to a vehicle profile with `set_target()`, and avoids stutter when the display rate differs from the 60 Hz physics rate.
+
+### T5 — Maps as data
+
+- **Decision:** A map is `maps/<name>/<name>.tscn` plus a `MapDefinition` resource. `WorldManager` loads it, provides the spawn, respawns below the kill height, and clamps to the bounds.
+- **Rationale:** The specification requires new maps without rewriting character and vehicle systems.
+
+### T6 — Vertex-color fix for the map at runtime
+
+- **Decision:** The game's map scene enables `vertex_color_use_as_albedo` on the GLB's 6 shared materials at load. The GLB, its import settings, and the original demo are unchanged.
+- **Rationale:** All map colors are stored as vertex colors with white base colors. Godot's importer does not apply them, so the city rendered white in Godot, including in the untouched original demo. The fix restores the look of the package's Blender previews without modifying the map.
+
+### T7 — Run control
+
+- **Decision:** Running is a toggle button on the right that switches off when the joystick finger lifts (`run_resets_on_release`). Running uses full speed whatever the stick tilt; walking speed follows the tilt. Walk 4.5 m/s and run 8.0 m/s, the original explorer's speeds.
+- **Rationale:** The specification asks only for a "run control" on the right side. Holding a button while also dragging the camera is awkward with two thumbs; a toggle frees the right thumb.
+
+### T8 — Placeholder character
+
+- **Decision:** Orange capsule (0.35 m radius, 1.8 m tall) with a dark visor showing the facing direction.
+- **Rationale:** No character model or animations exist. The specification allows a working placeholder.
+
+### T9 — Spawn facing
+
+- **Decision:** The player spawns facing along Galata Bridge toward Karaköy (yaw −27°), measured from deck-edge raycasts.
+- **Rationale:** Facing due north led off the deck's western edge within about 9 m, and railings have no collision.
+
+### T10 — Test approach
+
+- **Decision:** A small custom headless runner (`tests/run_tests.gd`) with unit tests and integration tests on the real map; touches go through `Input.parse_input_event`.
+- **Rationale:** No third-party test addon is needed, the runner works from the command line for every agent, and the real input pipeline is exercised.
+
+### T11 — Layout base
+
+- **Decision:** Keep the map project's 1440×900 base canvas; add `expand` aspect and `sensor_landscape` orientation.
+- **Rationale:** Fills any phone or tablet ratio without letterboxing and keeps the original explorer demo's HUD positions valid.
 
 ## Planned features
 
@@ -159,14 +215,17 @@ See "Requirements by phase". `PROJECT_STATE.md` records which parts exist.
 5. App name, bundle/package identifiers, signing team, and keystores for iOS and Android export.
 6. In-game UI language.
 7. Audience and monetization: not specified.
-8. Physics engine for vehicles (Godot Physics or Jolt): decide in Phase 3.
+8. Physics engine for vehicles (Godot Physics or Jolt): decide in Phase 3. The project currently uses the default engine.
 9. Whether the original explorer demo (`main.tscn`, `scripts/explorer.gd`, `scripts/main.gd`) should be kept long term.
 10. Branch strategy: work currently happens directly on `main`. Decide whether feature branches or pull requests are wanted.
 11. Whether `.vscode/` should be committed, ignored, or left untracked. It is currently left untracked.
+12. Railings, lamps, and other decor have no collision, so the player can walk off bridge decks and quays into the water (then respawns). Should invisible barriers be added along bridges and quays?
+13. Run control style: is the toggle with reset on stick release (T7) what the user wants, or a hold button, or auto-run at full stick tilt?
+14. HUD art: the controls are drawn with plain shapes. Is final art or an icon set planned?
 
 ## Constraints and priorities
 
 - Safety and Git constraints: `AGENTS.md` sections 5–7.
 - The map original in Google Drive must not be modified or deleted.
 - Physical device results are reported as NOT RUN until actually performed.
-- Current priority: Phase 0 and Phase 1 only.
+- Current priority: review of Phases 0 and 1. Phase 2 starts only after user approval.
