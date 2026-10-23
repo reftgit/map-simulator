@@ -1,0 +1,13 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="PackedScene" path="res://assets/istanbul_halic.glb" id="1_map"]
+[ext_resource type="Script" path="res://scripts/main.gd" id="2_script"]
+[ext_resource type="Script" path="res://scripts/explorer.gd" id="3_script"]
+
+[node name="IstanbulHalic" type="Node3D"]
+script = ExtResource("2_script")
+
+[node name="Map" parent="." instance=ExtResource("1_map")]
+
+[node name="Explorer" type="CharacterBody3D" parent="."]
+script = ExtResource("3_script")

@@ -1,0 +1,13 @@
+# Godot editor cache and imported assets (regenerated on import)
+.godot/
+
+# Map model kept out of Git (502 MB, over GitHub's 100 MB limit).
+# Source location and SHA-256: docs/maps/istanbul_halic/README.md
+/assets/istanbul_halic.glb
+
+# Export output and platform build templates
+/build/
+/android/
+
+# OS files
+.DS_Store
