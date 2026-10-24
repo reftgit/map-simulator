@@ -49,6 +49,7 @@ func respawn(body: Node3D) -> void:
 		body.teleport(get_spawn_transform())
 	else:
 		body.global_transform = get_spawn_transform()
+		body.reset_physics_interpolation()
 	body_respawned.emit(body)
 
 
@@ -66,3 +67,4 @@ func _physics_process(_delta: float) -> void:
 			var inside := Vector3(clampf(p.x, area.position.x, area.end.x), p.y, clampf(p.z, area.position.y, area.end.y))
 			if inside != p:
 				body.global_position = inside
+				body.reset_physics_interpolation()

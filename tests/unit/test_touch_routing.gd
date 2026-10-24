@@ -133,6 +133,42 @@ func test_run_resets_when_joystick_released() -> void:
 	check(not input.is_run_active(), "running stops when the stick finger lifts")
 
 
+## Joystick held forward with running on, then the app loses focus or pauses.
+func _check_reset_on_notification(what: int) -> void:
+	await _setup()
+	var button := _run_point()
+	touch(1, button, true)
+	touch(1, button, false)
+	var stick := _joystick_point()
+	touch(0, stick, true)
+	drag(0, stick, stick + Vector2(0, -200))
+	await process_frames(1)
+	check(input.get_move_vector().y < -0.9 and input.is_run_active(), "running forward before the notification")
+	tree.root.propagate_notification(what)
+	await process_frames(1)
+	check(input.get_move_vector() == Vector2.ZERO, "movement stops")
+	for action in MobileInputController.ACTIONS:
+		check(not Input.is_action_pressed(action), "%s released" % action)
+	check(not input.is_run_active(), "run toggle off")
+	# The old finger may still report drags after resume; it must not move the character.
+	drag(0, stick + Vector2(0, -200), stick + Vector2(0, -230))
+	await process_frames(1)
+	check(input.get_move_vector() == Vector2.ZERO, "stale finger is ignored after resume")
+	touch(0, stick + Vector2(0, -230), false)
+	touch(0, stick, true)
+	drag(0, stick, stick + Vector2(200, 0))
+	await process_frames(1)
+	check(input.get_move_vector().x > 0.9, "a new touch drives the joystick again")
+
+
+func test_focus_out_releases_held_joystick_and_run() -> void:
+	await _check_reset_on_notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+
+
+func test_pause_releases_held_joystick_and_run() -> void:
+	await _check_reset_on_notification(Node.NOTIFICATION_APPLICATION_PAUSED)
+
+
 func test_release_all_touches_clears_state() -> void:
 	await _setup()
 	var look := _look_point()

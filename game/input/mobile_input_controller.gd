@@ -10,6 +10,10 @@ extends Control
 ## release, so camera drags and buttons never interfere. Touches no control
 ## claims fall through to the GUI, where the joystick picks them up.
 
+const ACTIONS: Array[StringName] = [&"move_left", &"move_right", &"move_forward", &"move_back", &"run"]
+## Touch indices released on the joystick when input is reset.
+const MAX_TOUCHES := 10
+
 @export var joystick: VirtualJoystick
 @export var look_area: TouchLookArea
 @export var run_button: TouchButton
@@ -56,10 +60,25 @@ func handle_input_event(event: InputEvent) -> bool:
 	return false
 
 
+## Drops every finger and stops all movement, e.g. when the app loses focus
+## or pauses with a finger down. Nothing keeps moving after resume.
 func release_all_touches() -> void:
 	for control in _priority:
 		control.reset_touch()
 	_owners.clear()
+	if run_button:
+		run_button.set_toggled(false)
+	if joystick and is_inside_tree():
+		# The native joystick has no reset method. A release for each touch
+		# index makes it forget its finger (the GUI routes a release to the
+		# control holding that index and ignores the others).
+		for index in MAX_TOUCHES:
+			var release := InputEventScreenTouch.new()
+			release.index = index
+			release.position = joystick.get_global_rect().get_center()
+			get_viewport().push_input(release, true)
+	for action in ACTIONS:
+		Input.action_release(action)
 
 
 ## Movement in screen axes: x right, y down (forward is negative y), length 0..1.
