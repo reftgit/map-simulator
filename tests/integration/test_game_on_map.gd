@@ -207,6 +207,47 @@ func test_profiles_switch_on_the_real_map() -> void:
 	Engine.max_fps = saved_fps
 
 
+## Union of all occluder vertices in map space.
+func _occluder_bounds(holder: Node) -> AABB:
+	var bounds := AABB()
+	var first := true
+	for instance: OccluderInstance3D in holder.find_children("*", "OccluderInstance3D", true, false):
+		for vertex in (instance.occluder as ArrayOccluder3D).vertices:
+			var point := instance.transform * vertex
+			if first:
+				bounds = AABB(point, Vector3.ZERO)
+				first = false
+			else:
+				bounds = bounds.expand(point)
+	return bounds
+
+
+func test_baked_occluders_match_runtime_build() -> void:
+	await _setup()
+	var path: String = game.map_definition.occluders_path
+	check(ResourceLoader.exists(path), "baked occluders exist at %s" % path)
+	var baked: Node = (load(path) as PackedScene).instantiate()
+	var map_root: Node = game.world.map_root
+	var runtime := RenderSettings.build_occluders(map_root, RenderSettings.meshes_by_category(map_root))
+	var baked_stats := RenderSettings.occluder_stats(baked)
+	check(baked_stats == RenderSettings.occluder_stats(runtime), "same occluders and triangles: baked %s, runtime %s" % [baked_stats, RenderSettings.occluder_stats(runtime)])
+	var a := _occluder_bounds(baked)
+	var b := _occluder_bounds(runtime)
+	check(a.position.distance_to(b.position) < 0.01 and a.end.distance_to(b.end) < 0.01, "same extent: %s vs %s" % [a, b])
+	baked.free()
+	runtime.free()
+
+
+func test_profile_uses_baked_occluders() -> void:
+	await _setup()
+	var saved_fps := Engine.max_fps
+	game.set_quality_profile("high")
+	var report: Dictionary = game.render_settings.occluder_report
+	check(report.get("source") == "baked" and report.get("occluders") == 643 and report.get("triangles") == 317518, "occluders loaded from the baked file (%s)" % [report])
+	game.set_quality_profile("none")
+	Engine.max_fps = saved_fps
+
+
 func test_falling_into_water_respawns() -> void:
 	await _setup()
 	# The deck ends about 6 m west of the spawn; railings have no collision and

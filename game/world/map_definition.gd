@@ -12,6 +12,9 @@ extends Resource
 @export var bounds := Rect2()
 ## Bodies that fall below this height are respawned.
 @export var kill_height := -5.0
+## Baked OccluderInstance3D scene (tools/bake_occluders.gd). Without it,
+## occluders are built from the map's collision at load and a warning is logged.
+@export_file("*.scn", "*.tscn") var occluders_path := ""
 
 @export_group("Debug")
 ## Fixed player positions for repeatable performance measurements, cycled

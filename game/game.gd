@@ -34,7 +34,7 @@ func _ready() -> void:
 	camera_rig.set_target(player)
 	hud.bind_player(player)
 
-	render_settings = RenderSettings.new(world.map_root, camera_rig.camera, get_viewport())
+	render_settings = RenderSettings.new(world.map_root, camera_rig.camera, get_viewport(), map_definition.occluders_path)
 	if OS.is_debug_build():
 		_experiment = _load_perf_experiment()
 	set_quality_profile(_initial_profile())
