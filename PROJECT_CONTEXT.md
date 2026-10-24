@@ -112,7 +112,7 @@ PlayerController, PlayerStateMachine, PlayerCombat, PlayerAnimation, ThirdPerson
 
 ### D5 — Map source (2026-10-24, user confirmed)
 
-- **Decision:** The game uses the İstanbul • Haliç Godot project from `/Users/ref/My Drive/projeler/Istanbul_Halic/Godot`. It was copied unchanged into the repository root; the original stays untouched.
+- **Decision:** The game uses the İstanbul • Haliç Godot project from `<SOURCE_PACKAGE>/Istanbul_Halic/Godot` (placeholder explained in `docs/maps/istanbul_halic/README.md`). It was copied into the repository root; the original stays untouched.
 - **Rationale:** The specification says to work on the existing project and not to create a new one, but the repository held no Godot project. Copying keeps the original safe and puts the project under Git.
 
 ### D6 — Map model kept out of Git (2026-10-24, user decision)

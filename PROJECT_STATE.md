@@ -16,7 +16,7 @@ External review of Phases 0–1, a first device test, then user approval before 
 
 - Branch: `main`. Remote: `origin` → `https://github.com/reftgit/map-simulator.git`. Upstream: `origin/main`.
 - `3c0771c`: development protocol bootstrap.
-- `3a9a49b`: Phase 0, original map project imported unchanged, audit recorded.
+- `3a9a49b`: Phase 0, original map project imported (files matched the package manifest; Godot 4.7.2's first import added seven default-valued keys to `assets/istanbul_halic.glb.import`), audit recorded.
 - Phase 1 is the commit after `3a9a49b` (`git log`).
 
 ## Repository contents
