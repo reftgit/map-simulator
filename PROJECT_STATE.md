@@ -1,115 +1,164 @@
 # PROJECT_STATE.md — Verified Current State
 
-What actually exists in the repository and how it was verified. Plans and decisions belong in `PROJECT_CONTEXT.md`; code structure and test commands are in `docs/ARCHITECTURE.md`.
+What actually exists in the repository and how it was verified. Plans and decisions belong in `PROJECT_CONTEXT.md`; code structure, build, and test commands are in `docs/ARCHITECTURE.md`.
 
-Last updated: 2026-10-24 (Phase 1, Claude Code)
+Last updated: 2026-10-24 (Phase 1 device validation, Claude Code)
 
 ## Current phase
 
-**Phase 1 — mobile character control: implemented, awaiting review.** On the İstanbul • Haliç map, a placeholder character walks and runs with a touch joystick, and a touch-controlled third-person camera follows it. Verified with headless automated tests and desktop window renders. **Not tested on any physical phone or tablet.**
+**Phase 1 — mobile character control: implemented and checked on two physical devices.** Debug builds run on an iPhone 13 Pro and a Samsung Galaxy Tab A7. Touch controls passed the user's on-device checklist on both. Frame rate is far below the 60 FPS target on the Android tablet (5–8 FPS) and drops under thermal throttling on the iPhone (89 FPS cold → 43–53 FPS after long use). Performance work belongs to Phase 4 and has not started.
 
 ## Current objective
 
-External review of Phases 0–1, a first device test, then user approval before Phase 2 (punch, roll, animation/state).
+Review of the device results, then a user decision on the next step (Phase 2, or an earlier performance pass; see "Recommended next task").
 
 ## Git
 
 - Branch: `main`. Remote: `origin` → `https://github.com/reftgit/map-simulator.git`. Upstream: `origin/main`.
 - `3c0771c`: development protocol bootstrap.
 - `3a9a49b`: Phase 0, original map project imported (files matched the package manifest; Godot 4.7.2's first import added seven default-valued keys to `assets/istanbul_halic.glb.import`), audit recorded.
-- Phase 1 is the commit after `3a9a49b` (`git log`).
+- `e221c56`: Phase 1 implementation.
+- `6c37037`: test runner fails tests that log errors; SKIP without the GLB.
+- `8865437`: joystick and actions released on focus loss and pause; interpolation reset on clamp.
+- `565ff0f`: personal source paths replaced with `<SOURCE_PACKAGE>`.
+- `b4d2b2c`: debug performance overlay, PERF/STARTUP logs, VIEW measurement viewpoints.
+- `bab2b88`: fix for viewpoint names lost in exported builds.
+- Export presets, icon, iOS build script, and these device results: the commit after `bab2b88`.
 
 ## Repository contents
 
 | Path | Notes |
 |---|---|
-| `game/` | Phase 1 game code: composition root, world, player, camera, input, HUD. See `docs/ARCHITECTURE.md`. |
-| `maps/istanbul_halic/` | Game map scene (GLB + sky/ambient + sun + water shader + vertex-color fix) and its `MapDefinition`. |
-| `project.godot` | Main scene `res://game/main.tscn`; Mobile renderer; sensor landscape; `expand` aspect; physics interpolation; input actions; mouse emulates touch; physics layer names. |
-| `tests/` | Headless runner, 42 unit tests, 7 integration tests, flat-map fixture, original map validation. |
+| `game/` | Game code: composition root, world, player, camera, input, HUD with debug overlay. See `docs/ARCHITECTURE.md`. |
+| `maps/istanbul_halic/` | Game map scene (GLB + sky/ambient + sun + water shader + vertex-color fix) and its `MapDefinition` (with two debug viewpoints). |
+| `project.godot` | Main scene `res://game/main.tscn`; Mobile renderer; sensor landscape; `expand` aspect; physics interpolation; input actions; mouse emulates touch; ETC2/ASTC import (required for Android export); placeholder icon. |
+| `export_presets.cfg` | "Android Debug" (arm64 APK, `com.mirongi.mapsimulator`) and "iOS Debug" (`com.mirongi.mapsimulator.dev`, team `8N7RYA42S6`, project-only export). No passwords or keystore paths. |
+| `icon.svg` | Placeholder app icon (capsule character over water). |
+| `tests/` | Headless runner, 46 unit tests, 8 integration tests, flat-map fixture, original map validation. |
 | `tools/capture_screenshot.gd` | Windowed render to PNG with render stats. |
-| `main.tscn`, `scripts/` | Original explorer demo, unchanged. No longer the main scene. Desktop only. |
+| `tools/build_ios_debug.sh` | iOS debug build without contacting the Apple Developer portal; optional `devicectl` install. |
+| `build/.gdignore` | Keeps Godot from scanning or packing build output. Everything else in `build/` is ignored by Git. |
+| `main.tscn`, `scripts/` | Original explorer demo, unchanged. Desktop only. |
 | `assets/istanbul_halic.glb` | 502 MB, **not tracked**. Restore: `docs/maps/istanbul_halic/README.md`. |
 | `.vscode/settings.json` | The user's editor colors. Untracked, intentionally not committed. |
 
-## Implemented features (Phase 1)
+## Implemented features
 
-- Landscape layout with a safe-area-aware HUD (margins from `DisplayServer.get_display_safe_area()` on mobile).
-- Left side: Godot's native `VirtualJoystick` in dynamic mode over the left 42 % of the screen, analog, 360°.
-- Right side: camera drag area over the remaining 58 %, and a run toggle button.
-- Multi-touch: each finger belongs to one control until release; camera drags and buttons do not steal each other's fingers.
-- Movement relative to the camera; walking speed follows stick tilt (up to 4.5 m/s); running at 8.0 m/s.
-- Player state machine: Idle, Walk, Run; the body turns toward the movement direction.
-- Third-person camera: yaw and pitch from touch drags, pitch limited to −65°…35°, spring-arm collision so the camera stays in front of walls.
-- `WorldManager`: map loading from a `MapDefinition`, spawn on Galata Bridge facing Karaköy, respawn below y = −5 (for example after falling into the water), bounds clamping.
-- Map look: vertex colors applied, so the city renders in color (the original Godot import rendered it white).
-- Debug overlay in debug builds: FPS, state, speed (updated every 0.5 s).
-- Desktop development controls: WASD/arrows, Shift to run, mouse drag emulating touch.
+- Phase 1 controls: native `VirtualJoystick` (left 42 %), camera drag area (right 58 %), run toggle, camera-relative movement, Idle/Walk/Run states, spring-arm third-person camera, safe-area HUD, map loading with spawn, respawn, and bounds. Details in `docs/ARCHITECTURE.md`.
+- Focus loss and pause release the joystick, the `move_*`/`run` actions, and the run toggle.
+- Debug builds only: overlay with FPS, draw calls, primitives, objects, video memory, engine static memory; `PERF` log line every 2 s; `STARTUP` log line; VIEW button cycling Spawn → Karaköy street (facing north) → Galata street (facing south).
+- Android and iOS debug export presets.
 
-## Verified behaviors
+## Device results (2026-10-24, debug builds)
 
-All on 2026-10-24, macOS, Godot 4.7.2.
+### Devices and builds
+
+| | Android | iOS |
+|---|---|---|
+| Device | Samsung Galaxy Tab A7 (SM-T500), Android 12, Snapdragon 662 / Adreno 610, 2000×1200 | iPhone 13 Pro (A15), iOS 26.6.1, 2532×1170, 120 Hz |
+| Renderer (from engine log) | Vulkan 1.1.128, Forward Mobile | Metal, Forward Mobile, "Apple A15 GPU" |
+| Build | `Android Debug` preset, APK 223.7 MB (195 MB of it the imported map), debug keystore, `adb install` | `tools/build_ios_debug.sh` flow, app bundle 286 MB, Xcode-managed wildcard team profile, `devicectl` install |
+| Measurement source | overlay screenshots (`adb screencap`), `PERF`/`STARTUP` lines (`adb logcat`), `dumpsys meminfo`, `dumpsys battery`/`thermalservice` | overlay screenshots (`devicectl device capture screenshot`), `STARTUP`/`PERF` lines (Instruments "Logging" template), memory and thermal state (Instruments "Activity Monitor") |
+
+### Startup
+
+| | Android | iOS |
+|---|---|---|
+| Activity/process launch to first Android frame (`am start -W` TotalTime, cold) | 1,597 ms; 2,899 ms (two runs) | not measured |
+| Engine start → map ready (`STARTUP map_ready_ms`) | 15,196 ms; 9,720 ms | 1,565 ms |
+| Engine start → first game frame (`first_frame_ms`) | 20,683 ms; 12,452 ms | 1,649 ms |
+
+### Frame statistics at the measurement viewpoints
+
+Draw calls, primitives, and objects come from the overlay/PERF line at a fixed position and camera; they do not depend on temperature. FPS does.
+
+| Viewpoint | Android FPS | Android draw calls / primitives / objects | iOS FPS | iOS draw calls / primitives / objects |
+|---|---|---|---|---|
+| Spawn (Galata Bridge) | 6–7 | 1,068 / 2,593,418 / 1,233 | 89 (cold, ~1.5 min after launch); 78 (~3.5 min); 44 (after ~2.5 h, thermal "Serious") | 1,192 / 2,840,670 / 1,359 |
+| Karaköy street, facing north | 5–6 | 1,326 / 3,250,823 / 1,531 | 43 (after ~2.5 h, "Serious") | 1,495 / 3.37 M / 1,702 |
+| Galata street, facing south | 7–8 | 946 / 2,252,298 / 1,147 | 53 (after ~2.5 h, "Serious") | 1,114 / 2.55 M / 1,319 |
+
+iOS frame rates above 60 are possible because the 120 Hz display is not capped. The iPhone stayed in the app for about 2.5 hours at the spawn while waiting for the user's taps; this long run was not planned. The iPhone shows more objects than the tablet because its wider aspect ratio shows more of the scene.
+
+### Memory and heat
+
+| | Android | iOS |
+|---|---|---|
+| Process memory | PSS 507–528 MB (peak sampled 528,145 KB), plus 112–225 MB swap PSS | physical footprint 1.02 GiB (at ~3 min and at ~2.5 h); resident 385 MiB → 162 MiB |
+| Engine-reported | video memory 559 MB; static 179–182 MB | video memory 670 MB; static 172–178 MB |
+| Heat | battery 33.5 → 34.0 °C (run 1) and 35.0 → 35.5 °C (run 2, ~1.5 min); thermal status 0 | thermal state "Serious" at ~3 min and at ~2.5 h; CPU ~41–47 % |
+
+### On-device checklist
+
+| Item | Android | iOS |
+|---|---|---|
+| App opens | PASS | PASS |
+| Joystick and camera drag at the same time | PASS (user) | PASS (user) |
+| Drag starting on the run button does not turn the camera; run toggle on/off and reset on stick release | PASS (user) | PASS (user) |
+| HUD clear of notch, rounded corners, home indicator | PASS (screenshot; the tablet has no notch) | PASS (screenshot: overlay and VIEW start inside the notch-side inset; controls sit above the home indicator) |
+| Backgrounding with the joystick held does not leave the character walking | PASS (simulated: `adb input motionevent DOWN/MOVE`, HOME, relaunch → `Walk 4.5 m/s` before, `Idle 0.0 m/s` after, same session) | PASS (user) |
+| Heat / stutter | Severe stutter from 5–8 FPS; no thermal warning in ~1.5 min | Thermal "Serious"; FPS fell from 89 to 43–53 |
+| VIEW viewpoints | PASS after fix `bab2b88` (first build raised "Out of bounds get index") | PASS (user taps) |
+
+User feedback: asked about touch feel, camera sensitivity, stutter, and heat, the user chose the prepared answer "Kontroller iyi, oyun yavaş" ("controls are fine, the game is slow"). No free-text comment was given.
+
+## Verified behaviors (automated, macOS, Godot 4.7.2)
 
 | Behavior | Evidence |
 |---|---|
-| Project imports cleanly. | `godot --headless --path . --import`: exit 0, no errors or warnings in the log. |
-| Automated tests pass. | `godot --headless --path . --script res://tests/run_tests.gd` → `RESULT 49 passed, 0 failed` (42 unit, 7 integration), exit 0, no script errors in the log. |
-| Runner reports failures. | A deliberately failing test and a deliberately broken test file each produced `FAIL` and exit 1; both files were removed. |
-| Original map validation still passes with the new settings. | `tests/map/validate_scene.gd` → `VALIDATION PASS | failures=0`. |
-| Joystick drives movement through the real input pipeline. | `test_touch_routing.gd`: half deflection gives 0.375 after the 0.2 dead zone; full deflection forward gives y = −1; release gives zero. |
-| Joystick and camera drag work at the same time. | `test_joystick_and_look_work_simultaneously`. |
-| Buttons and camera drag do not interfere. | `test_run_button_toggles_without_turning_camera`, `test_look_drag_over_button_stays_look`, `test_second_finger_in_look_area_is_ignored`. |
-| Walk and run speeds, transitions, facing. | `test_player_controller.gd` on a flat fixture: 4.5 m/s, 8.0 m/s, analog half speed, Idle→Walk→Run→Idle, faces movement, stops at a wall. |
-| On the real map: spawn, touch walking and running along Galata Bridge. | `test_game_on_map.gd`: spawn on the Galata Bridge collider at y ≈ 4.55 facing along the deck; touch walk 2 s → Walk at 4.5 m/s, > 8 m along the bridge, still on the deck; run toggle + stick 2 s → Run at 8.0 m/s, > 14 m, still on the deck. |
-| Movement follows the camera. | `test_movement_follows_camera_direction`: after a 90° look drag, stick-up movement aligns with the camera direction (> 0.9). |
-| Camera stays out of geometry on the map. | `test_camera_stays_out_of_geometry_on_streets`: 24 ground points around Karaköy/Galata × 8 directions = 192 samples; the spring arm shortened in 44; 0 samples had geometry between the pivot and the camera. |
-| Camera stays in front of a wall and ignores the player capsule. | `test_third_person_camera.gd`. |
-| Falling into the water respawns the player. | `test_falling_into_water_respawns`: one respawn, back on the bridge deck. |
-| Safe-area math. | `test_ui_controller.gd`: iPhone 13 Pro landscape insets (141 px sides, 63 px bottom) convert to 108.46 / 851.54 canvas units. |
-| Windowed render with the Mobile renderer. | `tools/capture_screenshot.gd` at 1266×585 and 1180×820: "Metal 4.0 – Forward Mobile", map in color, HUD at the expected positions, touch-driven run reached `Run 8.00 m/s` at a 1.535 window-to-canvas scale. |
-
-## Measurements (desktop only, not device performance)
-
-Apple M5, macOS, Mobile renderer on Metal, 1266×585 window, spawn view: 60 FPS (vsync), about 1,190–1,410 draw calls, about 1,220–1,440 objects, about 2.5–2.8 million primitives per frame depending on view direction. These numbers show the scene's weight; they say nothing about phone frame rates.
+| Project imports cleanly. | `godot --headless --path . --import`: exit 0, no errors or warnings (after adding `build/.gdignore`). |
+| Automated tests pass. | `run_tests.gd` → `RESULT 54 passed, 0 failed, 0 skipped`, exit 0; unit only → `RESULT 46 passed, 0 failed, 0 skipped`, exit 0. |
+| Runtime errors fail tests. | Before the fix, a null method call and an error after `await` were both reported PASS (exit 0). After: both FAIL with "logged error: …", exit 1. |
+| Missing GLB is visible. | With the GLB moved away: `RESULT 42 passed, 0 failed, 7 skipped`, exit 2; unit only exit 0. GLB restored, SHA-256 re-verified. |
+| Focus loss / pause reset input. | `test_focus_out_releases_held_joystick_and_run`, `test_pause_releases_held_joystick_and_run`; both failed on the previous controller. |
+| Exported PackedStringArray guard. | `test_no_packed_string_array_exports`; fails if the old type is restored. |
+| Debug viewpoints stand on ground on the map. | `test_debug_viewpoints_stand_on_ground`. |
+| Original map validation. | `tests/map/validate_scene.gd` → `VALIDATION PASS | failures=0`. |
+| Phase 1 behaviors (routing, speeds, camera collision on 192 street samples, respawn, safe-area math). | Unit and integration suites; see `docs/ARCHITECTURE.md`. |
 
 ## Unverified behaviors
 
-- **Everything on physical iOS and Android devices: NOT RUN.** Includes touch feel, multi-touch on real hardware, safe area on notched phones, frame rate, thermal behavior, memory, load time.
-- iOS and Android export: NOT RUN. No `export_presets.cfg` exists.
-- Behavior when the app is paused or switched while a finger is on the native joystick: not tested (the router's own fingers are dropped on focus loss; the native joystick's handling was not tested).
-- Visual smoothness of physics interpolation on 120 Hz screens: not observed.
-- Desktop keyboard controls: bindings verified by test; movement with keys was only seen in an ad-hoc diagnostic, not in a committed test.
+- iOS process launch time to first frame (only engine-internal times were measured).
+- Mobile vs Compatibility renderer on these devices: not compared.
+- Release builds: none made (release signing out of scope).
+- Smoothness of physics interpolation on the 120 Hz screen: not judged separately.
+- Whether Android cancels a held touch by itself on backgrounding (the device test cannot tell that apart from the fix; the unit tests cover the fix).
+- F4 (interpolation reset after a bounds clamp): no dedicated test; a meaningful check needs a moving body at the boundary.
 - Codex reading `AGENTS.md`: not tested.
 
 ## Known bugs and limitations
 
-- Railings, lamps, and decor have no collision, so the player can walk off bridge decks and quays and fall into the water, then respawns at the bridge. Same as the original demo. See open question 12 in `PROJECT_CONTEXT.md`.
-- No jump (not requested). The capsule can get onto small curbs only when its rounded bottom slides over them; tall steps block it.
-- The original explorer demo still renders the city white; the vertex-color fix applies only to the game's map scene.
-- Placeholder character with no animations. Debug overlay text is English and visible in debug builds.
+- Android tablet at 5–8 FPS; startup to first frame 12–21 s.
+- Railings, lamps, and decor have no collision; falling into the water respawns the player (same as the original demo).
+- No jump (not requested); tall steps block the capsule.
+- The original explorer demo still renders the city white.
+- Placeholder character (no animations) and placeholder icon. The app name shown on devices is the project name "İstanbul • Haliç".
+- Debug overlay and VIEW button appear in debug builds only; overlay text is English.
+- Godot 4.7.2 export conversion dropped an exported `PackedStringArray` from a `.tres`; the project uses `Array[String]` instead (guarded by a test).
 
 ## Technical risks
 
-- **Map weight on phones:** about 2.5–2.8 M primitives and about 1,300 draw calls at street level, with 7.07 M triangles in the model. Very likely too heavy for 60 FPS, and possibly for 30 FPS, on mid-range phones. Phase 4 must measure and reduce (visibility ranges, occlusion culling, LOD tuning, decor culling, possibly map splitting).
-- Import needs about 3.3 GB peak memory on desktop; export size and device memory with the 502 MB model are unknown.
+- **Performance:** street-level frames carry 0.95–1.5 k draw calls and 2.3–3.4 M primitives with no occlusion culling. The Adreno 610 tablet manages 5–8 FPS; the iPhone reaches a "Serious" thermal state within minutes. Candidate measures are listed in `PROJECT_CONTEXT.md` (none implemented).
+- **Memory:** iPhone footprint 1.02 GiB; Android uses swap on a tablet with limited RAM.
+- **Startup:** 10–15 s to map ready on the tablet, with variance between runs.
 - A fresh clone lacks the GLB and will not run until it is restored.
 
 ## External blockers
 
-None for review. Device testing needs export presets (app name, bundle IDs, signing; open question 5).
+- Final iOS identity: `com.mirongi.mapsimulator` must be registered only in the user's future Apple Developer account. Until then, iOS debug builds use the temporary team and `.dev` bundle ID.
 
 ## Required manual actions
 
-- Run the game on a device or in the editor (F5) and judge touch feel, camera sensitivity (`look_sensitivity` 2.6), and the run toggle (open question 13).
-- Decide export identifiers and signing so a device build can be made.
-- Provide or choose character and car models (open questions 1–2).
+- Decide the minimum target devices and whether the Galaxy Tab A7 class must reach 30 FPS (open questions in `PROJECT_CONTEXT.md`).
+- Decide the next step: Phase 2 or a performance pass first.
+- Later: create the new Apple Developer account, then update the team ID and bundle ID (decision D8).
+- Provide or choose character and car models; decide the app name and icon.
 
 ## Current priorities
 
-1. Review of Phases 0–1.
-2. First device build and on-device check of controls and frame rate.
-3. Phase 2 after user approval.
+1. Review of the device results.
+2. User decision on the next step.
 
 ## Recommended next task
 
-Create debug export presets for Android and iOS, install on the available test devices, and record touch behavior, safe-area layout, and FPS at the spawn view. This is the evidence still missing for Phase 1 and the baseline Phase 4 needs. Requires the user's export identifiers and signing choices.
+A measurement-only performance pass before Phase 2: on the same two devices and three viewpoints, measure the effect of individual low-risk settings (camera far plane with fog, visibility ranges for lamps/trees/decor, occlusion culling, shadows off, 3D render scale, a 60 FPS cap on iOS), one at a time, and record which reach 30 FPS on the tablet and reduce iPhone heat. At 5–8 FPS the Android controls cannot be judged properly, and Phase 2 animation work would be measured on an unusable baseline. This changes the phase order and needs the user's approval.

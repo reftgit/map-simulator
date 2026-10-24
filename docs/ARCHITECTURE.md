@@ -19,8 +19,10 @@ maps/<map_name>/            One folder per map: scene, MapDefinition (.tres), ma
 assets/                     Map model and metadata (the 502 MB GLB is not in Git)
 scripts/, main.tscn         Original explorer demo from the map package (desktop only, not used by the game)
 tests/                      Headless test runner, unit and integration suites, fixtures
-tools/                      Development tools (screenshot capture)
+tools/                      Development tools (screenshot capture, iOS debug build)
 docs/                       This file, map documentation
+build/                      Export output, ignored by Git except build/.gdignore (keeps Godot from importing it)
+export_presets.cfg          "Android Debug" and "iOS Debug" presets
 ```
 
 ## Runtime structure
@@ -37,14 +39,15 @@ Main (game.gd) ─ wires everything once in _ready()
     └── SafeArea/Controls MobileInputController
         ├── LookArea      TouchLookArea (right 58 %)
         ├── Joystick      native VirtualJoystick (left 42 %), drives move_* actions
-        └── RunButton     TouchButton, toggle
+        ├── RunButton     TouchButton, toggle
+        └── DebugViewButton  TouchButton "VIEW", debug builds only (extra_controls)
 ```
 
 Systems do not search for each other. `game.gd` is the only place that connects them.
 
 ## Per-frame data flow
 
-1. **Touch.** The native `VirtualJoystick` writes the `move_left/right/forward/back` actions. `MobileInputController._input()` routes every other touch to one `TouchControl` in priority order (run button, then look area) and owns that finger until release. A finger that starts on the look area keeps turning the camera even if it slides over a button. Unclaimed touches fall through to the GUI, where the joystick takes them.
+1. **Touch.** The native `VirtualJoystick` writes the `move_left/right/forward/back` actions. `MobileInputController._input()` routes every other touch to one `TouchControl` in priority order (run button, `extra_controls`, then look area) and owns that finger until release. A finger that starts on the look area keeps turning the camera even if it slides over a button. Unclaimed touches fall through to the GUI, where the joystick takes them.
 2. **Camera (`_process`).** `ThirdPersonCamera` consumes the look delta (radians), clamps pitch, follows the target's interpolated transform, and lets the `SpringArm3D` (sphere, world layer) pull the camera in front of walls.
 3. **Player (`_physics_process`).** `PlayerController` clears its `PlayerIntent` and asks its `input_source` to fill it. `TouchPlayerInput` rotates the stick by the camera yaw (`camera_relative`). The active `PlayerState` picks the target speed and transitions, `apply_locomotion()` accelerates, turns the body, and applies gravity, then `move_and_slide()` runs.
 4. **World (`_physics_process`).** `WorldManager` respawns tracked bodies below `kill_height` and clamps them to `bounds`.
@@ -87,7 +90,14 @@ The map has collision on `Ground_*` terrain (streets included), `Buildings_*`, `
 - Touch is primary. Several fingers work at once; each finger belongs to one control until it lifts.
 - Running is a toggle button that turns off when the joystick finger lifts (`run_resets_on_release`).
 - Desktop development: WASD or arrow keys move, Shift runs, and the mouse emulates touch (`emulate_touch_from_mouse`), so left-drag on the left half is the joystick and left-drag on the right half turns the camera.
-- `MobileInputController` drops routed fingers when the app loses focus or pauses.
+- When the app loses focus or pauses, `MobileInputController.release_all_touches()` drops routed fingers, turns the run toggle off, sends touch releases so the native joystick forgets its finger, and releases the `move_*` and `run` actions.
+
+## Debug measurement tools (debug builds only)
+
+- Overlay (top left): FPS, draw calls, primitives, objects, video memory, engine static memory (current and peak), player state and speed, current viewpoint.
+- Log lines: `PERF view="…" fps=… draw_calls=… primitives=… objects=… video_mem_mb=… static_mem_mb=… static_peak_mb=…` every 2 s, `STARTUP map_ready_ms=… first_frame_ms=…` once, `VIEW <name>` on each switch.
+- VIEW button: cycles Spawn → the map's `debug_viewpoints` (`MapDefinition`, names in `debug_viewpoint_names`).
+- Reading the logs: Android `adb logcat -s godot`; iOS: Godot output goes to the unified log, not to `devicectl --console`; record it with `xcrun xctrace record --template Logging --device <udid> --all-processes` and export the `os-log` table. Screenshots: `adb exec-out screencap -p`, `xcrun devicectl device capture screenshot`. iOS memory and thermal state: Instruments "Activity Monitor" template (`memory-physical-footprint`, `device-thermal-state-intervals`).
 
 ## Rendering and performance settings
 
@@ -119,8 +129,27 @@ godot --headless --path . --script res://tests/map/validate_scene.gd # original 
 
   The tool prints renderer, FPS, draw calls, and primitive counts for the frame.
 
+## Device builds (debug)
+
+Never upload to a store, TestFlight, or Play Console from these steps.
+
+```bash
+# Android: arm64 APK signed with the Godot editor's debug keystore (local editor settings)
+godot --headless --path . --export-debug "Android Debug" build/android/map-simulator-debug.apk
+adb install -r build/android/map-simulator-debug.apk
+
+# iOS: Xcode project export + xcodebuild WITHOUT -allowProvisioningUpdates (no portal changes)
+tools/build_ios_debug.sh               # build only
+tools/build_ios_debug.sh <device-udid> # build and install with devicectl
+```
+
+- Identifiers: Android `com.mirongi.mapsimulator`; iOS debug `com.mirongi.mapsimulator.dev` on the temporary team in `export_presets.cfg`. The final iOS ID `com.mirongi.mapsimulator` must not be registered from this Mac (`PROJECT_CONTEXT.md` D8–D9).
+- Requirements: Godot 4.7.2 export templates; Android SDK, JDK, and debug keystore configured in the Godot editor settings; Xcode with a signing identity and a matching team profile.
+- The imported map is about 195 MB of the 224 MB APK.
+
 ## Conventions
 
 - One `class_name` per reusable module; `##` doc comments at the top of each script; tabs for indentation.
 - Scenes are `.tscn` text files; shared tunables live in resources (`CameraProfile`, `MapDefinition`).
 - Commit the `.uid` files Godot generates next to scripts.
+- Exported script properties use `Array[String]`, not `PackedStringArray`: Godot 4.7.2's export conversion of `.tres` files dropped an exported `PackedStringArray`. `test_no_packed_string_array_exports` enforces this.

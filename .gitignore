@@ -5,8 +5,10 @@
 # Source location and SHA-256: docs/maps/istanbul_halic/README.md
 /assets/istanbul_halic.glb
 
-# Export output and platform build templates
-/build/
+# Export output and platform build templates. build/.gdignore is tracked so
+# Godot never scans or packs build output (e.g. Xcode's CgBI PNGs).
+/build/*
+!/build/.gdignore
 /android/
 
 # OS files

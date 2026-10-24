@@ -2,7 +2,7 @@
 
 Planning context and decision rationale. This file does not describe implemented functionality; see `PROJECT_STATE.md` for that.
 
-Last updated: 2026-10-24 (Phase 1, Claude Code)
+Last updated: 2026-10-24 (Phase 1 device validation, Claude Code)
 
 ## Product vision and goals
 
@@ -126,15 +126,31 @@ PlayerController, PlayerStateMachine, PlayerCombat, PlayerAnimation, ThirdPerson
 - **Decision:** Godot 4.7.2 (the installed editor and export templates) with GDScript.
 - **Rationale:** The map was authored for Godot 4.4 and its own validation passes unchanged on 4.7.2. Its scripts are GDScript.
 
+### D8 — App identifiers and temporary iOS team (2026-10-24, user decision)
+
+- **Decision:** Android package `com.mirongi.mapsimulator`. iOS debug builds use the temporary bundle ID `com.mirongi.mapsimulator.dev` under the user's current Apple team `8N7RYA42S6`. The final iOS bundle ID `com.mirongi.mapsimulator` is **not registered with any Apple team** and must not be registered by Xcode automatically; it will be registered in the user's future Apple Developer account.
+- **When the account changes:** update `application/app_store_team_id` and, if needed, the temporary bundle ID in `export_presets.cfg`, and record it here.
+- **Rationale:** On Apple's side a bundle ID is bound to the team that registers it, so registering the final ID now would tie it to the wrong account. (The team ID was confirmed by the user in the session because the input field had been left as a placeholder; it was the only team on the build Mac.)
+
+### D9 — iOS signing without portal changes (2026-10-24)
+
+- **Decision:** The "iOS Debug" preset exports only the Xcode project (`export_project_only=true`); `tools/build_ios_debug.sh` builds it with automatic signing and **without** `-allowProvisioningUpdates`, so `xcodebuild` cannot contact the Apple Developer portal, register App IDs, or create profiles. It signs with a matching profile already on the Mac (the team's Xcode-managed wildcard "iOS Team Provisioning Profile: *").
+- **Rationale:** Implements D8's no-registration rule. Manual signing with the wildcard profile was tried and rejected by Xcode ("profile is Xcode managed, but signing settings require a manually managed profile"). After the build, the local profile folder held the same 5 profiles, none created that day.
+
+### D10 — Android debug signing (2026-10-24, user decision)
+
+- **Decision:** Debug APKs are signed with the Godot editor's debug keystore, configured in the local editor settings. `export_presets.cfg` holds no keystore path, user, or password. A release keystore is out of scope for now.
+
 ## Application technical decisions
 
-Phase 1 decisions made by the implementing agent (Claude Code, 2026-10-24). None was specified by the user; each can be revisited. Code structure: `docs/ARCHITECTURE.md`.
+Decisions made by the implementing agent (Claude Code, 2026-10-24). None was specified by the user unless stated; each can be revisited. Code structure: `docs/ARCHITECTURE.md`.
 
 ### T1 — Mobile renderer
 
 - **Decision:** Mobile renderer for desktop and mobile; the map project used GL Compatibility.
 - **Rationale:** The specification asks for a mobile renderer suited to the Godot version. Mobile is Godot 4's renderer for phones (Vulkan on Android, Metal on iOS) and supports occlusion culling, which Compatibility lacks and the city may need in Phase 4. Desktop measurement at the spawn view gave the same draw calls in both renderers (1330 vs 1335).
-- **Revisit:** Phase 4, after device measurements. Weak Android GPUs may favor Compatibility.
+- **Device data (2026-10-24, debug builds):** runs on both test devices: Vulkan 1.1.128 Forward Mobile on the Galaxy Tab A7 (Adreno 610) at 5–8 FPS; Metal Forward Mobile on the iPhone 13 Pro at 89 FPS cold at the spawn, 43–53 FPS at street level after long use in a "Serious" thermal state. Full numbers in `PROJECT_STATE.md`. Compatibility was not measured on the devices, so the comparison is still open.
+- **Revisit:** Phase 4 or an earlier performance pass. Occlusion culling (Mobile only) has not been tried yet.
 
 ### T2 — Native VirtualJoystick plus a touch router
 
@@ -186,6 +202,44 @@ Phase 1 decisions made by the implementing agent (Claude Code, 2026-10-24). None
 - **Decision:** Keep the map project's 1440×900 base canvas; add `expand` aspect and `sensor_landscape` orientation.
 - **Rationale:** Fills any phone or tablet ratio without letterboxing and keeps the original explorer demo's HUD positions valid.
 
+### T12 — Errors fail tests; skips are visible
+
+- **Decision:** The runner registers a `Logger` (`OS.add_logger`) and fails any test during which an engine, script, or shader error is logged; integration tests report SKIP without the map GLB; exit codes 0 / 1 / 2 (clean / failure / skipped).
+- **Rationale:** GDScript runtime errors abort only the failing function, so a crashed test looked like a pass. A completion flag set by the caller cannot detect that; a logger can, without parsing output.
+
+### T13 — Input reset on focus loss and pause
+
+- **Decision:** `release_all_touches()` also turns off the run toggle, releases the `move_*` and `run` actions, and pushes a touch release for indices 0–9 so the native `VirtualJoystick` (which has no reset API) forgets its finger.
+- **Rationale:** Releasing actions alone is not enough: the joystick would press them again on the next drag from the old finger.
+
+### T14 — Debug measurement tools
+
+- **Decision:** Debug builds show render and memory statistics, log them as `PERF` lines, log `STARTUP` times, and offer a VIEW button that cycles fixed viewpoints defined in `MapDefinition`.
+- **Rationale:** Device numbers must be repeatable and readable without an attached profiler. Release builds are unaffected.
+
+### T15 — App name and icon for debug builds
+
+- **Decision:** Debug builds show the project name "İstanbul • Haliç" and a placeholder icon (`icon.svg`, the capsule character over water). No app name was provided; iOS export requires an icon.
+
+### T16 — Export resources: no exported PackedStringArray
+
+- **Decision:** Exported script properties use `Array[String]`, never `PackedStringArray`; a unit test enforces this for `game/` and `maps/`.
+- **Rationale:** Godot 4.7.2's export conversion of text resources dropped an exported `PackedStringArray` (`MapDefinition.debug_viewpoint_names`) while keeping the neighbouring `Array[Transform3D]`; the device build then crashed on VIEW. The same data as `Array[String]` survived. Reproduced with ASCII-only names and a fresh export cache.
+
+## Performance findings and candidate measures
+
+Findings (2026-10-24, debug builds, details in `PROJECT_STATE.md`): street-level frames draw 0.95–1.5 k draw calls and 2.3–3.4 M primitives, including in a narrow Galata street facing a wall, so hidden geometry is drawn. The Galaxy Tab A7 runs at 5–8 FPS with PSS ~520 MB plus swap and 10–21 s to the first frame. The iPhone 13 Pro starts in 1.6 s and runs at 89 FPS cold, but enters a "Serious" thermal state within minutes and falls to 43–53 FPS.
+
+Candidate measures, none implemented, to be measured one at a time (Phase 4 or an earlier pass if approved):
+
+- Occlusion culling (Mobile renderer) with occluders from building footprints or baked from the GLB.
+- Visibility ranges (HLOD-style fade) for the 4,008 lamps, 5,477 trees, shrubs, road paint, and facade detail; these are the bulk of mesh nodes.
+- Shorter camera far plane (now 1500 m) with distance fog.
+- Shadows: lower distance, single split, or off on weak devices.
+- 3D render scale (`scaling_3d`) below 1.0 on weak devices.
+- Frame-rate cap at 60 on 120 Hz iPhones, and the 30 FPS mode from the specification, to reduce heat.
+- Faster startup: splitting the 195 MB imported map scene or streaming chunks.
+
 ## Planned features
 
 Everything listed under "Requirements by phase" from Phase 2 onward, plus the remaining Phase 4 and 5 work.
@@ -210,9 +264,9 @@ See "Requirements by phase". `PROJECT_STATE.md` records which parts exist.
 
 1. Character model and animations: none exist in the map package. Where will they come from? A placeholder is used until then.
 2. Car model: the map has no vehicles. Source needed before Phase 3.
-3. Map performance on phones: about 7.07 million triangles and 3,055 mesh nodes. Phase 4 may need decimation, visibility ranges, occlusion culling, or map splitting. Needs device measurements first.
-4. Minimum target devices, including what "weaker Android device" means for the 30 FPS mode.
-5. App name, bundle/package identifiers, signing team, and keystores for iOS and Android export.
+3. Map performance on phones: measured on 2026-10-24 (see "Performance findings"). Which measures to apply, and in which phase?
+4. Minimum target devices, including what "weaker Android device" means for the 30 FPS mode. Is the Galaxy Tab A7 (Snapdragon 662 / Adreno 610, 5–8 FPS today) a device that must reach 30 FPS?
+5. App name and final icon; Android release keystore. (Identifiers and debug signing are decided: D8–D10.)
 6. In-game UI language.
 7. Audience and monetization: not specified.
 8. Physics engine for vehicles (Godot Physics or Jolt): decide in Phase 3. The project currently uses the default engine.
@@ -222,10 +276,15 @@ See "Requirements by phase". `PROJECT_STATE.md` records which parts exist.
 12. Railings, lamps, and other decor have no collision, so the player can walk off bridge decks and quays into the water (then respawns). Should invisible barriers be added along bridges and quays?
 13. Run control style: is the toggle with reset on stick release (T7) what the user wants, or a hold button, or auto-run at full stick tilt?
 14. HUD art: the controls are drawn with plain shapes. Is final art or an icon set planned?
+15. Thermal budget on iPhone: is a 60 FPS cap acceptable on 120 Hz devices, and how long must a session stay out of "Serious"?
+16. Startup target: the tablet needs 10–21 s to the first frame. What is acceptable?
+17. Mobile vs Compatibility renderer on the weak Android device: worth measuring before Phase 4 work starts?
+18. Next step: Phase 2 as planned, or a measurement-only performance pass first (recommended in `PROJECT_STATE.md`)?
 
 ## Constraints and priorities
 
 - Safety and Git constraints: `AGENTS.md` sections 5–7.
-- The map original in Google Drive must not be modified or deleted.
+- The map original in the source package must not be modified or deleted.
 - Physical device results are reported as NOT RUN until actually performed.
-- Current priority: review of Phases 0 and 1. Phase 2 starts only after user approval.
+- No store, TestFlight, or Play Console uploads; no release signing without explicit approval.
+- Current priority: review of the Phase 1 device results and the user's decision on the next step.

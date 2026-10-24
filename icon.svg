@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- Placeholder app icon: the Phase 1 capsule character over Golden Horn water. -->
+  <rect width="1024" height="1024" fill="#1f6f73"/>
+  <rect y="640" width="1024" height="384" fill="#3f9a9a"/>
+  <rect x="377" y="190" width="270" height="640" rx="135" fill="#e8743b"/>
+  <rect x="417" y="330" width="190" height="62" rx="18" fill="#1f2a33"/>
+</svg>

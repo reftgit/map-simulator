@@ -6,6 +6,7 @@ config/name="İstanbul • Haliç"
 run/main_scene="res://game/main.tscn"
 config/features=PackedStringArray("4.7", "Mobile")
 config/description="OSM tabanlı, stilize İstanbul çevresi. © OpenStreetMap contributors."
+config/icon="res://icon.svg"
 
 [display]
 window/size/viewport_width=1440
@@ -47,6 +48,7 @@ pointing/emulate_touch_from_mouse=true
 [rendering]
 renderer/rendering_method="mobile"
 renderer/rendering_method.mobile="mobile"
+textures/vram_compression/import_etc2_astc=true
 textures/default_filters/use_nearest_mipmap_filter=false
 anti_aliasing/quality/msaa_3d=2
 environment/defaults/default_clear_color=Color(0.63, 0.76, 0.79, 1)
