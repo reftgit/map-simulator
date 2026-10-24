@@ -15,14 +15,16 @@ game/
   camera/                   ThirdPersonCamera, CameraProfile, on-foot profile
   input/                    MobileInputController, TouchControl, TouchLookArea, TouchButton
   ui/                       UIController, hud.tscn
-maps/<map_name>/            One folder per map: scene, MapDefinition (.tres), map script
+  quality/                  RenderSettings (applies render settings), QualityProfile, QualityProfiles, profiles/high.tres, low.tres
+  debug/                    PerfConfig (experiments), PerfBenchmark (debug builds only)
+maps/<map_name>/            One folder per map: scene, MapDefinition (.tres), map script, baked occluders (.scn)
 assets/                     Map model and metadata (the 502 MB GLB is not in Git)
 scripts/, main.tscn         Original explorer demo from the map package (desktop only, not used by the game)
 tests/                      Headless test runner, unit and integration suites, fixtures
-tools/                      Development tools (screenshot capture, iOS debug build)
+tools/                      Development tools (screenshot capture, iOS debug build, occluder bake, perf scripts)
 docs/                       This file, map documentation
 build/                      Export output, ignored by Git except build/.gdignore (keeps Godot from importing it)
-export_presets.cfg          "Android Debug" and "iOS Debug" presets
+export_presets.cfg          "Android Debug", "Android Debug Compatibility", and "iOS Debug" presets
 ```
 
 ## Runtime structure
@@ -31,6 +33,7 @@ export_presets.cfg          "Android Debug" and "iOS Debug" presets
 Main (game.gd) ─ wires everything once in _ready()
 ├── WorldManager          loads maps/<map>/<map>.tscn from a MapDefinition; respawn and bounds
 │   └── IstanbulHalic     map scene: GLB, sky/ambient, sun, water shader, vertex-color fix
+│       └── Occluders     baked occluders, added when the profile enables occlusion
 ├── Player                PlayerController (CharacterBody3D, layer 2)
 │   └── StateMachine      Idle, Walk, Run (child nodes)
 ├── ThirdPersonCamera     top-level rig → PitchPivot → SpringArm3D → Camera3D
@@ -40,8 +43,11 @@ Main (game.gd) ─ wires everything once in _ready()
         ├── LookArea      TouchLookArea (right 58 %)
         ├── Joystick      native VirtualJoystick (left 42 %), drives move_* actions
         ├── RunButton     TouchButton, toggle
-        └── DebugViewButton  TouchButton "VIEW", debug builds only (extra_controls)
+        ├── DebugViewButton     TouchButton "VIEW", debug builds only (extra_controls)
+        └── DebugQualityButton  TouchButton "Q", cycles quality profiles, debug builds only
 ```
+
+`game.gd` also owns a `RenderSettings` object (created after the map loads) that applies the quality profile.
 
 Systems do not search for each other. `game.gd` is the only place that connects them.
 
@@ -64,6 +70,7 @@ The specification suggested these modules. Status as of Phase 1:
 | MobileInputController | `game/input/mobile_input_controller.gd` + touch controls | Phase 1 |
 | WorldManager | `game/world/world_manager.gd` + `MapDefinition` | Phase 1 |
 | UIController | `game/ui/ui_controller.gd` | Phase 1: safe area, debug overlay |
+| Quality profiles | `game/quality/` (`RenderSettings`, `QualityProfile`) | High (iOS) and Low (Android) |
 | PlayerCombat | not started | Phase 2 |
 | PlayerAnimation | not started; will listen to `PlayerStateMachine.state_changed` | Phase 2 |
 | VehicleController, VehicleInteraction | not started | Phase 3 |
@@ -94,14 +101,16 @@ The map has collision on `Ground_*` terrain (streets included), `Buildings_*`, `
 
 ## Debug measurement tools (debug builds only)
 
-- Overlay (top left): FPS, draw calls, primitives, objects, video memory, engine static memory (current and peak), player state and speed, current viewpoint.
-- Log lines: `PERF view="…" fps=… draw_calls=… primitives=… objects=… video_mem_mb=… static_mem_mb=… static_peak_mb=…` every 2 s, `STARTUP map_ready_ms=… first_frame_ms=…` once, `VIEW <name>` on each switch.
+- Overlay (top left): FPS, draw calls, primitives, objects, video memory, engine static memory (current and peak), player state and speed, current viewpoint, quality profile.
+- Log lines: `PERF profile=… view="…" fps=… draw_calls=… …` every 2 s; `QUALITY profile=… experiment=… occluders={…} effective={…}` whenever settings are applied; `STARTUP map_ready_ms=… first_frame_ms=… profile=… occluders={…}` once; `VIEW <name>` on each switch.
+- Q button: cycles quality profiles none → high → low (the debug experiment, if any, stays on top).
 - VIEW button: cycles Spawn → the map's `debug_viewpoints` (`MapDefinition`, names in `debug_viewpoint_names`).
 - Reading the logs: Android `adb logcat -s godot`; iOS: Godot output goes to the unified log, not to `devicectl --console`; record it with `xcrun xctrace record --template Logging --device <udid> --all-processes` and export the `os-log` table. Screenshots: `adb exec-out screencap -p`, `xcrun devicectl device capture screenshot`. iOS memory and thermal state: Instruments "Activity Monitor" template (`memory-physical-footprint`, `device-thermal-state-intervals`).
 
 ## Rendering and performance settings
 
 - Mobile renderer on all platforms (`rendering_method` and `rendering_method.mobile`). Measured on macOS: Metal, "Forward Mobile".
+- Quality profiles change the values below on devices; see "Quality profiles".
 - Sun: 2-split directional shadows, 60 m distance (the original demo used 4 splits and 450 m).
 - Camera far plane 1500 m. MSAA 3D 2× (inherited from the map project). Physics interpolation is on (60 Hz physics, smooth on 120 Hz screens).
 - Landscape (`sensor_landscape`), 1440×900 base canvas with `canvas_items` stretch and `expand` aspect, so phones get a wider canvas at 900 units tall.
@@ -129,13 +138,37 @@ godot --headless --path . --script res://tests/map/validate_scene.gd # original 
 
   The tool prints renderer, FPS, draw calls, and primitive counts for the frame.
 
+## Quality profiles
+
+Permanent render settings per device class, applied in every build.
+
+| Profile | Default on | Settings (unset keys keep the scene default) |
+|---|---|---|
+| none | desktop, editor, tests | none |
+| high | iOS | 60 FPS cap, occlusion culling, 200 m visibility range for trees, lamps, decor, facade detail |
+| low | Android | 30 FPS cap, occlusion culling, 100 m visibility ranges (same categories), 400 m far plane with depth fog, shadows off, 0.6 render scale, LOD threshold 4 |
+
+- **Resources:** `QualityProfile` (`game/quality/quality_profile.gd`), `game/quality/profiles/{high,low}.tres`. `to_settings()` returns only the keys the profile sets.
+- **Selection** (`QualityProfiles`, strongest first): a debug experiment's `profile` key → `--quality=<none|high|low>` on the command line → platform rule (`OS.has_feature("ios")` → high, `"android"` → low, otherwise none). No GPU detection.
+- **Applying:** `RenderSettings` (`game/quality/render_settings.gd`) applies a settings dictionary over the defaults it captured from the scene: map-category visibility and visibility ranges, camera far plane, depth fog on the loaded environment, sun shadow mode, viewport scale/LOD/occlusion, `Engine.max_fps`. Keys a layer leaves out are reset to the defaults, so `set_quality_profile()` can switch at runtime.
+- **Precedence:** experiment > profile > defaults (`RenderSettings.merge`, per key; dictionary keys such as `visibility_end` are replaced as a whole).
+- **Occluders:** with occlusion on, `RenderSettings` loads `MapDefinition.occluders_path` (baked); if it is missing it builds occluders from the `buildings` and `ground` collision and logs a warning.
+- **Baking occluders** (after any map change):
+
+  ```bash
+  godot --headless --path . --import
+  godot --headless --path . --script res://tools/bake_occluders.gd   # -- --map=res://maps/<name>/<name>.tres
+  ```
+
+  Output for İstanbul • Haliç: `maps/istanbul_halic/istanbul_halic_occluders.scn`, compressed binary, 2,300,873 bytes; 643 occluders, 317,518 triangles, 206,048 shared vertices (the runtime build has 952,554 unshared). `test_baked_occluders_match_runtime_build` checks count, triangles, and extent against the runtime build.
+
 ## Performance experiments (debug builds only)
 
-Temporary render settings for measurements. With no experiment the game runs exactly as without this code (`test_no_perf_experiment_by_default`).
+Temporary settings layered on top of a profile for measurements. With no experiment and the "none" profile the game runs with scene defaults (`test_no_perf_experiment_by_default`).
 
-- **Flags:** `PerfConfig` (`game/debug/perf_config.gd`) holds one experiment, parsed from JSON; unknown keys or categories are rejected. Keys: `experiment`, `hide` (categories), `visibility_end` ({category: metres}), `camera_far` + `fog` (depth fog ending at the far plane), `shadows` (`default`/`off`/`single`), `render_scale` + `scaling_mode` (`bilinear`/`metalfx`; FSR is Forward+ only in Godot 4.7.2), `max_fps`, `occlusion`, `lod_threshold` (`Viewport.mesh_lod_threshold`), and an optional `bench` section (`warmup_s` 30, `measure_s` 60, `views`, `session_minutes`, `session_view`, `screenshots`, `quit_when_done`).
-- **Applying:** `PerfExperiments.apply()` changes only runtime state: node visibility and visibility ranges, camera far plane, a fog setting on the loaded environment, sun shadow mode, viewport scaling/LOD/occlusion, `Engine.max_fps`. Occlusion builds one `OccluderInstance3D` (`ArrayOccluder3D`) per collision shape of the `buildings` and `ground` categories at load (643 occluders, 317,518 triangles, ~12 ms on desktop). The GLB, the map scene, and import settings are never modified.
-- **Categories** (by node-name prefix, checked in this order; every one of the 3,055 map meshes matches one, enforced by `test_perf_categories_cover_every_map_mesh`):
+- **Flags:** `PerfConfig` (`game/debug/perf_config.gd`) holds one experiment, parsed from JSON; unknown keys, categories, or profiles are rejected. Keys: `experiment`, `profile` (`none`/`high`/`low`; omitted = platform default), the `RenderSettings` keys `hide` (categories), `visibility_end` ({category: metres}), `camera_far` + `fog`, `shadows` (`default`/`off`/`single`), `render_scale` + `scaling_mode` (`bilinear`/`metalfx`; FSR is Forward+ only in Godot 4.7.2), `max_fps`, `occlusion`, `lod_threshold`, and an optional `bench` section (`warmup_s` 30, `measure_s` 60, `views`, `session_minutes`, `session_view`, `screenshots`, `quit_when_done`). Experiments from the 2026-10-24 diagnosis pin `"profile": "none"`, the condition they were measured under.
+- **Applying:** `game.apply_perf_experiment()` merges the experiment over its profile and applies it through the same `RenderSettings`; there is no separate experiment code path.
+- **Categories** (by node-name prefix, checked in this order; every one of the 3,055 map meshes matches one, enforced by `test_perf_categories_cover_every_map_mesh`; defined in `RenderSettings.CATEGORIES`):
 
   | Category | Prefixes | Mesh nodes | Triangles (LOD0, from the GLB) |
   |---|---|---|---|
@@ -148,7 +181,7 @@ Temporary render settings for measurements. With no experiment the game runs exa
   | water | `Water` | 1 | 2 |
 
 - **Loading:** `game.gd` reads `--perf-config=<path>` from the command line (desktop) or a one-shot `user://perf_bench.json` (devices; deleted when read). Experiment definitions live in `tools/perf/experiments/*.json`.
-- **Benchmark:** `PerfBenchmark` visits each viewpoint, waits `warmup_s`, then records every frame time for `measure_s`: average FPS (frames / time), 1 % low (FPS at the 99th-percentile frame time), minimum FPS (longest frame), and per-second averages of draw calls, primitives, and objects, plus peak video memory and engine static memory. It logs `BENCH {json}` lines, writes `user://bench_results.json`, saves 640 px JPEG screenshots to `user://bench/`, then quits (Android) or hides the map and drops to 5 FPS until the host terminates it (iOS ignores `quit()`).
+- **Benchmark:** `PerfBenchmark` visits each viewpoint, waits `warmup_s`, then records every frame time for `measure_s`: average FPS (frames / time), 1 % low (FPS at the 99th-percentile frame time), minimum FPS (longest frame), and per-second averages of draw calls, primitives, and objects, plus peak video memory and engine static memory. Each result records the active profile. It logs `BENCH {json}` lines, writes `user://bench_results.json` (with the profile, the occluder source and load time, and the startup times), saves 640 px JPEG screenshots to `user://bench/`, then quits (Android) or hides the map and drops to 5 FPS until the host terminates it (iOS ignores `quit()`).
 
 ### Measurement protocol and host scripts
 

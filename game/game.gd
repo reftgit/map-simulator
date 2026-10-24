@@ -56,8 +56,9 @@ func set_quality_profile(profile_name: String) -> Dictionary:
 		layers.append(_experiment.settings)
 	var effective := render_settings.apply(RenderSettings.merge(layers))
 	hud.profile_name = profile_name
-	print("QUALITY profile=%s experiment=%s occluders=%s" % [profile_name,
-			_experiment.experiment if _experiment else "none", JSON.stringify(render_settings.occluder_report)])
+	print("QUALITY profile=%s experiment=%s occluders=%s effective=%s" % [profile_name,
+			_experiment.experiment if _experiment else "none", JSON.stringify(render_settings.occluder_report),
+			JSON.stringify(effective)])
 	return effective
 
 

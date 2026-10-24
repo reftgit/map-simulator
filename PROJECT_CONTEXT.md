@@ -2,7 +2,7 @@
 
 Planning context and decision rationale. This file does not describe implemented functionality; see `PROJECT_STATE.md` for that.
 
-Last updated: 2026-10-24 (performance diagnosis pass, Claude Code)
+Last updated: 2026-10-24 (quality profiles, Claude Code)
 
 ## Product vision and goals
 
@@ -146,6 +146,17 @@ PlayerController, PlayerStateMachine, PlayerCombat, PlayerAnimation, ThirdPerson
 - **Decision:** A measurement-only performance pass runs before Phase 2. Targets: Galaxy Tab A7 class at a stable 30 FPS; iPhone 13 Pro with a 60 FPS cap for a 10-minute session, thermal state at most "Fair", FPS ≥ 55. The pass did not have to meet them, only measure which measures could. No permanent default (renderer included) changes without a user decision.
 - **Outcome:** see "Performance findings and proposed measures".
 
+### D12 — Quality profiles and default selection (2026-10-24, user decision)
+
+- **Decision:** The measured packages are permanent quality profiles: **high** (60 FPS cap, occlusion, 200 m visibility range for trees/lamps/decor/facade detail) and **low** (combo_e: occlusion, 400 m far plane + depth fog, 100 m ranges, 0.6 render scale, shadows off, LOD threshold 4, 30 FPS cap). Default rule: iOS → high, Android → low, anything else → none (scene defaults). No automatic GPU detection in release builds. Debug builds can switch profiles from the overlay (Q).
+- **Acceptance criteria (user):** iPhone 13 Pro, 60 FPS cap, 10 minutes: thermal state ≤ Fair and average FPS ≥ 55. Galaxy Tab A7: average ≥ 30 and 1 % low ≥ 24, measured with PSS sampling off. Low is "best effort"; its visual cost (fog, no shadows, low render scale) is accepted for now; the real fix is the future facade work.
+- **Differences from the measured packages:** none in values. LOD 4 is not in high because adding it on top of occlusion + 200 m changed nothing measurable (primitives 0.20 vs 0.21 M, both Nominal).
+
+### D13 — Occluders baked once (2026-10-24)
+
+- **Decision:** `tools/bake_occluders.gd` bakes the occluders into `maps/istanbul_halic/istanbul_halic_occluders.scn` (2.3 MB, committed), referenced by `MapDefinition.occluders_path`. Runtime building from collision stays as a fallback with a warning.
+- **Rationale:** No dependence on collision layout at load, a quarter of the vertices (shared vertices), and the map scene stays untouched. The load-time saving is small (tablet 89 ms baked vs 114–118 ms runtime; iPhone 20 vs 21 ms).
+
 ## Application technical decisions
 
 Decisions made by the implementing agent (Claude Code, 2026-10-24). None was specified by the user unless stated; each can be revisited. Code structure: `docs/ARCHITECTURE.md`.
@@ -233,7 +244,7 @@ Decisions made by the implementing agent (Claude Code, 2026-10-24). None was spe
 
 ### T17 — Performance experiments as debug-only runtime flags
 
-- **Decision:** Experiments are JSON-defined, debug-only runtime flags (`PerfConfig`/`PerfExperiments`), measured by an in-app benchmark and host scripts (`tools/perf/`). They never modify the GLB, the map scene, or import settings, and they are off unless an experiment file is supplied.
+- **Decision:** Experiments are JSON-defined, debug-only runtime flags (`PerfConfig`), measured by an in-app benchmark and host scripts (`tools/perf/`). They never modify the GLB, the map scene, or import settings, and they are off unless an experiment file is supplied. Since D12 they are applied through the same `RenderSettings` as the profiles, layered on top (experiment > profile > defaults).
 - **Rationale:** The task required measuring without changing defaults or the map; the same definitions can be re-run after any change for comparison.
 
 ## Performance findings and proposed measures
@@ -253,14 +264,14 @@ Status: **measured on 2026-10-24, nothing applied.** Full tables and protocol: `
 - **Draw calls** matter less on the tablet (hiding lamps: −17 % draw calls, +0.2 FPS) but are where the iPhone's heat goes away (occlusion and visibility ranges both stopped the thermal rise; LOD, which keeps draw calls, only delayed "Fair").
 - Shadows (off or single split) changed almost nothing on either device.
 
-### Proposed settings packages (for the user to decide; not applied)
+### Settings packages (applied as quality profiles on 2026-10-24, D12; validation in `PROJECT_STATE.md`)
 
 | Package | Settings | Measured result | Visual cost |
 |---|---|---|---|
 | iPhone (A15 class) | 60 FPS cap + occlusion culling + 200 m visibility range for trees, lamps, decor, facade detail | 60.0 FPS every minute for 10 min, thermal Nominal throughout, footprint ~1.02 GiB; 1 % low ~41.5 (as in all capped runs) | Facade windows and some trees beyond ~200 m disappear (`docs/perf/ios/cap60_combo_occ_vis200_spawn.jpg`) |
 | Tablet (Adreno 610 class) | occlusion + 400 m far plane with depth fog + 100 m visibility range + 0.6 render scale + shadows off + LOD threshold 4 + 30 FPS cap | 29.9–30.0 FPS average, 1 % low 25.3–26.6, min 23.6–25.1 without the memory sampler; PSS ~560 MiB | Heavy: nearby buildings lose windows (chunk granularity), no shadows, fog, soft image (`docs/perf/android/combo_c_aggressive_karakoy.jpg`) |
 
-Recommendation: the iPhone package is usable as is. The tablet package proves 30 FPS is reachable but is not recommended for release without map-level work, because the chunk-granular visibility range blanks nearby facades.
+The tablet package (low) is a best-effort profile; the chunk-granular visibility range still blanks nearby facades until the map-level facade work is done.
 
 ### Map-level proposals (based on the attribution; none applied, the map must not be changed without approval)
 
@@ -301,7 +312,7 @@ See "Requirements by phase". `PROJECT_STATE.md` records which parts exist.
 
 1. Character model and animations: none exist in the map package. Where will they come from? A placeholder is used until then.
 2. Car model: the map has no vehicles. Source needed before Phase 3.
-3. Which proposed measures to adopt: the iPhone settings package, the tablet package, map-level facade work (needs approval to change the map pipeline), and in which phase?
+3. The settings packages are adopted as profiles (D12). Map-level facade work: see question 21.
 4. Target device list beyond the two test devices. Does the Galaxy Tab A7 class stay a 30 FPS target given the measured visual cost?
 5. App name and final icon; Android release keystore. (Identifiers and debug signing are decided: D8–D10.)
 6. In-game UI language.
@@ -313,10 +324,13 @@ See "Requirements by phase". `PROJECT_STATE.md` records which parts exist.
 12. Railings, lamps, and other decor have no collision, so the player can walk off bridge decks and quays into the water (then respawns). Should invisible barriers be added along bridges and quays?
 13. Run control style: is the toggle with reset on stick release (T7) what the user wants, or a hold button, or auto-run at full stick tilt?
 14. HUD art: the controls are drawn with plain shapes. Is final art or an icon set planned?
-15. Does "FPS ≥ 55" mean average FPS (met) or a 1 % low (not met: ~41.5 in every 60-capped run)? Should frame pacing on 120 Hz displays be investigated (e.g. a display-synchronized 60 Hz instead of `Engine.max_fps`)?
-16. Startup target: the tablet needs 10–21 s to the first frame. What is acceptable?
-17. Is a visible loss of distant facade detail (beyond ~200 m) acceptable on the iPhone?
-18. Should the measured packages become user-selectable quality presets, automatic per-device presets, or fixed per platform?
+15. iPhone frame pacing: the 1 % low stays around 41 FPS in every 60-capped run (now also with the high profile, see `PROJECT_STATE.md`). Investigate a display-synchronized 60 Hz instead of `Engine.max_fps`? Not part of the acceptance criterion (average FPS).
+16. Startup target: the tablet needs ~9–15 s to the map. What is acceptable?
+17. Is a visible loss of distant facade detail (beyond ~200 m) acceptable on the iPhone long term?
+18. Automatic GPU/device detection for choosing a profile (instead of the per-platform rule), e.g. for strong Android phones or older iPhones?
+19. A user-facing graphics settings menu to pick the profile?
+20. Bringing the map generation scripts (`<SOURCE_PACKAGE>/Istanbul_Halic/source/`) into the repository so map-level work is reproducible.
+21. The map-level facade detail work (lighter facades, LODs, smaller cells): awaiting the user's decision and approval to change the map pipeline.
 
 ## Constraints and priorities
 
@@ -324,4 +338,4 @@ See "Requirements by phase". `PROJECT_STATE.md` records which parts exist.
 - The map original in the source package must not be modified or deleted.
 - Physical device results are reported as NOT RUN until actually performed.
 - No store, TestFlight, or Play Console uploads; no release signing without explicit approval.
-- Current priority: the user's decision on the performance measures, then Phase 2.
+- Current priority: review of the quality profiles; then Phase 2, or the map-level facade work first (user decision).

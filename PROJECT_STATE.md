@@ -2,15 +2,15 @@
 
 What actually exists in the repository and how it was verified. Plans and decisions belong in `PROJECT_CONTEXT.md`; code structure, build, and test commands are in `docs/ARCHITECTURE.md`.
 
-Last updated: 2026-10-24 (performance diagnosis pass, Claude Code)
+Last updated: 2026-10-24 (quality profiles, Claude Code)
 
 ## Current phase
 
-**Performance diagnosis pass before Phase 2 (user-approved order): measurements done, no permanent setting changed.** Phase 1 (mobile character control) is functionally accepted on an iPhone 13 Pro and a Samsung Galaxy Tab A7. This pass measured where the frame cost goes and which runtime settings could meet the user's targets; see "Performance diagnosis pass" below. Default game behaviour is unchanged: every experiment is a debug-only, runtime flag.
+**Quality profiles applied and measured (before Phase 2).** iOS starts with the **high** profile and Android with **low**, without flags (log and test evidence below). iPhone 13 Pro, high, 10 minutes at 60 FPS cap: **PASS** (Nominal throughout, 60.0 FPS average). Galaxy Tab A7, low: average **PASS** at all viewpoints; 1 % low ≥ 24 **PASS at Spawn and Karaköy, FAIL at Galata** (23.1 and 23.4 in two runs). Occluders are baked and load from a file. Phase 1 controls were accepted on both devices earlier; the performance diagnosis that led to these profiles is kept below.
 
 ## Current objective
 
-User decision on which measures to adopt (settings package and/or map-level work), then Phase 2. See "Recommended next task".
+Review of the profile results; user decision between starting Phase 2 and doing the map-level facade work first. See "Recommended next task".
 
 ## Git
 
@@ -24,7 +24,11 @@ User decision on which measures to adopt (settings package and/or map-level work
 - `b4d2b2c`: debug performance overlay, PERF/STARTUP logs, VIEW measurement viewpoints.
 - `bab2b88`: fix for viewpoint names lost in exported builds.
 - `fb1ab19`: export presets, icon, iOS build script, Phase 1 device results.
-- Performance experiment flags, benchmark, host scripts, tests: the first commit after `fb1ab19`; measurement results and documentation: the commit after that (`git log`).
+- `e9ce135`: debug-only performance experiment flags, benchmark, host scripts.
+- `11e98c7`: performance diagnosis results and proposed measures.
+- `5024dd0`: quality profiles (high/low/none) with a per-platform default; shared `RenderSettings`.
+- `526ac6f`: occluders baked once (`tools/bake_occluders.gd`, `maps/istanbul_halic/istanbul_halic_occluders.scn`).
+- Profile measurements and documentation: the commit after `526ac6f` (`git log`).
 
 ## Repository contents
 
@@ -38,9 +42,12 @@ User decision on which measures to adopt (settings package and/or map-level work
 | `tests/` | Headless runner, 46 unit tests, 8 integration tests, flat-map fixture, original map validation. |
 | `tools/capture_screenshot.gd` | Windowed render to PNG with render stats. |
 | `tools/build_ios_debug.sh` | iOS debug build without contacting the Apple Developer portal; optional `devicectl` install. |
-| `game/debug/` | Debug-only performance experiments: `PerfConfig` (flags from JSON), `PerfExperiments` (applies them at runtime), `PerfBenchmark` (automatic measurement). |
+| `game/quality/` | `RenderSettings` (applies render settings; shared by profiles and experiments), `QualityProfile`, `QualityProfiles` (selection rule), `profiles/high.tres`, `profiles/low.tres`. |
+| `game/debug/` | Debug-only: `PerfConfig` (experiment flags from JSON, layered on a profile), `PerfBenchmark` (automatic measurement). |
+| `maps/istanbul_halic/istanbul_halic_occluders.scn` | Baked occluders, 2,300,873 bytes (643 occluders, 317,518 triangles), referenced by the `MapDefinition`. |
+| `tools/bake_occluders.gd` | Headless occluder bake. |
 | `tools/perf/` | Experiment definitions (`experiments/*.json`), device orchestration (`android_bench.sh`, `ios_bench.sh`, `run_batch.sh`), `parse_xctrace.py`, `summarize.py`. |
-| `docs/perf/` | Raw results and conditions of every run (`results/`), 480 px screenshots per experiment (`android/`, `ios/`); 1.8 MB. |
+| `docs/perf/` | Diagnosis pass: raw results and conditions (`results/`), 480 px screenshots (`android/`, `ios/`). Profile validation: `profiles/`. 2.4 MB in total. |
 | `build/.gdignore` | Keeps Godot from scanning or packing build output. Everything else in `build/` is ignored by Git. |
 | `main.tscn`, `scripts/` | Original explorer demo, unchanged. Desktop only. |
 | `assets/istanbul_halic.glb` | 502 MB, **not tracked**. Restore: `docs/maps/istanbul_halic/README.md`. |
@@ -53,7 +60,9 @@ User decision on which measures to adopt (settings package and/or map-level work
 - Debug builds only: overlay with FPS, draw calls, primitives, objects, video memory, engine static memory; `PERF` log line every 2 s; `STARTUP` log line; VIEW button cycling Spawn → Karaköy street (facing north) → Galata street (facing south).
 - Android and iOS debug export presets.
 - Android Compatibility debug preset (same code, `--rendering-method gl_compatibility`) for renderer comparisons.
-- Debug builds only: performance experiment flags (`PerfConfig`), applied at runtime without touching map files, and an automatic benchmark (`PerfBenchmark`) driven by host scripts in `tools/perf/`. Off unless an experiment file or `--perf-config` is given.
+- **Quality profiles (all builds):** high (60 FPS cap, occlusion, 200 m visibility range for trees/lamps/decor/facade detail) and low (occlusion, 400 m far plane + depth fog, 100 m ranges, 0.6 render scale, shadows off, LOD threshold 4, 30 FPS cap). Default: iOS → high, Android → low, desktop → none. `--quality=<name>` overrides; debug builds can cycle profiles with the Q button.
+- **Baked occluders** loaded from `maps/istanbul_halic/istanbul_halic_occluders.scn` when a profile enables occlusion; runtime building from collision remains as a fallback with a warning.
+- Debug builds only: performance experiment flags (`PerfConfig`) layered on top of the profile (experiment > profile > defaults), and an automatic benchmark (`PerfBenchmark`) driven by host scripts in `tools/perf/`. Off unless an experiment file or `--perf-config` is given.
 
 ## Device results (2026-10-24, debug builds)
 
@@ -107,6 +116,73 @@ iOS frame rates above 60 are possible because the 120 Hz display is not capped. 
 | VIEW viewpoints | PASS after fix `bab2b88` (first build raised "Out of bounds get index") | PASS (user taps) |
 
 User feedback: asked about touch feel, camera sensitivity, stutter, and heat, the user chose the prepared answer "Kontroller iyi, oyun yavaş" ("controls are fine, the game is slow"). No free-text comment was given.
+
+## Quality profile validation (2026-10-24, debug builds)
+
+Builds from commit `526ac6f` plus a log line listing the effective settings (in the documentation commit). Same protocol as the diagnosis pass: cold start (iPhone "Nominal", tablet battery back to its starting temperature), 30 s warm-up + 60 s per viewpoint; experiment files only start the benchmark (`profile_default*.json` set no render keys, so the platform default profile applies). Raw data: `docs/perf/profiles/results/`; screenshots: `docs/perf/profiles/`.
+
+### Automatic profile selection (no flags)
+
+- Galaxy Tab A7, plain launch, logcat: `QUALITY profile=low experiment=none occluders={"ms":89,"occluders":643,"source":"baked","triangles":317518} effective={"camera_far":400.0,"fog":true,"hide":[],"lod_threshold":4.0,"max_fps":30,"occlusion":true,"render_scale":0.6,"scaling_mode":"bilinear","shadows":"off","visibility_end":{"decor":100.0,"facade_detail":100.0,"lamps":100.0,"trees":100.0}}` and `STARTUP map_ready_ms=8961 first_frame_ms=9442 profile=low …`.
+- iPhone 13 Pro, plain launch, unified log (Instruments "Logging"): `QUALITY profile=high experiment=none occluders={"ms":20,…,"source":"baked",…} effective={"camera_far":1500.0,"fog":false,…,"max_fps":60,"occlusion":true,"render_scale":1.0,…,"visibility_end":{"decor":200.0,"facade_detail":200.0,"lamps":200.0,"trees":200.0}}` and `STARTUP map_ready_ms=1563 first_frame_ms=1696 profile=high …`.
+- The effective settings match the profile resources exactly, so the export conversion of the `.tres` profiles kept every value.
+- Tests: `test_platform_rule` (iOS → high, Android → low, desktop → none), `test_profiles_switch_on_the_real_map`.
+
+### Galaxy Tab A7 — low profile
+
+Values Spawn / Karaköy / Galata. Thermal status 0 in every run.
+
+| Experiment | Avg FPS (S / K / G) | 1% low | Min FPS | Draw calls | Primitives (M) | VRAM MiB | Peak memory | Thermal / temperature |
+|---|---|---|---|---|---|---|---|---|
+| profile_default | 30.0 / 30.0 / 30.0 | 24.8 / 24.8 / 23.1 | 22.4 / 23.8 / 21.9 | 86 / 78 / 41 | 0.05 / 0.06 / 0.05 | 493 | PSS not sampled | 28.5→30.0 °C, status 0→0 |
+| profile_default_pss | 29.9 / 29.9 / 29.9 | 26.4 / 26.3 / 25.5 | 8.1 / 8.6 / 9.8 | 86 / 78 / 41 | 0.05 / 0.06 / 0.05 | 493 | PSS 550 MiB | 30.0→31.0 °C, status 0→0 |
+| profile_default_repeat | 30.0 / 30.0 / 30.0 | 27.4 / 24.6 / 23.4 | 25.1 / 22.9 / 22.4 | 86 / 78 / 41 | 0.05 / 0.06 / 0.05 | 493 | PSS not sampled | 31.0→31.5 °C, status 0→0 |
+
+### iPhone 13 Pro — high profile
+
+| Experiment | Avg FPS (S / K / G) | 1% low | Min FPS | Draw calls | Primitives (M) | VRAM MiB | Peak memory | Thermal / temperature |
+|---|---|---|---|---|---|---|---|---|
+| profile_default | 60.0 / 60.0 / 60.0 | 42.7 / 42.2 / 40.4 | 37.8 / 40.6 / 39.8 | 248 / 147 / 78 | 0.21 / 0.26 / 0.32 | 673 | footprint 1034 MiB | Nominal→Nominal (max Nominal) |
+
+10-minute session at Karaköy (`session_profile_default`); thermal state Nominal at all 13 probes (0–598 s), footprint 1,017–1,034 MiB:
+
+| Minute | Avg FPS | 1% low | Min FPS | Draw calls | Primitives | Thermal (nearest probe) |
+|---|---|---|---|---|---|---|
+| 1 | 60.0 | 41.4 | 19.4 | 145 | 258,298 | Nominal |
+| 2 | 60.0 | 41.7 | 41.0 | 147 | 262,676 | Nominal |
+| 3 | 60.0 | 41.6 | 41.0 | 147 | 262,676 | Nominal |
+| 4 | 60.0 | 41.7 | 40.9 | 147 | 262,676 | Nominal |
+| 5 | 60.0 | 41.4 | 40.7 | 147 | 262,676 | Nominal |
+| 6 | 60.0 | 41.7 | 41.0 | 147 | 262,676 | Nominal |
+| 7 | 60.0 | 41.6 | 40.9 | 147 | 262,676 | Nominal |
+| 8 | 60.0 | 41.7 | 40.8 | 147 | 262,676 | Nominal |
+| 9 | 60.0 | 41.7 | 40.9 | 147 | 262,676 | Nominal |
+| 10 | 60.0 | 41.6 | 40.3 | 147 | 262,676 | Nominal |
+
+### Acceptance criteria (user, D12)
+
+| Criterion | Result |
+|---|---|
+| iOS starts with high, Android with low, without flags | **PASS** (device logs above; unit test) |
+| iPhone 13 Pro, high, 10 min: thermal ≤ Fair | **PASS** (Nominal throughout) |
+| iPhone 13 Pro, high, 10 min: average FPS ≥ 55 | **PASS** (59.97–60.0 every minute) |
+| Tab A7, low, Spawn: average ≥ 30 and 1 % low ≥ 24 | **PASS** (30.0; 24.81 and 27.44) |
+| Tab A7, low, Karaköy | **PASS** (30.0; 24.80 and 24.65 — close to the limit) |
+| Tab A7, low, Galata | **FAIL** on the 1 % low: 23.10 and 23.38 (average 30.0 passes). The same settings gave 25.8 in the diagnosis pass, so run-to-run spread is about ±2 FPS. Galata draws only 41 draw calls and 47 K primitives; the shortfall is more likely frame pacing (30 FPS cap on a 60 Hz display mixes 33 ms and 50 ms frames) and per-pixel cost of the wall-filled view than geometry. Not verified. |
+| Baked occluders load; runtime occluder building is gone from startup | **PASS**: `source: baked` on both devices. Load time 87–89 ms on the tablet (runtime build was 114–118 ms) and 18–20 ms on the iPhone (21 ms); the saving is small. |
+| Experiment flags still work | **PASS** (perf tests; experiments layer on the profile) |
+| Full suite passes; GLB-less SKIP behaviour kept | see "Verified behaviors" |
+
+- iPhone frame pacing: the 1 % low stays at ~41.4–41.7 FPS in the high profile as in every earlier 60-capped run; not addressed in this task (user decision).
+
+### Startup
+
+| Device | Before profiles (Phase 1, no occlusion) | With profile and baked occluders |
+|---|---|---|
+| Galaxy Tab A7, map ready / first frame | 9,720 / 12,452 ms and 15,196 / 20,683 ms | 7,806 / 8,224 ms (benchmark run) and 8,961 / 9,442 ms (plain launch) |
+| iPhone 13 Pro, map ready / first frame | 1,565 / 1,649 ms | 1,506 / 1,571, 1,540 / 1,612, 1,563 / 1,696 ms |
+
+The occluder step itself is small on both devices; the earlier tablet startup times varied between runs, so the lower values are not attributed to the bake.
 
 ## Performance diagnosis pass (2026-10-24, debug builds)
 
@@ -243,8 +319,9 @@ Thermal state: Nominal at all 13 probes (0–601 s). App footprint 1,022–1,044
 | Behavior | Evidence |
 |---|---|
 | Project imports cleanly. | `godot --headless --path . --import`: exit 0, no errors or warnings (after adding `build/.gdignore`). |
-| Automated tests pass. | `run_tests.gd` → `RESULT 65 passed, 0 failed, 0 skipped`, exit 0; unit only → `RESULT 54 passed, 0 failed, 0 skipped`, exit 0 (2026-10-24, after the performance pass). |
-| Performance flags do nothing by default and apply as specified. | `test_perf_experiments.gd` (8 unit tests: parsing and typo rejection, category matching, applying to a fixture map in a SubViewport, frame statistics, file-name slugs, every experiment file parses); integration: `test_perf_categories_cover_every_map_mesh` (all 3,055 map meshes categorized), `test_no_perf_experiment_by_default`, `test_short_benchmark_on_map` (occlusion + benchmark on the real map). |
+| Automated tests pass. | `run_tests.gd` → `RESULT 75 passed, 0 failed, 0 skipped`, exit 0; unit only → `RESULT 61 passed, 0 failed, 0 skipped`, exit 0; without the GLB → `RESULT 61 passed, 0 failed, 14 skipped`, exit 2 (2026-10-24, after the quality profiles). |
+| Quality profiles. | `test_render_settings.gd` (platform rule, `--quality`, profile values equal the measured packages, experiment > profile precedence, low profile applied, switching back restores every default, occluder fallback with warning, shared vertices keep triangles); integration: `test_profiles_switch_on_the_real_map`, `test_profile_uses_baked_occluders`, `test_baked_occluders_match_runtime_build` (643 occluders, 317,518 triangles, same extent). |
+| Performance flags still work and do nothing by default. | `test_perf_experiments.gd` (parsing, only given keys become settings, typo and unknown-profile rejection, every experiment file parses and older ones pin profile none, frame statistics, slugs); integration: `test_perf_categories_cover_every_map_mesh`, `test_no_perf_experiment_by_default`, `test_short_benchmark_on_map`. |
 | Runtime errors fail tests. | Before the fix, a null method call and an error after `await` were both reported PASS (exit 0). After: both FAIL with "logged error: …", exit 1. |
 | Missing GLB is visible. | With the GLB moved away: `RESULT 42 passed, 0 failed, 7 skipped`, exit 2; unit only exit 0. GLB restored, SHA-256 re-verified. |
 | Focus loss / pause reset input. | `test_focus_out_releases_held_joystick_and_run`, `test_pause_releases_held_joystick_and_run`; both failed on the previous controller. |
@@ -257,6 +334,9 @@ Thermal state: Nominal at all 13 probes (0–601 s). App footprint 1,022–1,044
 
 - iOS process launch time to first frame (only engine-internal times were measured).
 - iPhone single measures without a frame cap and the tablet's 10-minute session: not run (see "Not run").
+- Quality profiles in a release build: the profiles are not debug-only, but only debug builds were measured.
+- Cause of the tablet's Galata 1 % low shortfall (frame pacing suspected).
+- Profile behaviour on devices other than the two test devices.
 - Cause of the ~41 FPS 1 % low in every 60-capped iPhone run (frame pacing suspected).
 - Whether MetalFX spatial scaling was active on the iPhone: no engine warning on the Mac's Metal Forward Mobile renderer (FSR did warn), but no device log was captured during the run.
 - Release builds: none made (release signing out of scope).
@@ -267,7 +347,8 @@ Thermal state: Nominal at all 13 probes (0–601 s). App footprint 1,022–1,044
 
 ## Known bugs and limitations
 
-- Android tablet at 5–8 FPS with default settings; startup to first frame 12–21 s.
+- Galaxy Tab A7 with the low profile: 1 % low at Galata 23.1–23.4 FPS, below the user's 24 FPS criterion; the visual cost of low (fog, no shadows, 0.6 render scale, blank nearby facades from chunk-granular ranges) is accepted for now (D12).
+- Without a profile (desktop "none", or an experiment pinning "none") the map is as heavy as before: tablet 5.8–7.7 FPS.
 - Per-chunk visibility ranges remove facade detail from nearby buildings: the map merges facade detail into 150 m chunks and Godot measures the range to the chunk's centre.
 - On iOS, `get_tree().quit()` does not end the app; the benchmark hides the map and drops to 5 FPS, and `tools/perf/ios_bench.sh` terminates it.
 - Railings, lamps, and decor have no collision; falling into the water respawns the player (same as the original demo).
@@ -279,7 +360,8 @@ Thermal state: Nominal at all 13 probes (0–601 s). App footprint 1,022–1,044
 
 ## Technical risks
 
-- **Performance (measured, not yet addressed):** with default settings the tablet runs at 5.8–7.7 FPS and the iPhone reaches "Serious" in ~91 s uncapped or ~141 s at 60 FPS. Settings alone reach the iPhone target; the tablet reaches a 30 FPS average only with heavy visual cuts. Facade detail (64 % of triangles) is the main cost. Proposed measures: `PROJECT_CONTEXT.md` (none applied).
+- **Performance:** the profiles meet the iPhone criterion and the tablet's average; the tablet's 1 % low is marginal and its visual quality is low. Facade detail (64 % of triangles) remains the main cost; the map-level work in `PROJECT_CONTEXT.md` is not started.
+- Devices are assigned by platform only: a weak iPhone would get high, a strong Android phone low (open question 18 in `PROJECT_CONTEXT.md`).
 - **Memory:** iPhone footprint 1.02 GiB; Android uses swap on a tablet with limited RAM.
 - **Startup:** 10–15 s to map ready on the tablet, with variance between runs.
 - A fresh clone lacks the GLB and will not run until it is restored.
@@ -290,17 +372,19 @@ Thermal state: Nominal at all 13 probes (0–601 s). App footprint 1,022–1,044
 
 ## Required manual actions
 
-- **iPhone: set Auto-Lock back to its previous value** (it was set to "Never" for the measurements).
-- Decide which measures to adopt: the iPhone settings package, the tablet package (heavy visual cost), and/or map-level work on facade detail (`PROJECT_CONTEXT.md`).
-- Decide whether the Galaxy Tab A7 class stays a 30 FPS target given the measured cost.
+- **iPhone: set Auto-Lock back to its previous value** if it is still "Never" (set for the measurements).
+- Decide whether the Galata 1 % low shortfall on the tablet blocks Phase 2.
+- Decide on the map-level facade work and on bringing the map generation scripts into the repository (open questions 20–21 in `PROJECT_CONTEXT.md`).
 - Later: create the new Apple Developer account, then update the team ID and bundle ID (decision D8).
 - Provide or choose character and car models; decide the app name and icon.
 
 ## Current priorities
 
-1. Review of the performance diagnosis.
-2. User decision on the measures, then Phase 2.
+1. Review of the profile results.
+2. User decision: Phase 2 now, or the facade work first.
 
 ## Recommended next task
 
-Map-level reduction of facade detail, in a copy of the map pipeline and only with the user's approval to change the map: replace the geometric window frames, sills, and balconies (4.54 M of 7.07 M triangles) with lighter geometry or textured/shader facades, generate stronger LODs for what remains, and split detail into smaller cells (about 30–50 m or per building) so visibility ranges and occlusion work without blank nearby facades. Measure with the same protocol and experiments (`tools/perf/`). Basis: hiding facade detail alone took the tablet from 6.7 / 5.8 / 7.7 to 12.0 / 9.9 / 11.9 FPS, and it is the cost that forces the tablet package's visual cuts. Alternative if Phase 2 should start first: turn the measured iPhone package (60 FPS cap + occlusion + 200 m visibility range) into a permanent, per-device quality preset with occluders baked once instead of at load.
+Phase 2 (punch, roll, animation/state) can start: the iPhone meets its criterion with the high profile, and the tablet holds a 30 FPS average with the low profile, so animation and input work can be judged on both devices. The tablet's Galata 1 % low (23.1–23.4 vs 24) is the one open criterion; it is unlikely to be fixed by more settings, since that view already draws only 41 draw calls. Run the profile benchmark (`tools/perf/experiments/profile_default.json`) after Phase 2 to catch regressions from the character model and animations.
+
+The map-level facade work is the lasting fix for the tablet's quality and the remaining margin. Prerequisites: the user's approval to change the map pipeline; the generation scripts and data from `<SOURCE_PACKAGE>/Istanbul_Halic/source/` brought into the repository (or a reproducible copy), so the GLB can be rebuilt; a decision on the facade approach (lighter geometry, textured or shader windows, smaller cells); and re-baking occluders and re-running the same benchmarks afterwards.
