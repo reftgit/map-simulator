@@ -144,6 +144,48 @@ func test_debug_viewpoints_stand_on_ground() -> void:
 	check(game.hud.view_name == "Spawn", "cycling wraps back to the spawn")
 
 
+func test_perf_categories_cover_every_map_mesh() -> void:
+	await _setup()
+	var uncategorized: Array[String] = []
+	var counts := {}
+	for node in game.world.map_root.get_node("Model").find_children("*", "MeshInstance3D", true, false):
+		var category := PerfExperiments.category_of(node.name)
+		if category.is_empty():
+			uncategorized.append(str(node.name))
+		counts[category] = counts.get(category, 0) + 1
+	check(uncategorized.is_empty(), "every map mesh has a perf category; missing: %s" % [uncategorized.slice(0, 10)])
+	print("     perf categories: %s" % [counts])
+
+
+func test_no_perf_experiment_by_default() -> void:
+	await _setup()
+	check(game.find_children("*", "PerfBenchmark", false, false).is_empty(), "no benchmark node without a config")
+	var viewport := game.get_viewport()
+	check(not viewport.use_occlusion_culling and is_equal_approx(viewport.scaling_3d_scale, 1.0) and is_equal_approx(viewport.mesh_lod_threshold, 1.0), "viewport at defaults")
+	check(is_equal_approx(rig.camera.far, 1500.0), "camera far plane at default")
+	var sun: DirectionalLight3D = game.world.map_root.get_node("Sun")
+	check(sun.shadow_enabled and sun.directional_shadow_mode == DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS, "sun shadows at default")
+	for node in game.world.map_root.get_node("Model").find_children("*", "MeshInstance3D", true, false):
+		if not node.visible or node.visibility_range_end > 0.0:
+			check(false, "map mesh changed without a config: %s" % node.name)
+			break
+
+
+func test_short_benchmark_on_map() -> void:
+	await _setup()
+	var config := PerfConfig.from_dict({"experiment": "integration", "occlusion": true,
+			"bench": {"warmup_s": 0.2, "measure_s": 0.3, "screenshots": false, "quit_when_done": false}})
+	var bench: PerfBenchmark = game.apply_perf_experiment(config)
+	var results: Array = await bench.finished
+	check(results.size() == 3, "one result per viewpoint (%d)" % results.size())
+	for result: Dictionary in results:
+		for key in ["view", "avg_fps", "low1_fps", "min_fps", "frames", "draw_calls", "primitives", "objects", "video_mem_mb", "static_mem_mb", "experiment", "renderer"]:
+			check(result.has(key), "result has %s" % key)
+	check(bench.apply_report.get("occluders", 0) > 600, "occluders built from map collision (%s)" % [bench.apply_report])
+	check(FileAccess.file_exists(PerfBenchmark.RESULTS_PATH), "results file written")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(PerfBenchmark.RESULTS_PATH))
+
+
 func test_falling_into_water_respawns() -> void:
 	await _setup()
 	# The deck ends about 6 m west of the spawn; railings have no collision and
