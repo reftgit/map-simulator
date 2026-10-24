@@ -32,10 +32,13 @@ func _ready() -> void:
 		_log_startup()
 
 
-## Measurement viewpoints: the spawn, then the map's debug viewpoints.
-func get_view_names() -> PackedStringArray:
-	var names := PackedStringArray(["Spawn"])
-	names.append_array(map_definition.debug_viewpoint_names)
+## Measurement viewpoints: the spawn, then the map's debug viewpoints. A
+## viewpoint without a name gets a numbered one.
+func get_view_names() -> Array[String]:
+	var names: Array[String] = ["Spawn"]
+	for i in map_definition.debug_viewpoints.size():
+		var named := i < map_definition.debug_viewpoint_names.size()
+		names.append(map_definition.debug_viewpoint_names[i] if named else "View %d" % (i + 1))
 	return names
 
 

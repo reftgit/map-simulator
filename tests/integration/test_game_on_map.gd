@@ -128,7 +128,7 @@ func test_touch_run_on_bridge() -> void:
 
 func test_debug_viewpoints_stand_on_ground() -> void:
 	await _setup()
-	var names: PackedStringArray = game.get_view_names()
+	var names: Array[String] = game.get_view_names()
 	check(names.size() == 3, "spawn + 2 map viewpoints (%s)" % [names])
 	var respawns := [0]
 	game.world.body_respawned.connect(func(_body: Node3D) -> void: respawns[0] += 1)

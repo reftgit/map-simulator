@@ -17,4 +17,6 @@ extends Resource
 ## Fixed player positions for repeatable performance measurements, cycled
 ## with the debug overlay's VIEW button in debug builds.
 @export var debug_viewpoints: Array[Transform3D] = []
-@export var debug_viewpoint_names: PackedStringArray = []
+## Array[String], not PackedStringArray: Godot 4.7.2's export conversion of
+## text resources dropped a PackedStringArray here (seen on device 2026-10-24).
+@export var debug_viewpoint_names: Array[String] = []

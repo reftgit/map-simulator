@@ -25,6 +25,28 @@ func test_mouse_emulates_touch_for_desktop_testing() -> void:
 	check(ProjectSettings.get_setting("input_devices/pointing/emulate_touch_from_mouse") == true, "mouse emulates touch")
 
 
+func test_no_packed_string_array_exports() -> void:
+	# Godot 4.7.2's export conversion of text resources dropped an exported
+	# PackedStringArray (MapDefinition.debug_viewpoint_names, found on device).
+	# Exported builds would silently lose such data; use Array[String].
+	for directory in ["res://game", "res://maps"]:
+		for path in _scripts_under(directory):
+			var script := load(path) as Script
+			for property in script.get_script_property_list():
+				var exported: bool = property.usage & PROPERTY_USAGE_STORAGE and property.usage & PROPERTY_USAGE_SCRIPT_VARIABLE
+				check(not (exported and property.type == TYPE_PACKED_STRING_ARRAY), "%s: %s is an exported PackedStringArray" % [path, property.name])
+
+
+func _scripts_under(directory: String) -> PackedStringArray:
+	var found := PackedStringArray()
+	for file in DirAccess.get_files_at(directory):
+		if file.ends_with(".gd"):
+			found.append(directory.path_join(file))
+	for sub in DirAccess.get_directories_at(directory):
+		found.append_array(_scripts_under(directory.path_join(sub)))
+	return found
+
+
 func test_input_actions() -> void:
 	var expected := {
 		&"move_forward": KEY_W,
