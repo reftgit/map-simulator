@@ -1,1 +1,1 @@
-{"experiment": "cap60_renderer_compat", "max_fps": 60, "bench": {}}
+{"experiment": "cap60_renderer_compat", "profile": "none", "max_fps": 60, "bench": {}}

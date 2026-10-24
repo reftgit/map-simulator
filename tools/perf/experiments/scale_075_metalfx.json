@@ -1,1 +1,1 @@
-{"experiment": "scale_075_metalfx", "render_scale": 0.75, "scaling_mode": "metalfx", "bench": {}}
+{"experiment": "scale_075_metalfx", "profile": "none", "render_scale": 0.75, "scaling_mode": "metalfx", "bench": {}}

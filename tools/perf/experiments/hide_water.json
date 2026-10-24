@@ -1,1 +1,1 @@
-{"experiment": "hide_water", "hide": ["water"], "bench": {}}
+{"experiment": "hide_water", "profile": "none", "hide": ["water"], "bench": {}}

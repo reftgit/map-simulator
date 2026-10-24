@@ -1,1 +1,1 @@
-{"experiment": "hide_decor", "hide": ["decor"], "bench": {}}
+{"experiment": "hide_decor", "profile": "none", "hide": ["decor"], "bench": {}}

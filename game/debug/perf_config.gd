@@ -1,33 +1,19 @@
 class_name PerfConfig
 extends RefCounted
-## One performance experiment: temporary render settings plus optional
-## benchmark parameters. Debug builds only; the default instance changes
-## nothing. Loaded from JSON (see docs/ARCHITECTURE.md, "Performance
-## experiments"); unknown keys are rejected so typos do not silently measure
-## the baseline.
+## One performance experiment: render settings layered on top of a quality
+## profile, plus optional benchmark parameters. Debug builds only. Loaded
+## from JSON (see docs/ARCHITECTURE.md, "Performance experiments"); unknown
+## keys and values are rejected so typos do not silently measure something else.
+##
+## `settings` holds only the RenderSettings keys the experiment sets; they
+## override the profile (experiment > profile > defaults). `profile` picks the
+## base profile ("none", "high", "low"); empty means the platform default.
 
 const USER_PATH := "user://perf_bench.json"
 
 var experiment := "baseline"
-## Map categories to hide (PerfExperiments.CATEGORIES keys).
-var hide: Array[String] = []
-## Category -> visibility range end in metres.
-var visibility_end := {}
-## Camera far plane in metres; 0 keeps the scene value.
-var camera_far := 0.0
-## Depth fog that ends at the far plane (only with camera_far).
-var fog := false
-## "default", "off", or "single" (one orthogonal split).
-var shadows := "default"
-var render_scale := 1.0
-## "bilinear", "fsr", or "metalfx" (Apple only).
-var scaling_mode := "bilinear"
-## Engine.max_fps; -1 keeps the current value, 0 is unlimited.
-var max_fps := -1
-## Viewport occlusion culling with occluders built from map collision.
-var occlusion := false
-## Viewport.mesh_lod_threshold; 0 keeps the default (1.0).
-var lod_threshold := 0.0
+var profile := ""
+var settings := {}
 
 var bench := false
 var warmup_s := 30.0
@@ -40,8 +26,6 @@ var session_view := ""
 var screenshots := true
 var quit_when_done := true
 
-const _KEYS := ["experiment", "hide", "visibility_end", "camera_far", "fog", "shadows", "render_scale",
-		"scaling_mode", "max_fps", "occlusion", "lod_threshold", "bench"]
 const _BENCH_KEYS := ["warmup_s", "measure_s", "views", "session_minutes", "session_view", "screenshots", "quit_when_done"]
 
 
@@ -55,28 +39,17 @@ static func from_dict(data: Dictionary) -> PerfConfig:
 	last_error = ""
 	var config := PerfConfig.new()
 	for key in data:
-		if key not in _KEYS:
+		if key not in RenderSettings.KEYS and key not in ["experiment", "profile", "bench"]:
 			last_error = "unknown key '%s'" % key
 			return null
 	config.experiment = str(data.get("experiment", config.experiment))
-	for category in data.get("hide", []):
-		config.hide.append(str(category))
-	for category in data.get("visibility_end", {}):
-		config.visibility_end[str(category)] = float(data.visibility_end[category])
-	for category in config.hide + config.visibility_end.keys():
-		if category not in PerfExperiments.CATEGORIES:
-			last_error = "unknown category '%s'" % category
-			return null
-	config.camera_far = float(data.get("camera_far", 0.0))
-	config.fog = bool(data.get("fog", false))
-	config.shadows = str(data.get("shadows", "default"))
-	config.render_scale = float(data.get("render_scale", 1.0))
-	config.scaling_mode = str(data.get("scaling_mode", "bilinear"))
-	config.max_fps = int(data.get("max_fps", -1))
-	config.occlusion = bool(data.get("occlusion", false))
-	config.lod_threshold = float(data.get("lod_threshold", 0.0))
-	if config.shadows not in ["default", "off", "single"] or config.scaling_mode not in ["bilinear", "fsr", "metalfx"]:
-		last_error = "bad shadows or scaling_mode"
+	config.profile = str(data.get("profile", ""))
+	if not config.profile.is_empty() and config.profile not in QualityProfiles.names():
+		last_error = "unknown profile '%s'" % config.profile
+		return null
+	var error := _parse_settings(data, config.settings)
+	if not error.is_empty():
+		last_error = error
 		return null
 	var bench_data = data.get("bench")
 	if bench_data is Dictionary:
@@ -96,6 +69,40 @@ static func from_dict(data: Dictionary) -> PerfConfig:
 	return config
 
 
+## Copies and type-checks RenderSettings keys from `data`; returns an error message or "".
+static func _parse_settings(data: Dictionary, out: Dictionary) -> String:
+	if data.has("hide"):
+		var hidden: Array[String] = []
+		for category in data.hide:
+			hidden.append(str(category))
+		out.hide = hidden
+	if data.has("visibility_end"):
+		var ranges := {}
+		for category in data.visibility_end:
+			ranges[str(category)] = float(data.visibility_end[category])
+		out.visibility_end = ranges
+	for category in out.get("hide", []) + out.get("visibility_end", {}).keys():
+		if category not in RenderSettings.CATEGORIES:
+			return "unknown category '%s'" % category
+	for key in ["camera_far", "render_scale", "lod_threshold"]:
+		if data.has(key):
+			out[key] = float(data[key])
+	for key in ["fog", "occlusion"]:
+		if data.has(key):
+			out[key] = bool(data[key])
+	if data.has("max_fps"):
+		out.max_fps = int(data.max_fps)
+	if data.has("shadows"):
+		out.shadows = str(data.shadows)
+		if out.shadows not in ["default", "off", "single"]:
+			return "bad shadows '%s'" % out.shadows
+	if data.has("scaling_mode"):
+		out.scaling_mode = str(data.scaling_mode)
+		if out.scaling_mode not in ["bilinear", "fsr", "metalfx"]:
+			return "bad scaling_mode '%s'" % out.scaling_mode
+	return ""
+
+
 ## Reads a config file. With `consume`, the file is deleted after reading so
 ## the next normal launch runs without the experiment.
 static func load_file(path: String, consume := false) -> PerfConfig:
@@ -113,15 +120,5 @@ static func load_file(path: String, consume := false) -> PerfConfig:
 	return config
 
 
-## True when applying this config would change nothing.
-func is_default() -> bool:
-	return hide.is_empty() and visibility_end.is_empty() and camera_far <= 0.0 and shadows == "default" \
-			and is_equal_approx(render_scale, 1.0) and max_fps < 0 and not occlusion and lod_threshold <= 0.0
-
-
 func to_dict() -> Dictionary:
-	return {
-		"experiment": experiment, "hide": hide, "visibility_end": visibility_end, "camera_far": camera_far,
-		"fog": fog, "shadows": shadows, "render_scale": render_scale, "scaling_mode": scaling_mode,
-		"max_fps": max_fps, "occlusion": occlusion, "lod_threshold": lod_threshold,
-	}
+	return {"experiment": experiment, "profile": profile, "settings": settings}

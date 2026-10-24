@@ -149,7 +149,7 @@ func test_perf_categories_cover_every_map_mesh() -> void:
 	var uncategorized: Array[String] = []
 	var counts := {}
 	for node in game.world.map_root.get_node("Model").find_children("*", "MeshInstance3D", true, false):
-		var category := PerfExperiments.category_of(node.name)
+		var category := RenderSettings.category_of(node.name)
 		if category.is_empty():
 			uncategorized.append(str(node.name))
 		counts[category] = counts.get(category, 0) + 1
@@ -181,9 +181,30 @@ func test_short_benchmark_on_map() -> void:
 	for result: Dictionary in results:
 		for key in ["view", "avg_fps", "low1_fps", "min_fps", "frames", "draw_calls", "primitives", "objects", "video_mem_mb", "static_mem_mb", "experiment", "renderer"]:
 			check(result.has(key), "result has %s" % key)
-	check(bench.apply_report.get("occluders", 0) > 600, "occluders built from map collision (%s)" % [bench.apply_report])
+	var report: Dictionary = game.render_settings.occluder_report
+	check(report.get("occluders", 0) > 600, "occluders available for the map (%s)" % [report])
+	check(results[0].get("profile") == "none", "results record the profile")
 	check(FileAccess.file_exists(PerfBenchmark.RESULTS_PATH), "results file written")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(PerfBenchmark.RESULTS_PATH))
+
+
+func test_profiles_switch_on_the_real_map() -> void:
+	await _setup()
+	check(game.quality_profile == "none", "desktop starts without a profile")
+	var saved_fps := Engine.max_fps
+	var effective: Dictionary = game.set_quality_profile("low")
+	var viewport := game.get_viewport()
+	check(effective.max_fps == 30 and Engine.max_fps == 30, "low: 30 FPS cap")
+	check(viewport.use_occlusion_culling and is_equal_approx(viewport.scaling_3d_scale, 0.6), "low: occlusion and 0.6 scale")
+	check(is_equal_approx(rig.camera.far, 400.0), "low: 400 m far plane")
+	var detail: Array[Node] = game.world.map_root.get_node("Model").find_children("Detail_*", "MeshInstance3D", true, false)
+	check(not detail.is_empty() and is_equal_approx(detail[0].visibility_range_end, 100.0), "low: 100 m facade detail range")
+	game.set_quality_profile("high")
+	check(Engine.max_fps == 60 and is_equal_approx(viewport.scaling_3d_scale, 1.0) and is_equal_approx(rig.camera.far, 1500.0), "high: 60 FPS cap, full scale, default far plane")
+	check(is_equal_approx(detail[0].visibility_range_end, 200.0), "high: 200 m facade detail range")
+	game.set_quality_profile("none")
+	check(Engine.max_fps == saved_fps and not viewport.use_occlusion_culling and is_equal_approx(detail[0].visibility_range_end, 0.0), "none: defaults restored")
+	Engine.max_fps = saved_fps
 
 
 func test_falling_into_water_respawns() -> void:

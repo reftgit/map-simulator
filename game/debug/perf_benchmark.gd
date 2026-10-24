@@ -14,7 +14,6 @@ const SCREENSHOT_WIDTH := 640
 
 var config: PerfConfig
 var game: Node
-var apply_report := {}
 var results: Array = []
 
 
@@ -121,6 +120,7 @@ static func frame_stats(frame_us: PackedInt64Array, elapsed_s: float) -> Diction
 
 func _record(result: Dictionary) -> void:
 	result["experiment"] = config.experiment
+	result["profile"] = game.quality_profile
 	result["renderer"] = RenderingServer.get_current_rendering_method()
 	result["window"] = str(DisplayServer.window_get_size())
 	results.append(result)
@@ -157,4 +157,5 @@ static func view_slug(view: String) -> String:
 func _write_results() -> void:
 	var file := FileAccess.open(RESULTS_PATH, FileAccess.WRITE)
 	if file:
-		file.store_string(JSON.stringify({"config": config.to_dict(), "apply": apply_report, "results": results}, "  "))
+		file.store_string(JSON.stringify({"config": config.to_dict(), "profile": game.quality_profile,
+				"occluders": game.render_settings.occluder_report, "startup": game.startup, "results": results}, "  "))

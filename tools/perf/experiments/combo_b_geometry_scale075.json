@@ -1,1 +1,1 @@
-{"experiment": "combo_b_geometry_scale075", "occlusion": true, "camera_far": 400, "fog": true, "visibility_end": {"trees": 200, "lamps": 200, "decor": 200, "facade_detail": 200}, "render_scale": 0.75, "bench": {}}
+{"experiment": "combo_b_geometry_scale075", "profile": "none", "occlusion": true, "camera_far": 400, "fog": true, "visibility_end": {"trees": 200, "lamps": 200, "decor": 200, "facade_detail": 200}, "render_scale": 0.75, "bench": {}}

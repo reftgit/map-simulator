@@ -1,1 +1,1 @@
-{"experiment": "combo_a_geometry", "occlusion": true, "camera_far": 400, "fog": true, "visibility_end": {"trees": 200, "lamps": 200, "decor": 200, "facade_detail": 200}, "bench": {}}
+{"experiment": "combo_a_geometry", "profile": "none", "occlusion": true, "camera_far": 400, "fog": true, "visibility_end": {"trees": 200, "lamps": 200, "decor": 200, "facade_detail": 200}, "bench": {}}

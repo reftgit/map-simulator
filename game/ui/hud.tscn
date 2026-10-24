@@ -29,7 +29,7 @@ script = ExtResource("2_input")
 joystick = NodePath("Joystick")
 look_area = NodePath("LookArea")
 run_button = NodePath("RunButton")
-extra_controls = [NodePath("DebugViewButton")]
+extra_controls = [NodePath("DebugViewButton"), NodePath("DebugQualityButton")]
 
 [node name="LookArea" type="Control" parent="SafeArea/Controls"]
 layout_mode = 1
@@ -82,6 +82,16 @@ offset_bottom = 208.0
 mouse_filter = 2
 script = ExtResource("5_button")
 label = "VIEW"
+
+[node name="DebugQualityButton" type="Control" parent="SafeArea/Controls"]
+visible = false
+layout_mode = 0
+offset_top = 224.0
+offset_right = 96.0
+offset_bottom = 320.0
+mouse_filter = 2
+script = ExtResource("5_button")
+label = "Q"
 
 [node name="DebugLabel" type="Label" parent="SafeArea"]
 layout_mode = 0

@@ -1,1 +1,1 @@
-{"experiment": "hide_facade_detail", "hide": ["facade_detail"], "bench": {}}
+{"experiment": "hide_facade_detail", "profile": "none", "hide": ["facade_detail"], "bench": {}}

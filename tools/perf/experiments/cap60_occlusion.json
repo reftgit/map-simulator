@@ -1,1 +1,1 @@
-{"experiment": "cap60_occlusion", "max_fps": 60, "occlusion": true, "bench": {}}
+{"experiment": "cap60_occlusion", "profile": "none", "max_fps": 60, "occlusion": true, "bench": {}}

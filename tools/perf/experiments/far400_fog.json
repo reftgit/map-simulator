@@ -1,1 +1,1 @@
-{"experiment": "far400_fog", "camera_far": 400, "fog": true, "bench": {}}
+{"experiment": "far400_fog", "profile": "none", "camera_far": 400, "fog": true, "bench": {}}

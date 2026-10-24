@@ -7,6 +7,8 @@ extends CanvasLayer
 
 ## Emitted when the debug VIEW button is tapped.
 signal debug_view_requested
+## Emitted when the debug quality button is tapped.
+signal debug_quality_requested
 
 ## Extra space between the safe area and the controls, in canvas units.
 @export var edge_margin := 16.0
@@ -15,6 +17,8 @@ signal debug_view_requested
 
 ## Name of the current measurement viewpoint, shown in the overlay and logs.
 var view_name := ""
+## Active quality profile, shown in the overlay.
+var profile_name := ""
 
 var _player: PlayerController
 var _ticks := 0
@@ -23,6 +27,7 @@ var _ticks := 0
 @onready var _safe_area: Control = $SafeArea
 @onready var _debug_label: Label = $SafeArea/DebugLabel
 @onready var _debug_view_button: TouchButton = $SafeArea/Controls/DebugViewButton
+@onready var _debug_quality_button: TouchButton = $SafeArea/Controls/DebugQualityButton
 @onready var _debug_timer: Timer = $DebugTimer
 
 
@@ -32,8 +37,10 @@ func _ready() -> void:
 	var debug := OS.is_debug_build()
 	_debug_label.visible = debug
 	_debug_view_button.visible = debug
+	_debug_quality_button.visible = debug
 	if debug:
 		_debug_view_button.pressed.connect(debug_view_requested.emit)
+		_debug_quality_button.pressed.connect(debug_quality_requested.emit)
 		_debug_timer.timeout.connect(_update_debug)
 		_debug_timer.start()
 
@@ -84,11 +91,11 @@ func _update_debug() -> void:
 		state = "%s %.1f m/s" % [_player.state_machine.get_state_name(), _player.get_horizontal_speed()]
 	_debug_label.text = "FPS %d | %d draw calls | %.2f M prims | %d objects\n%s | vram %.0f MB | mem %.0f MB (peak %.0f)\n%s" % [
 		stats.fps, stats.draw_calls, stats.primitives / 1e6, stats.objects,
-		state, stats.video_mem_mb, stats.static_mem_mb, stats.static_peak_mb, view_name,
+		state, stats.video_mem_mb, stats.static_mem_mb, stats.static_peak_mb, "%s  |  quality %s" % [view_name, profile_name],
 	]
 	_ticks += 1
 	if _ticks % perf_log_every == 0:
-		print("PERF view=\"%s\" fps=%d draw_calls=%d primitives=%d objects=%d video_mem_mb=%.0f static_mem_mb=%.0f static_peak_mb=%.0f" % [
-			view_name, stats.fps, stats.draw_calls, stats.primitives, stats.objects,
+		print("PERF profile=%s view=\"%s\" fps=%d draw_calls=%d primitives=%d objects=%d video_mem_mb=%.0f static_mem_mb=%.0f static_peak_mb=%.0f" % [
+			profile_name, view_name, stats.fps, stats.draw_calls, stats.primitives, stats.objects,
 			stats.video_mem_mb, stats.static_mem_mb, stats.static_peak_mb,
 		])

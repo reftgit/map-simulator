@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="QualityProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/quality/quality_profile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+profile_name = "low"
+max_fps = 30
+occlusion = true
+trees_visibility_end = 100.0
+lamps_visibility_end = 100.0
+decor_visibility_end = 100.0
+facade_detail_visibility_end = 100.0
+camera_far = 400.0
+fog = true
+shadows = "off"
+render_scale = 0.6
+lod_threshold = 4.0

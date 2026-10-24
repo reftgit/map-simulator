@@ -1,1 +1,1 @@
-{"experiment": "cap60_lod_4", "max_fps": 60, "lod_threshold": 4.0, "bench": {}}
+{"experiment": "cap60_lod_4", "profile": "none", "max_fps": 60, "lod_threshold": 4.0, "bench": {}}

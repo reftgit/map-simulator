@@ -1,1 +1,1 @@
-{"experiment": "combo_d_aggressive_scale075", "occlusion": true, "camera_far": 400, "fog": true, "visibility_end": {"trees": 100, "lamps": 100, "decor": 100, "facade_detail": 100}, "render_scale": 0.75, "shadows": "off", "lod_threshold": 4.0, "bench": {}}
+{"experiment": "combo_d_aggressive_scale075", "profile": "none", "occlusion": true, "camera_far": 400, "fog": true, "visibility_end": {"trees": 100, "lamps": 100, "decor": 100, "facade_detail": 100}, "render_scale": 0.75, "shadows": "off", "lod_threshold": 4.0, "bench": {}}
