@@ -5,11 +5,18 @@ extends Node
 
 @export var map_definition: MapDefinition
 
+## Debug builds: training dummy position relative to the spawn (m, forward is
+## -Z). Close enough that a punch from the spawn reaches it, and a little to
+## the right so the camera behind the player sees it.
+const DUMMY_OFFSET := Vector3(0.35, 0.0, -1.3)
+
 var render_settings: RenderSettings
 ## Active quality profile name ("none", "high", "low").
 var quality_profile := QualityProfiles.NONE
 ## Engine-start-to-map-ready and first-frame times, filled in debug builds.
 var startup := {}
+## Debug builds: punching target near the spawn, toggled from the overlay.
+var training_dummy: TrainingDummy
 
 var _view_index := 0
 var _experiment: PerfConfig
@@ -43,6 +50,7 @@ func _ready() -> void:
 		hud.view_name = get_view_names()[0]
 		hud.debug_view_requested.connect(cycle_debug_view)
 		hud.debug_quality_requested.connect(cycle_quality_profile)
+		hud.debug_dummy_requested.connect(toggle_training_dummy)
 		_log_startup()
 		if _experiment and _experiment.bench:
 			_start_benchmark(_experiment)
@@ -79,6 +87,19 @@ func get_view_names() -> Array[String]:
 
 func cycle_debug_view() -> void:
 	show_debug_view((_view_index + 1) % get_view_names().size())
+
+
+## Debug builds: shows the training dummy in front of the spawn, or removes it.
+func toggle_training_dummy() -> void:
+	if training_dummy:
+		training_dummy.queue_free()
+		training_dummy = null
+		print("DUMMY off")
+		return
+	training_dummy = (load("res://game/debug/training_dummy.tscn") as PackedScene).instantiate()
+	world.add_child(training_dummy)
+	training_dummy.place_above_floor(world.get_spawn_transform() * DUMMY_OFFSET)
+	print("DUMMY on")
 
 
 ## Moves the player to measurement viewpoint `index` (0 is the spawn).

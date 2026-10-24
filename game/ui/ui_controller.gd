@@ -4,12 +4,15 @@ extends CanvasLayer
 ## corners, home indicator), fades the roll button while the bound player's
 ## roll is on cooldown, and, in debug builds only, shows a performance
 ## overlay, logs the same numbers as "PERF" lines (readable from adb logcat or
-## the Xcode console), and offers a VIEW button for measurement viewpoints.
+## the Xcode console), and offers VIEW (measurement viewpoints), Q (quality
+## profile), and DUMMY (training dummy) buttons.
 
 ## Emitted when the debug VIEW button is tapped.
 signal debug_view_requested
 ## Emitted when the debug quality button is tapped.
 signal debug_quality_requested
+## Emitted when the debug DUMMY toggle is tapped.
+signal debug_dummy_requested
 
 ## Extra space between the safe area and the controls, in canvas units.
 @export var edge_margin := 16.0
@@ -29,6 +32,7 @@ var _ticks := 0
 @onready var _debug_label: Label = $SafeArea/DebugLabel
 @onready var _debug_view_button: TouchButton = $SafeArea/Controls/DebugViewButton
 @onready var _debug_quality_button: TouchButton = $SafeArea/Controls/DebugQualityButton
+@onready var _debug_dummy_button: TouchButton = $SafeArea/Controls/DebugDummyButton
 @onready var _debug_timer: Timer = $DebugTimer
 
 
@@ -39,9 +43,11 @@ func _ready() -> void:
 	_debug_label.visible = debug
 	_debug_view_button.visible = debug
 	_debug_quality_button.visible = debug
+	_debug_dummy_button.visible = debug
 	if debug:
 		_debug_view_button.pressed.connect(debug_view_requested.emit)
 		_debug_quality_button.pressed.connect(debug_quality_requested.emit)
+		_debug_dummy_button.pressed.connect(debug_dummy_requested.emit)
 		_debug_timer.timeout.connect(_update_debug)
 		_debug_timer.start()
 

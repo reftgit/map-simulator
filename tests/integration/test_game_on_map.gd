@@ -395,3 +395,29 @@ func test_roll_off_the_deck_edge_respawns() -> void:
 	check(respawns[0] == 1, "fell into the water and respawned (%d)" % respawns[0])
 	await physics_frames(30)
 	check(player.state_machine.get_state_name() == &"Idle" and _on_bridge_deck(), "idle on the deck at the spawn after the respawn")
+
+
+func test_training_dummy_is_hit_once_per_punch() -> void:
+	await _setup()
+	check(game.training_dummy == null, "no dummy until requested")
+	game.toggle_training_dummy()
+	await physics_frames(5)
+	var dummy: TrainingDummy = game.training_dummy
+	check(dummy != null and dummy.is_inside_tree(), "dummy created")
+	var spawn: Transform3D = game.world.get_spawn_transform()
+	var offset := dummy.global_position - player.global_position
+	check(Vector2(offset.x, offset.z).length() < game.DUMMY_OFFSET.length() + 0.1, "dummy next to the spawn (%s)" % offset)
+	check((-player.global_basis.z).dot(Vector3(offset.x, 0, offset.z).normalized()) > 0.95, "dummy ahead of the spawn facing")
+	check_near(dummy.global_position.y, SPAWN_FLOOR_Y, 0.2, "dummy stands on the deck")
+	var counted := [0]
+	dummy.hit.connect(func(_count: int) -> void: counted[0] += 1)
+	_tap(input.punch_button, 1)
+	await physics_frames(40)
+	check(dummy.hits == 1 and counted[0] == 1, "one punch, one hit (%d)" % dummy.hits)
+	_tap(input.punch_button, 1)
+	await physics_frames(40)
+	check(dummy.hits == 2, "second punch, second hit (%d)" % dummy.hits)
+	check(player.global_position.distance_to(spawn.origin - Vector3(0, spawn.origin.y - player.global_position.y, 0)) < 0.3, "punching does not move the player or push it back")
+	game.toggle_training_dummy()
+	await physics_frames(2)
+	check(game.training_dummy == null and not is_instance_valid(dummy), "second toggle removes the dummy")

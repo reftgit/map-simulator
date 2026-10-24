@@ -1,11 +1,12 @@
 extends SceneTree
 ## Renders the game in a real window and saves a screenshot plus render stats.
 ## Development aid for checking HUD layout and visuals without a device.
-##   godot --path . --resolution 1266x585 --script res://tools/capture_screenshot.gd -- --out=/abs/path/shot.png [--walk] [--run] [--yaw=DEG] [--punch] [--roll] [--frames=N]
+##   godot --path . --resolution 1266x585 --script res://tools/capture_screenshot.gd -- --out=/abs/path/shot.png [--walk] [--run] [--yaw=DEG] [--punch] [--roll] [--frames=N] [--dummy]
 ## --walk holds the joystick forward (with --run, after tapping the run button)
 ## so the screenshot shows the controls in use. --punch / --roll tap that
 ## button; --frames sets how many frames later the shot is taken (default 90),
-## e.g. a few frames for a mid-action pose.
+## e.g. a few frames for a mid-action pose. --dummy shows the debug training
+## dummy in front of the spawn.
 
 var _options := {}
 
@@ -31,6 +32,10 @@ func _run() -> void:
 		game.camera_rig.yaw = deg_to_rad(float(_options["yaw"]))
 		game.camera_rig.add_look(Vector2.ZERO)
 	var input: MobileInputController = game.hud.input
+	if _options.has("dummy"):
+		game.toggle_training_dummy()
+		for i in 5:
+			await physics_frame
 	if _options.has("run"):
 		_touch(1, input.run_button.get_global_rect().get_center(), true)
 		_touch(1, input.run_button.get_global_rect().get_center(), false)

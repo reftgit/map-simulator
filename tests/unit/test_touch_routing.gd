@@ -323,3 +323,18 @@ func test_touch_input_fills_one_shot_intent() -> void:
 	source.fill_intent(intent, null)
 	check(not intent.roll, "the same tap does not reach the next tick while the finger is held")
 	touch(0, _roll_point(), false)
+
+
+func test_debug_dummy_button_requests_the_dummy() -> void:
+	await _setup()
+	var button: TouchButton = hud.get_node("SafeArea/Controls/DebugDummyButton")
+	check(button.visible == OS.is_debug_build(), "DUMMY button only in debug builds")
+	var requests := [0]
+	hud.debug_dummy_requested.connect(func() -> void: requests[0] += 1)
+	var center := button.get_global_rect().get_center()
+	touch(0, center, true)
+	drag(0, center, center + Vector2(60, 0))
+	touch(0, center + Vector2(60, 0), false)
+	await process_frames(1)
+	check(requests[0] == 1, "tap requests the dummy toggle once")
+	check(input.get_move_vector() == Vector2.ZERO, "the joystick does not get the button's finger")
