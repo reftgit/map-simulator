@@ -317,3 +317,81 @@ func test_camera_stays_out_of_geometry_on_streets() -> void:
 	print("     camera samples=%d shortened_by_walls=%d obstructed=%d" % [samples, shortened, obstructed.size()])
 	check(obstructed.is_empty(), "no camera position hidden behind or inside geometry: %s" % [obstructed])
 	check(shortened > 0, "spring arm engaged near buildings at least once")
+
+
+func _tap(button: TouchButton, index: int) -> void:
+	var point := button.get_global_rect().get_center()
+	touch(index, point, true)
+	touch(index, point, false)
+
+
+func _state_sequence(ticks: int) -> Array[StringName]:
+	var seen: Array[StringName] = []
+	for i in ticks:
+		await tree.physics_frame
+		var state := player.state_machine.get_state_name()
+		if seen.is_empty() or seen.back() != state:
+			seen.append(state)
+	return seen
+
+
+func test_roll_on_bridge_then_walk() -> void:
+	await _setup()
+	var roll: RollState = player.state_machine.get_node("Roll")
+	var start := player.global_position
+	var stick := _stick_start()
+	var up := stick + Vector2.UP * input.joystick.joystick_size
+	touch(0, stick, true)
+	drag(0, stick, up)
+	_tap(input.roll_button, 1)
+	var ticks := 0
+	while player.state_machine.get_state_name() != &"Roll" and ticks < 5:
+		await tree.physics_frame
+		ticks += 1
+	check(player.state_machine.get_state_name() == &"Roll", "roll button + stick rolls on the bridge")
+	while player.state_machine.get_state_name() == &"Roll" and ticks < 120:
+		await tree.physics_frame
+		ticks += 1
+	var rolled := player.global_position - start
+	check(rolled.dot(BRIDGE_FORWARD) > roll.distance - 0.5, "rolled along the bridge toward Karaköy (moved %s)" % rolled)
+	check(_on_bridge_deck(), "still on the deck after the roll (%s)" % player.global_position)
+	check(player.state_machine.get_state_name() == &"Walk", "walking after the roll with the stick held (%s)" % player.state_machine.get_state_name())
+	await physics_frames(60)
+	check_near(player.get_horizontal_speed(), player.walk_speed, 0.2, "walk speed after the roll")
+	var walked := player.global_position - start - rolled
+	check(walked.dot(BRIDGE_FORWARD) > 3.0, "kept walking along the bridge (moved %s)" % walked)
+	touch(0, up, false)
+	await physics_frames(30)
+	check(player.state_machine.get_state_name() == &"Idle" and _on_bridge_deck(), "idle on the deck after release")
+
+
+func test_punch_on_bridge_then_walk() -> void:
+	await _setup()
+	_tap(input.punch_button, 1)
+	var seen := await _state_sequence(40)
+	check(seen == ([&"Punch", &"Idle"] as Array[StringName]) or seen == ([&"Idle", &"Punch", &"Idle"] as Array[StringName]), "punch then Idle (%s)" % [seen])
+	var sample := await _hold_stick(Vector2.UP, 90)
+	check(sample[0] == &"Walk" and absf(sample[1] - player.walk_speed) < 0.2, "walks normally after the punch (%s)" % [sample])
+
+
+func test_roll_off_the_deck_edge_respawns() -> void:
+	await _setup()
+	# Toward the western deck edge, across the deck axis; railings have no collision.
+	var across := Vector3(-BRIDGE_FORWARD.z, 0.0, BRIDGE_FORWARD.x) * -1.0
+	var respawns := [0]
+	game.world.body_respawned.connect(func(_body: Node3D) -> void: respawns[0] += 1)
+	player.teleport(Transform3D(Basis(Vector3.UP, atan2(-across.x, -across.z)), SPAWN + across * 2.0))
+	await physics_frames(30)
+	check(_on_bridge_deck(), "starts on the deck near its edge")
+	_tap(input.roll_button, 1)
+	var left_floor := false
+	for i in 240:
+		await tree.physics_frame
+		if not player.is_on_floor() and respawns[0] == 0:
+			left_floor = true
+		if respawns[0] > 0:
+			break
+	check(left_floor, "the roll carried the body off the deck")
+	check(respawns[0] == 1, "fell into the water and respawned (%d)" % respawns[0])
+	await physics_frames(30)
+	check(player.state_machine.get_state_name() == &"Idle" and _on_bridge_deck(), "idle on the deck at the spawn after the respawn")

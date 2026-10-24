@@ -1,9 +1,11 @@
 extends SceneTree
 ## Renders the game in a real window and saves a screenshot plus render stats.
 ## Development aid for checking HUD layout and visuals without a device.
-##   godot --path . --resolution 1266x585 --script res://tools/capture_screenshot.gd -- --out=/abs/path/shot.png [--walk] [--run] [--yaw=DEG]
+##   godot --path . --resolution 1266x585 --script res://tools/capture_screenshot.gd -- --out=/abs/path/shot.png [--walk] [--run] [--yaw=DEG] [--punch] [--roll] [--frames=N]
 ## --walk holds the joystick forward (with --run, after tapping the run button)
-## so the screenshot shows the controls in use.
+## so the screenshot shows the controls in use. --punch / --roll tap that
+## button; --frames sets how many frames later the shot is taken (default 90),
+## e.g. a few frames for a mid-action pose.
 
 var _options := {}
 
@@ -42,7 +44,12 @@ func _run() -> void:
 		drag.position = root.get_final_transform() * (start + offset)
 		drag.relative = root.get_final_transform().basis_xform(offset)
 		Input.parse_input_event(drag)
-	for i in 90:
+	for action in ["punch", "roll"]:
+		if _options.has(action):
+			var button: TouchButton = input.punch_button if action == "punch" else input.roll_button
+			_touch(2, button.get_global_rect().get_center(), true)
+			_touch(2, button.get_global_rect().get_center(), false)
+	for i in int(_options.get("frames", "90")):
 		await process_frame
 	await RenderingServer.frame_post_draw
 	var image := root.get_texture().get_image()

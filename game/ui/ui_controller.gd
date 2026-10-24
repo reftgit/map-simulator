@@ -1,7 +1,8 @@
 class_name UIController
 extends CanvasLayer
 ## HUD root. Keeps the controls inside the device safe area (notch, rounded
-## corners, home indicator) and, in debug builds only, shows a performance
+## corners, home indicator), fades the roll button while the bound player's
+## roll is on cooldown, and, in debug builds only, shows a performance
 ## overlay, logs the same numbers as "PERF" lines (readable from adb logcat or
 ## the Xcode console), and offers a VIEW button for measurement viewpoints.
 
@@ -47,6 +48,11 @@ func _ready() -> void:
 
 func bind_player(player: PlayerController) -> void:
 	_player = player
+
+
+func _process(_delta: float) -> void:
+	if _player and input.roll_button:
+		input.roll_button.dimmed = _player.actions.is_blocked(&"roll")
 
 
 func apply_safe_area() -> void:

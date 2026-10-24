@@ -1,10 +1,14 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=21 format=3]
 
 [ext_resource type="Script" path="res://game/player/player_controller.gd" id="1_controller"]
 [ext_resource type="Script" path="res://game/player/state_machine/player_state_machine.gd" id="2_machine"]
 [ext_resource type="Script" path="res://game/player/state_machine/idle_state.gd" id="3_idle"]
 [ext_resource type="Script" path="res://game/player/state_machine/walk_state.gd" id="4_walk"]
 [ext_resource type="Script" path="res://game/player/state_machine/run_state.gd" id="5_run"]
+[ext_resource type="Script" path="res://game/player/state_machine/punch_state.gd" id="6_punch"]
+[ext_resource type="Script" path="res://game/player/state_machine/roll_state.gd" id="7_roll"]
+[ext_resource type="Script" path="res://game/player/visual/placeholder_character_visual.gd" id="8_visual"]
+[ext_resource type="Script" path="res://game/combat/hitbox.gd" id="9_hitbox"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
 radius = 0.35
@@ -29,26 +33,60 @@ roughness = 0.4
 material = SubResource("StandardMaterial3D_visor")
 size = Vector3(0.42, 0.14, 0.2)
 
-[node name="Player" type="CharacterBody3D"]
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_fist"]
+albedo_color = Color(0.95, 0.78, 0.6, 1)
+roughness = 0.7
+
+[sub_resource type="SphereMesh" id="SphereMesh_fist"]
+material = SubResource("StandardMaterial3D_fist")
+radius = 0.15
+height = 0.3
+radial_segments = 12
+rings = 6
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_hitbox"]
+size = Vector3(0.6, 0.6, 0.8)
+
+[node name="Player" type="CharacterBody3D" node_paths=PackedStringArray("visual")]
 collision_layer = 2
 collision_mask = 1
 floor_max_angle = 0.872665
 floor_snap_length = 0.5
 script = ExtResource("1_controller")
+visual = NodePath("Visual")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
 shape = SubResource("CapsuleShape3D_body")
 
 [node name="Visual" type="Node3D" parent="."]
+script = ExtResource("8_visual")
 
-[node name="Body" type="MeshInstance3D" parent="Visual"]
+[node name="Pivot" type="Node3D" parent="Visual"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+
+[node name="Body" type="MeshInstance3D" parent="Visual/Pivot"]
 mesh = SubResource("CapsuleMesh_body")
 
-[node name="Visor" type="MeshInstance3D" parent="Visual"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, -0.28)
+[node name="Visor" type="MeshInstance3D" parent="Visual/Pivot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, -0.28)
 mesh = SubResource("BoxMesh_visor")
+
+[node name="Fist" type="MeshInstance3D" parent="Visual/Pivot"]
+visible = false
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.42, 0.15, -0.1)
+mesh = SubResource("SphereMesh_fist")
+
+[node name="Hitbox" type="Area3D" parent="."]
+collision_layer = 0
+collision_mask = 4
+monitoring = false
+monitorable = false
+script = ExtResource("9_hitbox")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Hitbox"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, -0.65)
+shape = SubResource("BoxShape3D_hitbox")
 
 [node name="StateMachine" type="Node" parent="." node_paths=PackedStringArray("initial_state")]
 script = ExtResource("2_machine")
@@ -62,3 +100,10 @@ script = ExtResource("4_walk")
 
 [node name="Run" type="Node" parent="StateMachine"]
 script = ExtResource("5_run")
+
+[node name="Punch" type="Node" parent="StateMachine" node_paths=PackedStringArray("hitbox")]
+script = ExtResource("6_punch")
+hitbox = NodePath("../../Hitbox")
+
+[node name="Roll" type="Node" parent="StateMachine"]
+script = ExtResource("7_roll")
