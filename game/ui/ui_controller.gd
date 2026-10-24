@@ -1,24 +1,39 @@
 class_name UIController
 extends CanvasLayer
 ## HUD root. Keeps the controls inside the device safe area (notch, rounded
-## corners, home indicator) and shows a debug overlay in debug builds.
+## corners, home indicator) and, in debug builds only, shows a performance
+## overlay, logs the same numbers as "PERF" lines (readable from adb logcat or
+## the Xcode console), and offers a VIEW button for measurement viewpoints.
+
+## Emitted when the debug VIEW button is tapped.
+signal debug_view_requested
 
 ## Extra space between the safe area and the controls, in canvas units.
 @export var edge_margin := 16.0
+## Overlay refreshes between PERF log lines.
+@export var perf_log_every := 4
+
+## Name of the current measurement viewpoint, shown in the overlay and logs.
+var view_name := ""
 
 var _player: PlayerController
+var _ticks := 0
 
 @onready var input: MobileInputController = $SafeArea/Controls
 @onready var _safe_area: Control = $SafeArea
 @onready var _debug_label: Label = $SafeArea/DebugLabel
+@onready var _debug_view_button: TouchButton = $SafeArea/Controls/DebugViewButton
 @onready var _debug_timer: Timer = $DebugTimer
 
 
 func _ready() -> void:
 	get_viewport().size_changed.connect(apply_safe_area)
 	apply_safe_area()
-	_debug_label.visible = OS.is_debug_build()
-	if _debug_label.visible:
+	var debug := OS.is_debug_build()
+	_debug_label.visible = debug
+	_debug_view_button.visible = debug
+	if debug:
+		_debug_view_button.pressed.connect(debug_view_requested.emit)
 		_debug_timer.timeout.connect(_update_debug)
 		_debug_timer.start()
 
@@ -48,8 +63,32 @@ static func safe_rect_in_viewport(safe_area: Rect2i, window_size: Vector2i, view
 	return rect.intersection(full)
 
 
+## Current frame statistics. Static memory is what the engine allocated
+## itself (tracked in debug builds); it excludes GPU driver memory.
+static func perf_stats() -> Dictionary:
+	return {
+		"fps": Engine.get_frames_per_second(),
+		"draw_calls": RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME),
+		"primitives": RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_PRIMITIVES_IN_FRAME),
+		"objects": RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_OBJECTS_IN_FRAME),
+		"video_mem_mb": RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_VIDEO_MEM_USED) / 1048576.0,
+		"static_mem_mb": OS.get_static_memory_usage() / 1048576.0,
+		"static_peak_mb": OS.get_static_memory_peak_usage() / 1048576.0,
+	}
+
+
 func _update_debug() -> void:
-	var text := "FPS %d" % Engine.get_frames_per_second()
+	var stats := perf_stats()
+	var state := ""
 	if _player:
-		text += "  |  %s  |  %.1f m/s" % [_player.state_machine.get_state_name(), _player.get_horizontal_speed()]
-	_debug_label.text = text
+		state = "%s %.1f m/s" % [_player.state_machine.get_state_name(), _player.get_horizontal_speed()]
+	_debug_label.text = "FPS %d | %d draw calls | %.2f M prims | %d objects\n%s | vram %.0f MB | mem %.0f MB (peak %.0f)\n%s" % [
+		stats.fps, stats.draw_calls, stats.primitives / 1e6, stats.objects,
+		state, stats.video_mem_mb, stats.static_mem_mb, stats.static_peak_mb, view_name,
+	]
+	_ticks += 1
+	if _ticks % perf_log_every == 0:
+		print("PERF view=\"%s\" fps=%d draw_calls=%d primitives=%d objects=%d video_mem_mb=%.0f static_mem_mb=%.0f static_peak_mb=%.0f" % [
+			view_name, stats.fps, stats.draw_calls, stats.primitives, stats.objects,
+			stats.video_mem_mb, stats.static_mem_mb, stats.static_peak_mb,
+		])

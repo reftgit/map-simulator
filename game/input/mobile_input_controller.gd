@@ -17,6 +17,9 @@ const MAX_TOUCHES := 10
 @export var joystick: VirtualJoystick
 @export var look_area: TouchLookArea
 @export var run_button: TouchButton
+## Further controls (e.g. debug buttons), routed after the run button and
+## before the look area.
+@export var extra_controls: Array[TouchControl] = []
 ## Turn running off when the joystick finger lifts.
 @export var run_resets_on_release := true
 ## Camera rotation in radians for a drag across the full viewport height.
@@ -28,7 +31,10 @@ var _priority: Array[TouchControl] = []
 
 func _ready() -> void:
 	mouse_filter = MOUSE_FILTER_IGNORE
-	for control: TouchControl in [run_button, look_area]:
+	var ordered: Array[TouchControl] = [run_button]
+	ordered.append_array(extra_controls)
+	ordered.append(look_area)
+	for control in ordered:
 		if control:
 			_priority.append(control)
 	if joystick:

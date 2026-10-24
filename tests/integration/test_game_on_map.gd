@@ -126,6 +126,24 @@ func test_touch_run_on_bridge() -> void:
 	check(_on_bridge_deck(), "still on the bridge deck after running (%s)" % player.global_position)
 
 
+func test_debug_viewpoints_stand_on_ground() -> void:
+	await _setup()
+	var names: PackedStringArray = game.get_view_names()
+	check(names.size() == 3, "spawn + 2 map viewpoints (%s)" % [names])
+	var respawns := [0]
+	game.world.body_respawned.connect(func(_body: Node3D) -> void: respawns[0] += 1)
+	for i in range(1, names.size()):
+		game.cycle_debug_view()
+		await physics_frames(60)
+		var target: Transform3D = game.map_definition.debug_viewpoints[i - 1]
+		check(player.is_on_floor(), "%s: standing on a floor" % names[i])
+		check(player.global_position.distance_to(target.origin) < 0.5, "%s: at the viewpoint (%s)" % [names[i], player.global_position])
+		check(game.hud.view_name == names[i], "overlay shows %s" % names[i])
+	check(respawns[0] == 0, "no viewpoint drops the player out of the world")
+	game.cycle_debug_view()
+	check(game.hud.view_name == "Spawn", "cycling wraps back to the spawn")
+
+
 func test_falling_into_water_respawns() -> void:
 	await _setup()
 	# The deck ends about 6 m west of the spawn; railings have no collision and

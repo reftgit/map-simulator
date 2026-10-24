@@ -10,3 +10,5 @@ player_spawn_position = Vector3(-109.0365, 6.5477, 204.2572)
 player_spawn_yaw_degrees = -27.0
 bounds = Rect2(-1931.65, -1558.48, 2687.51, 2671.68)
 kill_height = -5.0
+debug_viewpoints = Array[Transform3D]([Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.03, 120), Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -20, 39.49, -250)])
+debug_viewpoint_names = PackedStringArray("Karaköy street, facing north", "Galata street, facing south")

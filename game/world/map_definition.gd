@@ -12,3 +12,9 @@ extends Resource
 @export var bounds := Rect2()
 ## Bodies that fall below this height are respawned.
 @export var kill_height := -5.0
+
+@export_group("Debug")
+## Fixed player positions for repeatable performance measurements, cycled
+## with the debug overlay's VIEW button in debug builds.
+@export var debug_viewpoints: Array[Transform3D] = []
+@export var debug_viewpoint_names: PackedStringArray = []

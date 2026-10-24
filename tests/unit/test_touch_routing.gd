@@ -133,6 +133,22 @@ func test_run_resets_when_joystick_released() -> void:
 	check(not input.is_run_active(), "running stops when the stick finger lifts")
 
 
+func test_debug_view_button_is_routed_before_joystick_zone() -> void:
+	await _setup()
+	var button: TouchButton = hud.get_node("SafeArea/Controls/DebugViewButton")
+	check(button.visible == OS.is_debug_build(), "VIEW button only in debug builds")
+	check(input.joystick.get_global_rect().encloses(button.get_global_rect()), "button sits inside the joystick zone (worst case for routing)")
+	var requests := [0]
+	hud.debug_view_requested.connect(func() -> void: requests[0] += 1)
+	var center := button.get_global_rect().get_center()
+	touch(0, center, true)
+	drag(0, center, center + Vector2(80, 0))
+	await process_frames(1)
+	check(requests[0] == 1, "tap requests the next view")
+	check(input.get_move_vector() == Vector2.ZERO, "the joystick does not get the button's finger")
+	touch(0, center + Vector2(80, 0), false)
+
+
 ## Joystick held forward with running on, then the app loses focus or pauses.
 func _check_reset_on_notification(what: int) -> void:
 	await _setup()

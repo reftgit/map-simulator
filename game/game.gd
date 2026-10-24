@@ -4,6 +4,8 @@ extends Node
 
 @export var map_definition: MapDefinition
 
+var _view_index := 0
+
 @onready var world: WorldManager = $WorldManager
 @onready var player: PlayerController = $Player
 @onready var camera_rig: ThirdPersonCamera = $ThirdPersonCamera
@@ -23,3 +25,32 @@ func _ready() -> void:
 	camera_rig.input = hud.input
 	camera_rig.set_target(player)
 	hud.bind_player(player)
+
+	if OS.is_debug_build():
+		hud.view_name = get_view_names()[0]
+		hud.debug_view_requested.connect(cycle_debug_view)
+		_log_startup()
+
+
+## Measurement viewpoints: the spawn, then the map's debug viewpoints.
+func get_view_names() -> PackedStringArray:
+	var names := PackedStringArray(["Spawn"])
+	names.append_array(map_definition.debug_viewpoint_names)
+	return names
+
+
+func cycle_debug_view() -> void:
+	var views: Array[Transform3D] = [world.get_spawn_transform()]
+	views.append_array(map_definition.debug_viewpoints)
+	_view_index = (_view_index + 1) % views.size()
+	player.teleport(views[_view_index])
+	camera_rig.snap_behind_target()
+	hud.view_name = get_view_names()[_view_index]
+	print("VIEW ", hud.view_name)
+
+
+## Logs engine-start-to-map-ready and first-frame times (debug builds).
+func _log_startup() -> void:
+	var map_ready_ms := Time.get_ticks_msec()
+	await RenderingServer.frame_post_draw
+	print("STARTUP map_ready_ms=%d first_frame_ms=%d" % [map_ready_ms, Time.get_ticks_msec()])
