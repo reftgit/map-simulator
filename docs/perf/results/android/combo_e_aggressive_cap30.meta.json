@@ -1,0 +1,3 @@
+{"experiment": "combo_e_aggressive_cap30", "device": "android", "battery_c_start": 35.5, "battery_c_end": 35.0,
+ "thermal_status_start": "0", "thermal_status_end": "0",
+ "pss_peak_kb": 571530, "wall_s": 294, "started": "2026-10-24 20:01:54"}

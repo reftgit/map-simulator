@@ -1,0 +1,53 @@
+{
+ "experiment": "cap60_shadows_off",
+ "device": "ios",
+ "wall_s": 303,
+ "cooldown_s": 0,
+ "app_args": "",
+ "thermal_start": "Nominal",
+ "thermal_end": "Serious",
+ "thermal_max": "Serious",
+ "footprint_peak_mib": 1044,
+ "probes": [
+  {
+   "t": 0,
+   "thermal": "Nominal",
+   "footprint_mib": null
+  },
+  {
+   "t": 40,
+   "thermal": "Fair",
+   "footprint_mib": 1024
+  },
+  {
+   "t": 91,
+   "thermal": "Fair",
+   "footprint_mib": 1044
+  },
+  {
+   "t": 141,
+   "thermal": "Serious",
+   "footprint_mib": 1024
+  },
+  {
+   "t": 191,
+   "thermal": "Serious",
+   "footprint_mib": 1022
+  },
+  {
+   "t": 242,
+   "thermal": "Serious",
+   "footprint_mib": 1022
+  },
+  {
+   "t": 293,
+   "thermal": "Serious",
+   "footprint_mib": 1019
+  },
+  {
+   "t": 304,
+   "thermal": "Serious",
+   "footprint_mib": null
+  }
+ ]
+}

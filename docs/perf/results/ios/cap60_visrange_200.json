@@ -1,0 +1,71 @@
+{
+  "apply": {},
+  "config": {
+    "camera_far": 0.0,
+    "experiment": "cap60_visrange_200",
+    "fog": false,
+    "hide": [],
+    "lod_threshold": 0.0,
+    "max_fps": 60,
+    "occlusion": false,
+    "render_scale": 1.0,
+    "scaling_mode": "bilinear",
+    "shadows": "default",
+    "visibility_end": {
+      "decor": 200.0,
+      "facade_detail": 200.0,
+      "lamps": 200.0,
+      "trees": 200.0
+    }
+  },
+  "results": [
+    {
+      "avg_fps": 60.0,
+      "draw_calls": 598,
+      "experiment": "cap60_visrange_200",
+      "frames": 3601,
+      "low1_fps": 45.19,
+      "min_fps": 41.99,
+      "objects": 811,
+      "primitives": 419278,
+      "renderer": "mobile",
+      "static_mem_mb": 171,
+      "static_peak_mb": 171,
+      "video_mem_mb": 672,
+      "view": "Spawn",
+      "window": "(2532, 1170)"
+    },
+    {
+      "avg_fps": 60.0,
+      "draw_calls": 725,
+      "experiment": "cap60_visrange_200",
+      "frames": 3600,
+      "low1_fps": 45.66,
+      "min_fps": 44.81,
+      "objects": 978,
+      "primitives": 601144,
+      "renderer": "mobile",
+      "static_mem_mb": 171,
+      "static_peak_mb": 191,
+      "video_mem_mb": 672,
+      "view": "Karaköy street, facing north",
+      "window": "(2532, 1170)"
+    },
+    {
+      "avg_fps": 60.0,
+      "draw_calls": 561,
+      "experiment": "cap60_visrange_200",
+      "frames": 3600,
+      "low1_fps": 45.26,
+      "min_fps": 43.76,
+      "objects": 812,
+      "primitives": 620841,
+      "renderer": "mobile",
+      "static_mem_mb": 172,
+      "static_peak_mb": 191,
+      "video_mem_mb": 672,
+      "view": "Galata street, facing south",
+      "window": "(2532, 1170)"
+    }
+  ]
+}

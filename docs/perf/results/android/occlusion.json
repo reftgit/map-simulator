@@ -1,0 +1,70 @@
+{
+  "apply": {
+    "occluder_build_ms": 118,
+    "occluder_triangles": 317518,
+    "occluders": 643
+  },
+  "config": {
+    "camera_far": 0.0,
+    "experiment": "occlusion",
+    "fog": false,
+    "hide": [],
+    "lod_threshold": 0.0,
+    "max_fps": -1,
+    "occlusion": true,
+    "render_scale": 1.0,
+    "scaling_mode": "bilinear",
+    "shadows": "default",
+    "visibility_end": {}
+  },
+  "results": [
+    {
+      "avg_fps": 10.31,
+      "draw_calls": 273,
+      "experiment": "occlusion",
+      "frames": 619,
+      "low1_fps": 9.42,
+      "min_fps": 7.59,
+      "objects": 468,
+      "primitives": 1294218,
+      "renderer": "mobile",
+      "static_mem_mb": 201,
+      "static_peak_mb": 201,
+      "video_mem_mb": 561,
+      "view": "Spawn",
+      "window": "(2000, 1200)"
+    },
+    {
+      "avg_fps": 13.97,
+      "draw_calls": 150,
+      "experiment": "occlusion",
+      "frames": 839,
+      "low1_fps": 12.68,
+      "min_fps": 7.49,
+      "objects": 385,
+      "primitives": 590613,
+      "renderer": "mobile",
+      "static_mem_mb": 201,
+      "static_peak_mb": 217,
+      "video_mem_mb": 561,
+      "view": "Karaköy street, facing north",
+      "window": "(2000, 1200)"
+    },
+    {
+      "avg_fps": 16.39,
+      "draw_calls": 78,
+      "experiment": "occlusion",
+      "frames": 984,
+      "low1_fps": 14.13,
+      "min_fps": 7.95,
+      "objects": 309,
+      "primitives": 470329,
+      "renderer": "mobile",
+      "static_mem_mb": 202,
+      "static_peak_mb": 217,
+      "video_mem_mb": 561,
+      "view": "Galata street, facing south",
+      "window": "(2000, 1200)"
+    }
+  ]
+}

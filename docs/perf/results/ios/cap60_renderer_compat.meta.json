@@ -1,0 +1,28 @@
+{
+ "experiment": "cap60_renderer_compat",
+ "device": "ios",
+ "wall_s": 51,
+ "cooldown_s": 0,
+ "app_args": "--rendering-method gl_compatibility",
+ "thermal_start": "Nominal",
+ "thermal_end": "Nominal",
+ "thermal_max": "Nominal",
+ "footprint_peak_mib": null,
+ "probes": [
+  {
+   "t": 0,
+   "thermal": "Nominal",
+   "footprint_mib": null
+  },
+  {
+   "t": 40,
+   "thermal": "Nominal",
+   "footprint_mib": null
+  },
+  {
+   "t": 51,
+   "thermal": "Nominal",
+   "footprint_mib": null
+  }
+ ]
+}

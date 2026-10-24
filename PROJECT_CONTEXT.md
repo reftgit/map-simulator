@@ -2,7 +2,7 @@
 
 Planning context and decision rationale. This file does not describe implemented functionality; see `PROJECT_STATE.md` for that.
 
-Last updated: 2026-10-24 (Phase 1 device validation, Claude Code)
+Last updated: 2026-10-24 (performance diagnosis pass, Claude Code)
 
 ## Product vision and goals
 
@@ -141,6 +141,11 @@ PlayerController, PlayerStateMachine, PlayerCombat, PlayerAnimation, ThirdPerson
 
 - **Decision:** Debug APKs are signed with the Godot editor's debug keystore, configured in the local editor settings. `export_presets.cfg` holds no keystore path, user, or password. A release keystore is out of scope for now.
 
+### D11 — Performance pass before Phase 2, with targets (2026-10-24, user decision)
+
+- **Decision:** A measurement-only performance pass runs before Phase 2. Targets: Galaxy Tab A7 class at a stable 30 FPS; iPhone 13 Pro with a 60 FPS cap for a 10-minute session, thermal state at most "Fair", FPS ≥ 55. The pass did not have to meet them, only measure which measures could. No permanent default (renderer included) changes without a user decision.
+- **Outcome:** see "Performance findings and proposed measures".
+
 ## Application technical decisions
 
 Decisions made by the implementing agent (Claude Code, 2026-10-24). None was specified by the user unless stated; each can be revisited. Code structure: `docs/ARCHITECTURE.md`.
@@ -150,7 +155,7 @@ Decisions made by the implementing agent (Claude Code, 2026-10-24). None was spe
 - **Decision:** Mobile renderer for desktop and mobile; the map project used GL Compatibility.
 - **Rationale:** The specification asks for a mobile renderer suited to the Godot version. Mobile is Godot 4's renderer for phones (Vulkan on Android, Metal on iOS) and supports occlusion culling, which Compatibility lacks and the city may need in Phase 4. Desktop measurement at the spawn view gave the same draw calls in both renderers (1330 vs 1335).
 - **Device data (2026-10-24, debug builds):** runs on both test devices: Vulkan 1.1.128 Forward Mobile on the Galaxy Tab A7 (Adreno 610) at 5–8 FPS; Metal Forward Mobile on the iPhone 13 Pro at 89 FPS cold at the spawn, 43–53 FPS at street level after long use in a "Serious" thermal state. Full numbers in `PROJECT_STATE.md`. Compatibility was not measured on the devices, so the comparison is still open.
-- **Revisit:** Phase 4 or an earlier performance pass. Occlusion culling (Mobile only) has not been tried yet.
+- **Revisit result (2026-10-24 performance pass):** keep Mobile; see "Renderer (T1 update)" below.
 
 ### T2 — Native VirtualJoystick plus a touch router
 
@@ -226,19 +231,51 @@ Decisions made by the implementing agent (Claude Code, 2026-10-24). None was spe
 - **Decision:** Exported script properties use `Array[String]`, never `PackedStringArray`; a unit test enforces this for `game/` and `maps/`.
 - **Rationale:** Godot 4.7.2's export conversion of text resources dropped an exported `PackedStringArray` (`MapDefinition.debug_viewpoint_names`) while keeping the neighbouring `Array[Transform3D]`; the device build then crashed on VIEW. The same data as `Array[String]` survived. Reproduced with ASCII-only names and a fresh export cache.
 
-## Performance findings and candidate measures
+### T17 — Performance experiments as debug-only runtime flags
 
-Findings (2026-10-24, debug builds, details in `PROJECT_STATE.md`): street-level frames draw 0.95–1.5 k draw calls and 2.3–3.4 M primitives, including in a narrow Galata street facing a wall, so hidden geometry is drawn. The Galaxy Tab A7 runs at 5–8 FPS with PSS ~520 MB plus swap and 10–21 s to the first frame. The iPhone 13 Pro starts in 1.6 s and runs at 89 FPS cold, but enters a "Serious" thermal state within minutes and falls to 43–53 FPS.
+- **Decision:** Experiments are JSON-defined, debug-only runtime flags (`PerfConfig`/`PerfExperiments`), measured by an in-app benchmark and host scripts (`tools/perf/`). They never modify the GLB, the map scene, or import settings, and they are off unless an experiment file is supplied.
+- **Rationale:** The task required measuring without changing defaults or the map; the same definitions can be re-run after any change for comparison.
 
-Candidate measures, none implemented, to be measured one at a time (Phase 4 or an earlier pass if approved):
+## Performance findings and proposed measures
 
-- Occlusion culling (Mobile renderer) with occluders from building footprints or baked from the GLB.
-- Visibility ranges (HLOD-style fade) for the 4,008 lamps, 5,477 trees, shrubs, road paint, and facade detail; these are the bulk of mesh nodes.
-- Shorter camera far plane (now 1500 m) with distance fog.
-- Shadows: lower distance, single split, or off on weak devices.
-- 3D render scale (`scaling_3d`) below 1.0 on weak devices.
-- Frame-rate cap at 60 on 120 Hz iPhones, and the 30 FPS mode from the specification, to reduce heat.
-- Faster startup: splitting the 195 MB imported map scene or streaming chunks.
+Status: **measured on 2026-10-24, nothing applied.** Full tables and protocol: `PROJECT_STATE.md`, "Performance diagnosis pass". Raw data and screenshots: `docs/perf/`.
+
+### User targets (D11, 2026-10-24)
+
+- The performance pass runs before Phase 2 (user-approved order).
+- Galaxy Tab A7 class: stable 30 FPS. iPhone 13 Pro: 60 FPS cap, 10-minute session with thermal state at most "Fair" and FPS ≥ 55.
+
+### What costs the most
+
+- **Facade detail** (`Detail_*`, `MosqueDetail_*`, `LandmarkDetail_*`): 64.2 % of the 7.07 M triangles and 60–72 % of the primitives drawn at street level. Hiding it took the tablet from 6.7 / 5.8 / 7.7 to 12.0 / 9.9 / 11.9 FPS. The building shells themselves are 2 %.
+- **Hidden geometry:** without occlusion culling, a narrow Galata street facing a wall still draws ~1,000 draw calls; occlusion cuts that to 78.
+- **Pixel fill on the tablet:** 0.75 render scale alone gave 1.5–1.7×; on the iPhone render scale changed nothing thermally.
+- **Draw calls** matter less on the tablet (hiding lamps: −17 % draw calls, +0.2 FPS) but are where the iPhone's heat goes away (occlusion and visibility ranges both stopped the thermal rise; LOD, which keeps draw calls, only delayed "Fair").
+- Shadows (off or single split) changed almost nothing on either device.
+
+### Proposed settings packages (for the user to decide; not applied)
+
+| Package | Settings | Measured result | Visual cost |
+|---|---|---|---|
+| iPhone (A15 class) | 60 FPS cap + occlusion culling + 200 m visibility range for trees, lamps, decor, facade detail | 60.0 FPS every minute for 10 min, thermal Nominal throughout, footprint ~1.02 GiB; 1 % low ~41.5 (as in all capped runs) | Facade windows and some trees beyond ~200 m disappear (`docs/perf/ios/cap60_combo_occ_vis200_spawn.jpg`) |
+| Tablet (Adreno 610 class) | occlusion + 400 m far plane with depth fog + 100 m visibility range + 0.6 render scale + shadows off + LOD threshold 4 + 30 FPS cap | 29.9–30.0 FPS average, 1 % low 25.3–26.6, min 23.6–25.1 without the memory sampler; PSS ~560 MiB | Heavy: nearby buildings lose windows (chunk granularity), no shadows, fog, soft image (`docs/perf/android/combo_c_aggressive_karakoy.jpg`) |
+
+Recommendation: the iPhone package is usable as is. The tablet package proves 30 FPS is reachable but is not recommended for release without map-level work, because the chunk-granular visibility range blanks nearby facades.
+
+### Map-level proposals (based on the attribution; none applied, the map must not be changed without approval)
+
+| Proposal | Basis in the measurements | Expected effect (estimate) |
+|---|---|---|
+| Replace geometric facade detail with lighter geometry or textured/shader facades; stronger LODs for what remains | `hide_facade_detail`: −60–72 % primitives, 1.6–1.8× FPS on the tablet | Most of that gain while keeping a similar look; tablet near or above 30 FPS with fewer of the other cuts |
+| Split facade detail (and trees) into cells of ~30–50 m or per building | Per-150 m-chunk visibility ranges blank nearby buildings | Visibility ranges and occlusion usable without near-field artefacts; allows a gentler tablet package |
+| Merge ground, road, pavement, quay, garden meshes per chunk | `hide_ground`: −33–34 % draw calls, +0.4–1.4 FPS on the tablet | Fewer draw calls, mostly helps CPU and iPhone heat |
+| MultiMesh or merged instances for lamps and trees | lamps: −16–18 % draw calls; trees: −12–19 % primitives | Small FPS gain on the tablet; draw-call reduction on the iPhone |
+| Bake simplified occluders offline (building boxes) instead of building them from collision at load | Runtime build: 643 occluders, 317,518 triangles, 114–118 ms on the tablet, ~+40 MiB | Faster load, less memory; occlusion stays the biggest single measure |
+| Faster startup (split or stream the 195 MB imported map) | 10–21 s to the first frame on the tablet | Not measured in this pass |
+
+### Renderer (T1 update)
+
+Keep the **Mobile** renderer. On the tablet, Compatibility was ~20 % faster on the unchanged scene but used ~914 MiB peak PSS instead of ~510 MiB, has no occlusion culling (Mobile with occlusion alone beat it: 10.3 / 14.0 / 16.4 vs 8.0 / 7.0 / 9.2 FPS), and it does not start on the iPhone (framebuffer creation and GLES3 shader compilation fail on iOS 26.6.1). FSR is unavailable on Mobile in Godot 4.7.2; MetalFX spatial produced no thermal benefit.
 
 ## Planned features
 
@@ -264,8 +301,8 @@ See "Requirements by phase". `PROJECT_STATE.md` records which parts exist.
 
 1. Character model and animations: none exist in the map package. Where will they come from? A placeholder is used until then.
 2. Car model: the map has no vehicles. Source needed before Phase 3.
-3. Map performance on phones: measured on 2026-10-24 (see "Performance findings"). Which measures to apply, and in which phase?
-4. Minimum target devices, including what "weaker Android device" means for the 30 FPS mode. Is the Galaxy Tab A7 (Snapdragon 662 / Adreno 610, 5–8 FPS today) a device that must reach 30 FPS?
+3. Which proposed measures to adopt: the iPhone settings package, the tablet package, map-level facade work (needs approval to change the map pipeline), and in which phase?
+4. Target device list beyond the two test devices. Does the Galaxy Tab A7 class stay a 30 FPS target given the measured visual cost?
 5. App name and final icon; Android release keystore. (Identifiers and debug signing are decided: D8–D10.)
 6. In-game UI language.
 7. Audience and monetization: not specified.
@@ -276,10 +313,10 @@ See "Requirements by phase". `PROJECT_STATE.md` records which parts exist.
 12. Railings, lamps, and other decor have no collision, so the player can walk off bridge decks and quays into the water (then respawns). Should invisible barriers be added along bridges and quays?
 13. Run control style: is the toggle with reset on stick release (T7) what the user wants, or a hold button, or auto-run at full stick tilt?
 14. HUD art: the controls are drawn with plain shapes. Is final art or an icon set planned?
-15. Thermal budget on iPhone: is a 60 FPS cap acceptable on 120 Hz devices, and how long must a session stay out of "Serious"?
+15. Does "FPS ≥ 55" mean average FPS (met) or a 1 % low (not met: ~41.5 in every 60-capped run)? Should frame pacing on 120 Hz displays be investigated (e.g. a display-synchronized 60 Hz instead of `Engine.max_fps`)?
 16. Startup target: the tablet needs 10–21 s to the first frame. What is acceptable?
-17. Mobile vs Compatibility renderer on the weak Android device: worth measuring before Phase 4 work starts?
-18. Next step: Phase 2 as planned, or a measurement-only performance pass first (recommended in `PROJECT_STATE.md`)?
+17. Is a visible loss of distant facade detail (beyond ~200 m) acceptable on the iPhone?
+18. Should the measured packages become user-selectable quality presets, automatic per-device presets, or fixed per platform?
 
 ## Constraints and priorities
 
@@ -287,4 +324,4 @@ See "Requirements by phase". `PROJECT_STATE.md` records which parts exist.
 - The map original in the source package must not be modified or deleted.
 - Physical device results are reported as NOT RUN until actually performed.
 - No store, TestFlight, or Play Console uploads; no release signing without explicit approval.
-- Current priority: review of the Phase 1 device results and the user's decision on the next step.
+- Current priority: the user's decision on the performance measures, then Phase 2.

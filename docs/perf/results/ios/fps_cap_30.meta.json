@@ -1,0 +1,53 @@
+{
+ "experiment": "fps_cap_30",
+ "device": "ios",
+ "wall_s": 304,
+ "cooldown_s": 300,
+ "app_args": "",
+ "thermal_start": "Nominal",
+ "thermal_end": "Fair",
+ "thermal_max": "Fair",
+ "footprint_peak_mib": 1055,
+ "probes": [
+  {
+   "t": 0,
+   "thermal": "Nominal",
+   "footprint_mib": null
+  },
+  {
+   "t": 41,
+   "thermal": "Nominal",
+   "footprint_mib": 1024
+  },
+  {
+   "t": 91,
+   "thermal": "Nominal",
+   "footprint_mib": 1055
+  },
+  {
+   "t": 142,
+   "thermal": "Fair",
+   "footprint_mib": 1024
+  },
+  {
+   "t": 192,
+   "thermal": "Fair",
+   "footprint_mib": 1044
+  },
+  {
+   "t": 243,
+   "thermal": "Fair",
+   "footprint_mib": 1044
+  },
+  {
+   "t": 294,
+   "thermal": "Fair",
+   "footprint_mib": 1034
+  },
+  {
+   "t": 305,
+   "thermal": "Fair",
+   "footprint_mib": null
+  }
+ ]
+}

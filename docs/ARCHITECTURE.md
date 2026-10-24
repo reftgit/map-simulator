@@ -129,6 +129,44 @@ godot --headless --path . --script res://tests/map/validate_scene.gd # original 
 
   The tool prints renderer, FPS, draw calls, and primitive counts for the frame.
 
+## Performance experiments (debug builds only)
+
+Temporary render settings for measurements. With no experiment the game runs exactly as without this code (`test_no_perf_experiment_by_default`).
+
+- **Flags:** `PerfConfig` (`game/debug/perf_config.gd`) holds one experiment, parsed from JSON; unknown keys or categories are rejected. Keys: `experiment`, `hide` (categories), `visibility_end` ({category: metres}), `camera_far` + `fog` (depth fog ending at the far plane), `shadows` (`default`/`off`/`single`), `render_scale` + `scaling_mode` (`bilinear`/`metalfx`; FSR is Forward+ only in Godot 4.7.2), `max_fps`, `occlusion`, `lod_threshold` (`Viewport.mesh_lod_threshold`), and an optional `bench` section (`warmup_s` 30, `measure_s` 60, `views`, `session_minutes`, `session_view`, `screenshots`, `quit_when_done`).
+- **Applying:** `PerfExperiments.apply()` changes only runtime state: node visibility and visibility ranges, camera far plane, a fog setting on the loaded environment, sun shadow mode, viewport scaling/LOD/occlusion, `Engine.max_fps`. Occlusion builds one `OccluderInstance3D` (`ArrayOccluder3D`) per collision shape of the `buildings` and `ground` categories at load (643 occluders, 317,518 triangles, ~12 ms on desktop). The GLB, the map scene, and import settings are never modified.
+- **Categories** (by node-name prefix, checked in this order; every one of the 3,055 map meshes matches one, enforced by `test_perf_categories_cover_every_map_mesh`):
+
+  | Category | Prefixes | Mesh nodes | Triangles (LOD0, from the GLB) |
+  |---|---|---|---|
+  | facade_detail | `Detail_`, `MosqueDetail_`, `LandmarkDetail_` | 371 | 4,536,517 (64.2 %) |
+  | decor | bridge details and glass, `RoadPaint_`, `TrafficSignals_`, `SignalGlow_`, `Ferry_` | 299 | 159,048 (2.2 %) |
+  | lamps | `StreetLamps_`, `LampGlow_` | 517 | 305,368 (4.3 %) |
+  | trees | `Trees_`, `TreeTrunks_`, `Shrubs_` | 465 | 1,246,592 (17.6 %) |
+  | buildings | `Buildings_`, `Mosque_`, `Landmark_` | 371 | 144,716 (2.0 %) |
+  | ground | `Ground_`, `Road_`, `Pavement_`, `Quays_`, `Gardens_`, bridge decks | 1,031 | 678,214 (9.6 %) |
+  | water | `Water` | 1 | 2 |
+
+- **Loading:** `game.gd` reads `--perf-config=<path>` from the command line (desktop) or a one-shot `user://perf_bench.json` (devices; deleted when read). Experiment definitions live in `tools/perf/experiments/*.json`.
+- **Benchmark:** `PerfBenchmark` visits each viewpoint, waits `warmup_s`, then records every frame time for `measure_s`: average FPS (frames / time), 1 % low (FPS at the 99th-percentile frame time), minimum FPS (longest frame), and per-second averages of draw calls, primitives, and objects, plus peak video memory and engine static memory. It logs `BENCH {json}` lines, writes `user://bench_results.json`, saves 640 px JPEG screenshots to `user://bench/`, then quits (Android) or hides the map and drops to 5 FPS until the host terminates it (iOS ignores `quit()`).
+
+### Measurement protocol and host scripts
+
+```bash
+# Android (debug APK installed; do not run Godot --import/--export meanwhile: the editor stops adb on exit)
+tools/perf/run_batch.sh android build/perf/android tools/perf/experiments/baseline.json ...
+# iOS (debug app installed; Auto-Lock off)
+IOS_UDID=<udid> tools/perf/run_batch.sh ios build/perf/ios tools/perf/experiments/baseline.json ...
+python3 -I tools/perf/summarize.py build/perf/android   # Markdown tables
+```
+
+- Cold start for every run. Android: the batch waits until the battery is back to its starting temperature (+0.5 °C) and keeps the screen on while plugged in (`svc power stayon usb`, restored afterwards). iOS: each run waits for the Instruments thermal state "Nominal".
+- Per viewpoint (Spawn, Karaköy, Galata): 30 s warm-up, 60 s measurement. The app is closed between runs.
+- Recorded per run: Android battery temperature and thermal status at start and end, peak PSS (`dumpsys meminfo` every 15 s); iOS thermal state and app physical footprint from 3 s "Activity Monitor" probes every ~45 s (`tools/perf/parse_xctrace.py`). A run that reaches "Serious" on iOS is invalid.
+- The probes themselves add load. On the tablet, `dumpsys meminfo` every 15 s causes single 100+ ms frames, which lowers the minimum FPS (average unaffected); set `SAMPLE_PSS=0` for frame-pacing measurements. On iOS an Instruments session runs for 3 s of every ~45 s.
+- Results, conditions, and screenshots of the 2026-10-24 pass are kept in `docs/perf/` (`results/<device>/<experiment>.json` and `.meta.json`; 480 px screenshots). Regenerate the tables with `python3 -I tools/perf/summarize.py docs/perf/results/android --compact`.
+- Renderer comparison: Android uses the "Android Debug Compatibility" preset (`--rendering-method gl_compatibility` embedded); iOS passes the same argument at launch (`APP_ARGS`).
+
 ## Device builds (debug)
 
 Never upload to a store, TestFlight, or Play Console from these steps.
