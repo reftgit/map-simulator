@@ -1,6 +1,7 @@
 extends "res://tests/test_case.gd"
-## Multi-touch behavior of the HUD: native joystick, camera look area, run button.
-## Events go through Input.parse_input_event, like device touches.
+## Multi-touch behavior of the HUD: native joystick, camera look area, run,
+## punch, and roll buttons. Events go through Input.parse_input_event, like
+## device touches.
 
 var hud: UIController
 var input: MobileInputController
@@ -24,6 +25,22 @@ func _look_point() -> Vector2:
 
 func _run_point() -> Vector2:
 	return input.run_button.get_global_rect().get_center()
+
+
+func _punch_point() -> Vector2:
+	return input.punch_button.get_global_rect().get_center()
+
+
+func _roll_point() -> Vector2:
+	return input.roll_button.get_global_rect().get_center()
+
+
+func _key(keycode: Key, pressed: bool, echo := false) -> void:
+	var event := InputEventKey.new()
+	event.physical_keycode = keycode
+	event.pressed = pressed
+	event.echo = echo
+	send_input(event)
 
 
 func test_layout_splits_screen() -> void:
@@ -158,14 +175,22 @@ func _check_reset_on_notification(what: int) -> void:
 	var stick := _joystick_point()
 	touch(0, stick, true)
 	drag(0, stick, stick + Vector2(0, -200))
+	touch(2, _punch_point(), true)
+	touch(3, _roll_point(), true)
+	touch(3, _roll_point(), false)
 	await process_frames(1)
 	check(input.get_move_vector().y < -0.9 and input.is_run_active(), "running forward before the notification")
+	check(input.punch_button.is_down, "punch button held before the notification")
 	tree.root.propagate_notification(what)
 	await process_frames(1)
 	check(input.get_move_vector() == Vector2.ZERO, "movement stops")
 	for action in MobileInputController.ACTIONS:
 		check(not Input.is_action_pressed(action), "%s released" % action)
 	check(not input.is_run_active(), "run toggle off")
+	check(not input.punch_button.is_down and not input.roll_button.is_down, "no action button stays down")
+	check(not input.consume_action_press(&"punch") and not input.consume_action_press(&"roll"), "pending punch and roll presses are dropped")
+	touch(2, _punch_point(), false)
+	check(not input.consume_action_press(&"punch"), "lifting the old punch finger after resume does nothing")
 	# The old finger may still report drags after resume; it must not move the character.
 	drag(0, stick + Vector2(0, -200), stick + Vector2(0, -230))
 	await process_frames(1)
@@ -194,3 +219,107 @@ func test_release_all_touches_clears_state() -> void:
 	check(input.consume_look_delta() == Vector2.ZERO, "pending look input is dropped")
 	drag(0, look + Vector2(50, 0), look + Vector2(100, 0))
 	check(input.consume_look_delta() == Vector2.ZERO, "the dropped finger no longer turns the camera")
+
+
+func test_action_buttons_layout() -> void:
+	await _setup()
+	var view := hud.get_viewport().get_visible_rect()
+	var safe: Rect2 = hud.get_node("SafeArea").get_global_rect()
+	var buttons: Array[TouchButton] = [input.run_button, input.punch_button, input.roll_button]
+	for button in buttons:
+		var rect := button.get_global_rect()
+		check(rect.get_center().x > view.size.x * 0.5, "%s is on the right" % button.name)
+		check(safe.encloses(rect), "%s is inside the safe area" % button.name)
+		check(button.size.x >= 110.0, "%s is at least 110 canvas units wide" % button.name)
+		check(input.look_area.get_global_rect().encloses(rect), "%s sits over the look area, not the joystick zone" % button.name)
+	for i in buttons.size():
+		for j in range(i + 1, buttons.size()):
+			var a := buttons[i]
+			var b := buttons[j]
+			var reach := (a.size.x * 0.5 * a.hit_scale) + (b.size.x * 0.5 * b.hit_scale)
+			var gap := a.get_global_rect().get_center().distance_to(b.get_global_rect().get_center()) - reach
+			check(gap > 0.0, "%s and %s hit areas do not overlap (gap %.0f)" % [a.name, b.name, gap])
+	check(input.punch_button.icon != null and input.roll_button.icon != null, "action buttons have icons")
+
+
+func test_action_buttons_fire_once_on_touch_down() -> void:
+	await _setup()
+	var punch := _punch_point()
+	touch(0, punch, true)
+	check(input.consume_action_press(&"punch"), "touch-down presses punch")
+	check(not input.consume_action_press(&"punch"), "a press is consumed once")
+	drag(0, punch, punch + Vector2(-140, -90))
+	await process_frames(3)
+	check(not input.consume_action_press(&"punch"), "holding and dragging does not repeat the press")
+	check(input.consume_look_delta() == Vector2.ZERO, "dragging from the punch button does not turn the camera")
+	touch(0, punch + Vector2(-140, -90), false)
+	check(not input.consume_action_press(&"punch"), "lifting does not press again")
+	var roll := _roll_point()
+	touch(1, roll, true)
+	drag(1, roll, roll + Vector2(-200, 50))
+	touch(1, roll + Vector2(-200, 50), false)
+	check(input.consume_action_press(&"roll"), "tap presses roll")
+	check(not input.consume_action_press(&"punch"), "roll does not press punch")
+	check(input.consume_look_delta() == Vector2.ZERO, "dragging from the roll button does not turn the camera")
+	check(not input.is_run_active(), "action buttons do not touch the run toggle")
+
+
+func test_joystick_look_and_action_buttons_together() -> void:
+	await _setup()
+	var stick := _joystick_point()
+	var look := _look_point()
+	touch(0, stick, true)
+	touch(1, look, true)
+	drag(0, stick, stick + Vector2(0, -200))
+	touch(2, _punch_point(), true)
+	drag(1, look, look + Vector2(80, 0))
+	touch(3, _roll_point(), true)
+	await process_frames(1)
+	check(input.get_move_vector().y < -0.9, "joystick finger keeps moving forward")
+	check(input.consume_look_delta().x > 0.0, "look finger keeps turning the camera")
+	check(input.consume_action_press(&"punch") and input.consume_action_press(&"roll"), "both buttons pressed while stick and look are held")
+	touch(2, _punch_point(), false)
+	touch(3, _roll_point(), false)
+	drag(1, look + Vector2(80, 0), look + Vector2(120, 0))
+	drag(0, stick + Vector2(0, -200), stick + Vector2(0, -210))
+	await process_frames(1)
+	check(input.consume_look_delta().x > 0.0, "look still works after the button fingers lift")
+	check(input.get_move_vector().y < -0.9, "joystick still works after the button fingers lift")
+
+
+func test_look_drag_over_action_button_stays_look() -> void:
+	await _setup()
+	var start := _look_point()
+	touch(0, start, true)
+	drag(0, start, _punch_point())
+	touch(0, _punch_point(), false)
+	check(not input.consume_action_press(&"punch"), "a look drag that ends on the punch button does not press it")
+	check(input.consume_look_delta() != Vector2.ZERO, "the drag still turns the camera")
+
+
+func test_action_keys() -> void:
+	await _setup()
+	_key(KEY_J, true)
+	_key(KEY_J, true, true)
+	_key(KEY_J, false)
+	check(input.consume_action_press(&"punch"), "J presses punch")
+	check(not input.consume_action_press(&"punch"), "key repeat (echo) does not press again")
+	_key(KEY_SPACE, true)
+	_key(KEY_SPACE, false)
+	check(input.consume_action_press(&"roll"), "Space presses roll")
+	check(not input.consume_action_press(&"punch"), "Space does not press punch")
+
+
+func test_touch_input_fills_one_shot_intent() -> void:
+	await _setup()
+	var source := TouchPlayerInput.new()
+	add_node(source)
+	source.input = input
+	var intent := PlayerIntent.new()
+	touch(0, _roll_point(), true)
+	source.fill_intent(intent, null)
+	check(intent.roll and not intent.punch, "roll tap reaches the intent")
+	intent.clear()
+	source.fill_intent(intent, null)
+	check(not intent.roll, "the same tap does not reach the next tick while the finger is held")
+	touch(0, _roll_point(), false)

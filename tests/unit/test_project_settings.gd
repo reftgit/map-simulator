@@ -54,6 +54,8 @@ func test_input_actions() -> void:
 		&"move_left": KEY_A,
 		&"move_right": KEY_D,
 		&"run": KEY_SHIFT,
+		&"punch": KEY_J,
+		&"roll": KEY_SPACE,
 	}
 	for action: StringName in expected:
 		check(InputMap.has_action(action), "action exists: %s" % action)

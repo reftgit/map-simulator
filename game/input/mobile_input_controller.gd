@@ -9,15 +9,23 @@ extends Control
 ## (buttons, then camera look); a routed finger stays with its control until
 ## release, so camera drags and buttons never interfere. Touches no control
 ## claims fall through to the GUI, where the joystick picks them up.
+##
+## Punch and roll are one-shot presses: a tap on their button (on touch-down)
+## or a press of their key is kept until gameplay consumes it once. Holding
+## does not repeat.
 
-const ACTIONS: Array[StringName] = [&"move_left", &"move_right", &"move_forward", &"move_back", &"run"]
+const ACTIONS: Array[StringName] = [&"move_left", &"move_right", &"move_forward", &"move_back", &"run", &"punch", &"roll"]
+## Actions delivered as one-shot presses (consume_action_press()).
+const ACTION_PRESSES: Array[StringName] = [&"punch", &"roll"]
 ## Touch indices released on the joystick when input is reset.
 const MAX_TOUCHES := 10
 
 @export var joystick: VirtualJoystick
 @export var look_area: TouchLookArea
 @export var run_button: TouchButton
-## Further controls (e.g. debug buttons), routed after the run button and
+@export var punch_button: TouchButton
+@export var roll_button: TouchButton
+## Further controls (e.g. debug buttons), routed after the action buttons and
 ## before the look area.
 @export var extra_controls: Array[TouchControl] = []
 ## Turn running off when the joystick finger lifts.
@@ -27,16 +35,21 @@ const MAX_TOUCHES := 10
 
 var _owners := {}  # touch index -> TouchControl
 var _priority: Array[TouchControl] = []
+var _presses := {}  # action StringName -> true, until consumed
 
 
 func _ready() -> void:
 	mouse_filter = MOUSE_FILTER_IGNORE
-	var ordered: Array[TouchControl] = [run_button]
+	var ordered: Array[TouchControl] = [run_button, punch_button, roll_button]
 	ordered.append_array(extra_controls)
 	ordered.append(look_area)
 	for control in ordered:
 		if control:
 			_priority.append(control)
+	if punch_button:
+		punch_button.pressed.connect(press_action.bind(&"punch"))
+	if roll_button:
+		roll_button.pressed.connect(press_action.bind(&"roll"))
 	if joystick:
 		joystick.released.connect(_on_joystick_released)
 
@@ -52,8 +65,13 @@ func _notification(what: int) -> void:
 			release_all_touches()
 
 
-## Routes a touch event; returns true when a control consumed it.
+## Routes a touch event or records an action key press; returns true when
+## the event was consumed.
 func handle_input_event(event: InputEvent) -> bool:
+	for action in ACTION_PRESSES:
+		if event.is_action_pressed(action):
+			press_action(action)
+			return true
 	var touch := event as InputEventScreenTouch
 	if touch:
 		if touch.pressed:
@@ -66,12 +84,14 @@ func handle_input_event(event: InputEvent) -> bool:
 	return false
 
 
-## Drops every finger and stops all movement, e.g. when the app loses focus
-## or pauses with a finger down. Nothing keeps moving after resume.
+## Drops every finger, pending action presses, and all movement, e.g. when
+## the app loses focus or pauses with a finger down. Nothing keeps moving or
+## fires after resume.
 func release_all_touches() -> void:
 	for control in _priority:
 		control.reset_touch()
 	_owners.clear()
+	_presses.clear()
 	if run_button:
 		run_button.set_toggled(false)
 	if joystick and is_inside_tree():
@@ -90,6 +110,16 @@ func release_all_touches() -> void:
 ## Movement in screen axes: x right, y down (forward is negative y), length 0..1.
 func get_move_vector() -> Vector2:
 	return Input.get_vector(&"move_left", &"move_right", &"move_forward", &"move_back")
+
+
+## Records a one-shot press of `action` (one of ACTION_PRESSES).
+func press_action(action: StringName) -> void:
+	_presses[action] = true
+
+
+## True once per press of `action` since the last call.
+func consume_action_press(action: StringName) -> bool:
+	return _presses.erase(action)
 
 
 func is_run_active() -> bool:

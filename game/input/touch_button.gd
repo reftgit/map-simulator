@@ -1,7 +1,8 @@
 class_name TouchButton
 extends TouchControl
 ## Round on-screen button. HOLD mode is down while a finger is on it; TOGGLE
-## mode flips `toggled_on` on each press.
+## mode flips `toggled_on` on each press. `pressed` fires on touch-down in
+## both modes, which is what one-shot actions (punch, roll) listen to.
 
 signal pressed
 signal released
@@ -11,11 +12,21 @@ enum Mode { HOLD, TOGGLE }
 
 @export var mode := Mode.HOLD
 @export var label := ""
+## Drawn in the middle, above the label if both are set.
+@export var icon: Texture2D
+## Icon size as a fraction of the button diameter.
+@export var icon_scale := 0.6
 ## Hit area as a multiple of the drawn radius, so near misses still count.
 @export var hit_scale := 1.15
 
 var is_down := false
 var toggled_on := false
+## Drawn faded (e.g. an action on cooldown); touches are still accepted.
+var dimmed := false:
+	set(value):
+		if value != dimmed:
+			dimmed = value
+			queue_redraw()
 
 var _touch_index := -1
 
@@ -64,12 +75,16 @@ func _draw() -> void:
 	var center := size * 0.5
 	var lit := is_down or toggled_on
 	var fill := Color(0.95, 0.75, 0.3, 0.55) if lit else Color(0.05, 0.08, 0.1, 0.35)
+	var alpha := 0.35 if dimmed else 1.0
 	draw_circle(center, _radius(), fill)
-	draw_arc(center, _radius(), 0.0, TAU, 48, Color(1, 1, 1, 0.6), 3.0, true)
+	draw_arc(center, _radius(), 0.0, TAU, 48, Color(1, 1, 1, 0.6 * alpha), 3.0, true)
+	if icon:
+		var side := _radius() * 2.0 * icon_scale
+		draw_texture_rect(icon, Rect2(center - Vector2(side, side) * 0.5, Vector2(side, side)), false, Color(1, 1, 1, 0.9 * alpha))
 	if label.is_empty():
 		return
 	var font := get_theme_default_font()
 	var font_size := int(_radius() * 0.6)
 	var text_size := font.get_string_size(label, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size)
 	var baseline := center + Vector2(-text_size.x * 0.5, font.get_ascent(font_size) - text_size.y * 0.5)
-	draw_string(font, baseline, label, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, Color(1, 1, 1, 0.9))
+	draw_string(font, baseline, label, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, Color(1, 1, 1, 0.9 * alpha))

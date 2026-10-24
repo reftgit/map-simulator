@@ -1,9 +1,11 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://game/ui/ui_controller.gd" id="1_ui"]
 [ext_resource type="Script" path="res://game/input/mobile_input_controller.gd" id="2_input"]
 [ext_resource type="Script" path="res://game/input/touch_look_area.gd" id="3_look"]
 [ext_resource type="Script" path="res://game/input/touch_button.gd" id="5_button"]
+[ext_resource type="Texture2D" path="res://game/ui/icons/punch.svg" id="6_punch_icon"]
+[ext_resource type="Texture2D" path="res://game/ui/icons/roll.svg" id="7_roll_icon"]
 
 [node name="HUD" type="CanvasLayer"]
 script = ExtResource("1_ui")
@@ -17,7 +19,7 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="Controls" type="Control" parent="SafeArea" node_paths=PackedStringArray("joystick", "look_area", "run_button", "extra_controls")]
+[node name="Controls" type="Control" parent="SafeArea" node_paths=PackedStringArray("joystick", "look_area", "run_button", "punch_button", "roll_button", "extra_controls")]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -29,6 +31,8 @@ script = ExtResource("2_input")
 joystick = NodePath("Joystick")
 look_area = NodePath("LookArea")
 run_button = NodePath("RunButton")
+punch_button = NodePath("PunchButton")
+roll_button = NodePath("RollButton")
 extra_controls = [NodePath("DebugViewButton"), NodePath("DebugQualityButton")]
 
 [node name="LookArea" type="Control" parent="SafeArea/Controls"]
@@ -72,6 +76,40 @@ mouse_filter = 2
 script = ExtResource("5_button")
 mode = 1
 label = "»"
+
+[node name="PunchButton" type="Control" parent="SafeArea/Controls"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -400.0
+offset_top = -200.0
+offset_right = -260.0
+offset_bottom = -60.0
+grow_horizontal = 0
+grow_vertical = 0
+mouse_filter = 2
+script = ExtResource("5_button")
+icon = ExtResource("6_punch_icon")
+
+[node name="RollButton" type="Control" parent="SafeArea/Controls"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -237.0
+offset_top = -407.0
+offset_right = -113.0
+offset_bottom = -283.0
+grow_horizontal = 0
+grow_vertical = 0
+mouse_filter = 2
+script = ExtResource("5_button")
+icon = ExtResource("7_roll_icon")
 
 [node name="DebugViewButton" type="Control" parent="SafeArea/Controls"]
 visible = false

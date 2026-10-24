@@ -37,6 +37,14 @@ run={
 "deadzone": 0.2,
 "events": [Object(InputEventKey,"physical_keycode":4194325)]
 }
+punch={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"physical_keycode":74)]
+}
+roll={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"physical_keycode":32)]
+}
 
 [input_devices]
 pointing/emulate_touch_from_mouse=true
