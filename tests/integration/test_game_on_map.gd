@@ -3,6 +3,7 @@ extends "res://tests/test_case.gd"
 ## camera collision. Needs assets/istanbul_halic.glb, which is not in Git
 ## (docs/maps/istanbul_halic/README.md).
 
+const MAP_MODEL := "res://assets/istanbul_halic.glb"
 const SPAWN := Vector3(-109.0365, 6.5477, 204.2572)
 const SPAWN_FLOOR_Y := 4.5476
 ## Galata Bridge deck axis toward Karaköy, measured from deck-edge raycasts:
@@ -13,6 +14,12 @@ var game: Node
 var player: PlayerController
 var rig: ThirdPersonCamera
 var input: MobileInputController
+
+
+func skip_reason() -> String:
+	if FileAccess.file_exists(MAP_MODEL):
+		return ""
+	return "%s missing; restore it as in docs/maps/istanbul_halic/README.md" % MAP_MODEL.trim_prefix("res://")
 
 
 func _setup() -> void:

@@ -106,8 +106,10 @@ godot --headless --path . --script res://tests/run_tests.gd -- unit # unit suite
 godot --headless --path . --script res://tests/map/validate_scene.gd # original map validation
 ```
 
-- The runner exits 0 only when every test passes. A test file that fails to load counts as a failure.
-- `tests/unit/` runs without the map. `tests/integration/` loads the real map and needs `assets/istanbul_halic.glb`.
+- Output: one `PASS`, `FAIL`, or `SKIP` line per test, then `RESULT <n> passed, <n> failed, <n> skipped`.
+- A test fails when a check fails **or** when any engine or script error is logged while it runs (captured with a `Logger` via `OS.add_logger`). GDScript runtime errors abort only the failing function, so a test that crashes halfway would otherwise look like a pass. Warnings are printed but do not fail a test. A test file that fails to load counts as a failure.
+- Exit code: `0` no failures and no skips; `1` any failure, an error logged outside a test, or nothing passed; `2` no failures but some tests skipped.
+- `tests/unit/` runs without the map. `tests/integration/` loads the real map; when `assets/istanbul_halic.glb` is missing its tests are reported as `SKIP` (via the file's `skip_reason()`), and the full run exits 2.
 - Tests send touches through `Input.parse_input_event`, the same pipeline device touches use, with positions converted from canvas units to window pixels.
 - Visual check without a device (opens a window):
 
