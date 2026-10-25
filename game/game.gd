@@ -63,6 +63,7 @@ func _ready() -> void:
 		hud.debug_view_requested.connect(cycle_debug_view)
 		hud.debug_quality_requested.connect(cycle_quality_profile)
 		hud.debug_dummy_requested.connect(toggle_training_dummy)
+		hud.debug_car_requested.connect(walk_up_to_vehicle)
 		_log_startup()
 		if _experiment and _experiment.bench:
 			_start_benchmark(_experiment)
@@ -124,6 +125,17 @@ func toggle_training_dummy() -> void:
 	world.add_child(training_dummy)
 	training_dummy.place_above_floor(world.get_spawn_transform() * DUMMY_OFFSET)
 	print("DUMMY on")
+
+
+## Debug builds: puts the player next to the driver's door of the first
+## vehicle (which is far from the player spawn), facing the same way.
+func walk_up_to_vehicle() -> void:
+	if vehicle_interaction.is_driving() or world.vehicles.is_empty():
+		return
+	var vehicle := world.vehicles[0]
+	player.teleport(Transform3D(Basis(Vector3.UP, vehicle.get_follow_yaw()), vehicle.to_global(Vector3(2.4, 0.5, 0.0))))
+	camera_rig.snap_behind_target()
+	print("CAR walk-up")
 
 
 ## Moves the player (or, while driving, the vehicle) to measurement viewpoint

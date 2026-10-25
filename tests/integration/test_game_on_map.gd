@@ -519,3 +519,16 @@ func test_short_benchmark_in_the_vehicle() -> void:
 	var last_view: Transform3D = game.map_definition.debug_viewpoints[-1]
 	check(Vector2(_vehicle().global_position.x - last_view.origin.x, _vehicle().global_position.z - last_view.origin.z).length() < 1.0, "vehicle moved to the last viewpoint (%s)" % _vehicle().global_position)
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(PerfBenchmark.RESULTS_PATH))
+
+
+func test_debug_car_button_walks_up_to_the_vehicle() -> void:
+	await _setup()
+	var button: TouchButton = game.hud.get_node("SafeArea/Controls/DebugCarButton")
+	check(button.visible == OS.is_debug_build(), "CAR button only in debug builds")
+	_tap(button, 1)
+	await physics_frames(30)
+	check(player.is_on_floor(), "standing after the walk-up")
+	check(input.interact_button.visible, "vehicle in reach: interact button shown")
+	_tap(input.interact_button, 1)
+	await physics_frames(3)
+	check(game.vehicle_interaction.is_driving(), "can get in right away")

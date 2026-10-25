@@ -6,7 +6,7 @@ extends CanvasLayer
 ## to get out, and, in debug builds only, shows a performance
 ## overlay, logs the same numbers as "PERF" lines (readable from adb logcat or
 ## the Xcode console), and offers VIEW (measurement viewpoints), Q (quality
-## profile), and DUMMY (training dummy) buttons.
+## profile), DUMMY (training dummy), and CAR (walk-up to the vehicle) buttons.
 
 ## Emitted when the debug VIEW button is tapped.
 signal debug_view_requested
@@ -14,6 +14,8 @@ signal debug_view_requested
 signal debug_quality_requested
 ## Emitted when the debug DUMMY toggle is tapped.
 signal debug_dummy_requested
+## Emitted when the debug CAR button is tapped.
+signal debug_car_requested
 
 ## Extra space between the safe area and the controls, in canvas units.
 @export var edge_margin := 16.0
@@ -35,6 +37,7 @@ var _ticks := 0
 @onready var _debug_view_button: TouchButton = $SafeArea/Controls/DebugViewButton
 @onready var _debug_quality_button: TouchButton = $SafeArea/Controls/DebugQualityButton
 @onready var _debug_dummy_button: TouchButton = $SafeArea/Controls/DebugDummyButton
+@onready var _debug_car_button: TouchButton = $SafeArea/Controls/DebugCarButton
 @onready var _debug_timer: Timer = $DebugTimer
 
 
@@ -46,10 +49,12 @@ func _ready() -> void:
 	_debug_view_button.visible = debug
 	_debug_quality_button.visible = debug
 	_debug_dummy_button.visible = debug
+	_debug_car_button.visible = debug
 	if debug:
 		_debug_view_button.pressed.connect(debug_view_requested.emit)
 		_debug_quality_button.pressed.connect(debug_quality_requested.emit)
 		_debug_dummy_button.pressed.connect(debug_dummy_requested.emit)
+		_debug_car_button.pressed.connect(debug_car_requested.emit)
 		_debug_timer.timeout.connect(_update_debug)
 		_debug_timer.start()
 
