@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="VehicleDefinition" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://game/vehicle/vehicle_definition.gd" id="1_definition"]
+[ext_resource type="Resource" path="res://game/camera/vehicle_camera_profile.tres" id="2_camera"]
+
+[resource]
+script = ExtResource("1_definition")
+display_name = "Compact car (placeholder)"
+mass = 1200.0
+center_of_mass = Vector3(0, 0.25, 0)
+linear_damp = 0.0
+engine_force = 3000.0
+max_speed = 22.0
+reverse_force = 2000.0
+max_reverse_speed = 6.0
+reverse_threshold = 1.0
+brake_force = 30.0
+handbrake_force = 60.0
+coast_brake = 1.0
+max_steer_degrees = 30.0
+steer_at_max_speed_degrees = 5.0
+steer_rate = 3.0
+steer_return_rate = 4.0
+safe_exit_speed = 1.5
+flip_angle_degrees = 70.0
+flip_reset_seconds = 2.0
+flip_reset_max_speed = 2.0
+camera_profile = ExtResource("2_camera")
