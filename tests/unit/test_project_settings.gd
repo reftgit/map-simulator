@@ -63,3 +63,14 @@ func test_input_actions() -> void:
 		key.physical_keycode = expected[action]
 		key.pressed = true
 		check(InputMap.event_is_action(key, action), "%s bound to %s" % [action, OS.get_keycode_string(expected[action])])
+
+
+func test_active_physics_engine_is_detected() -> void:
+	# Godot 4.7.2 maps the "DEFAULT" setting to GodotPhysics3D; the engine is
+	# identified by the class of the world's direct space state (open question 8).
+	# Switching engines is a user decision: update this test with it.
+	var game_script: GDScript = load("res://game/game.gd")
+	var space_state := tree.root.get_world_3d().direct_space_state
+	check(ProjectSettings.get_setting("physics/3d/physics_engine") == "DEFAULT", "engine setting left at DEFAULT")
+	check(space_state.get_class() == "GodotPhysicsDirectSpaceState3D", "direct space state class (%s)" % space_state.get_class())
+	check(game_script.physics_engine_name(space_state) == "GodotPhysics3D", "active engine is GodotPhysics3D (%s)" % game_script.physics_engine_name(space_state))

@@ -148,10 +148,25 @@ func _load_perf_experiment() -> PerfConfig:
 	return PerfConfig.load_file(PerfConfig.USER_PATH, true)
 
 
-## Logs engine-start-to-map-ready and first-frame times (debug builds).
+## Name of the active 3D physics engine. Godot has no getter for it and the
+## project setting may just say "DEFAULT", so it is read from the class of
+## the world's direct space state, which each engine implements itself.
+static func physics_engine_name(space_state: PhysicsDirectSpaceState3D) -> String:
+	var type := space_state.get_class()
+	if type.begins_with("GodotPhysics"):
+		return "GodotPhysics3D"
+	if type.begins_with("JoltPhysics"):
+		return "Jolt Physics"
+	return type
+
+
+## Logs engine-start-to-map-ready and first-frame times and the physics
+## engine (debug builds).
 func _log_startup() -> void:
 	var map_ready_ms := Time.get_ticks_msec()
 	await RenderingServer.frame_post_draw
-	startup = {"map_ready_ms": map_ready_ms, "first_frame_ms": Time.get_ticks_msec()}
-	print("STARTUP map_ready_ms=%d first_frame_ms=%d profile=%s occluders=%s user_dir=%s" % [map_ready_ms,
-			startup.first_frame_ms, quality_profile, JSON.stringify(render_settings.occluder_report), OS.get_user_data_dir()])
+	var physics := physics_engine_name(world.get_world_3d().direct_space_state)
+	startup = {"map_ready_ms": map_ready_ms, "first_frame_ms": Time.get_ticks_msec(), "physics_3d": physics}
+	print("STARTUP map_ready_ms=%d first_frame_ms=%d profile=%s occluders=%s physics_3d=%s (setting %s) user_dir=%s" % [map_ready_ms,
+			startup.first_frame_ms, quality_profile, JSON.stringify(render_settings.occluder_report), physics,
+			ProjectSettings.get_setting("physics/3d/physics_engine"), OS.get_user_data_dir()])
