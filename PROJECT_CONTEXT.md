@@ -2,7 +2,7 @@
 
 Planning context and decision rationale. This file does not describe implemented functionality; see `PROJECT_STATE.md` for that.
 
-Last updated: 2026-10-24 (quality profiles, Claude Code)
+Last updated: 2026-10-25 (Phase 2 character actions, Claude Code)
 
 ## Product vision and goals
 
@@ -55,6 +55,8 @@ Touch requirements that apply from Phase 1:
 ### Phase 2 — Character actions
 
 Punch button and roll button on the right side. Roll follows the movement direction. Punch and roll are managed by the animation/state system and must not break each other or locomotion.
+
+Detailed task of 2026-10-25 (user): one-shot punch/roll fields on the intent; two right-side buttons on press (not hold) plus keys; a short input buffer (~0.15–0.2 s); `PunchState` (startup/active/recovery, slowed movement, a front hitbox only in the active phase) and `RollState` (camera-relative stick direction or facing, constant speed, gravity and `move_and_slide` stay on, cooldown) as new states; rules for their interplay (D14, T18); a `CharacterVisual` interface so an AnimationTree visual can replace the placeholder; a debug training dummy that signals hits; no vehicle, NPC, damage, sound, or real model. Implementation and verification: `PROJECT_STATE.md`.
 
 ### Phase 3 — Vehicle system
 
@@ -151,11 +153,17 @@ PlayerController, PlayerStateMachine, PlayerCombat, PlayerAnimation, ThirdPerson
 - **Decision:** The measured packages are permanent quality profiles: **high** (60 FPS cap, occlusion, 200 m visibility range for trees/lamps/decor/facade detail) and **low** (combo_e: occlusion, 400 m far plane + depth fog, 100 m ranges, 0.6 render scale, shadows off, LOD threshold 4, 30 FPS cap). Default rule: iOS → high, Android → low, anything else → none (scene defaults). No automatic GPU detection in release builds. Debug builds can switch profiles from the overlay (Q).
 - **Acceptance criteria (user):** iPhone 13 Pro, 60 FPS cap, 10 minutes: thermal state ≤ Fair and average FPS ≥ 55. Galaxy Tab A7: average ≥ 30 and 1 % low ≥ 24, measured with PSS sampling off. Low is "best effort"; its visual cost (fog, no shadows, low render scale) is accepted for now; the real fix is the future facade work.
 - **Differences from the measured packages:** none in values. LOD 4 is not in high because adding it on top of occlusion + 200 m changed nothing measurable (primitives 0.20 vs 0.21 M, both Nominal).
+- **Known deviation (user decision, 2026-10-25):** the Galaxy Tab A7's 1 % low at the Galata viewpoint (23.1–23.4 FPS in the profile validation, criterion 24) is a known deviation that depends on the map-level facade work (open question 21). The criterion itself was not relaxed.
 
 ### D13 — Occluders baked once (2026-10-24)
 
 - **Decision:** `tools/bake_occluders.gd` bakes the occluders into `maps/istanbul_halic/istanbul_halic_occluders.scn` (2.3 MB, committed), referenced by `MapDefinition.occluders_path`. Runtime building from collision stays as a fallback with a warning.
 - **Rationale:** No dependence on collision layout at load, a quarter of the vertices (shared vertices), and the map scene stays untouched. The load-time saving is small (tablet 89 ms baked vs 114–118 ms runtime; iPhone 20 vs 21 ms).
+
+### D14 — Phase 2 scope and defaults (2026-10-25, user decision)
+
+- **Decision:** Phase 2 continues with the placeholder capsule (no character model or animation pack is added or researched in this task). Roll defaults: about 0.6 s, about 6 m, 0.8 s cooldown, no damage immunity; all exported and tunable. Punch and roll rules from the task: a punch pressed during a roll is buffered and runs after it; a roll can cancel the punch recovery but not its active phase; neither starts in the air; roll presses during the cooldown are ignored; focus loss or pause ends an action safely and returns to Idle.
+- **Note:** the task prompt also offered, as an alternative, researching a CC0 animated character pack; that option was left as unfilled template text, so the primary choice (placeholder) was applied.
 
 ## Application technical decisions
 
@@ -247,6 +255,36 @@ Decisions made by the implementing agent (Claude Code, 2026-10-24). None was spe
 - **Decision:** Experiments are JSON-defined, debug-only runtime flags (`PerfConfig`), measured by an in-app benchmark and host scripts (`tools/perf/`). They never modify the GLB, the map scene, or import settings, and they are off unless an experiment file is supplied. Since D12 they are applied through the same `RenderSettings` as the profiles, layered on top (experiment > profile > defaults).
 - **Rationale:** The task required measuring without changing defaults or the map; the same definitions can be re-run after any change for comparison.
 
+### T18 — Punch and roll as states with explicit rules
+
+- **Decision:** `PunchState` and `RollState` are child states of `PlayerStateMachine`; the locomotion states only start them (`PlayerState.start_buffered_action()`). Punch phases 0.10 / 0.10 / 0.25 s (startup / active / recovery), speed 0 while punching, facing locked. Roll 0.6 s / 6 m at constant speed, direction snapped at the start, 0.8 s cooldown, horizontal speed limited to 4.5 m/s when it ends. Rules beyond the user's (D14): a roll also cannot cancel the punch **startup** (only recovery is cancellable); a roll press during the roll itself is ignored like one during the cooldown (rolls do not chain); roll wins when both presses are pending; a punch can chain after a punch through the buffer.
+- **Rationale:** States keep each action's timing in one place (T3). Punch timings were chosen by the implementing agent (no user values) as multiples of the 60 Hz tick; they are exported for tuning. Locking startup keeps a started punch committed, the usual convention; the user only specified recovery (cancellable) and active (not).
+
+### T19 — Input buffer
+
+- **Decision:** `ActionBuffer` keeps a press for 0.18 s (`PlayerController.input_buffer_time`, exported) and drops it afterwards. Blocked actions (roll during the roll and its cooldown) ignore presses instead of storing them. The buffer lives in the character, not in the touch input, so AI drivers get the same behaviour.
+- **Consequence:** a punch pressed early in a 0.6 s roll (more than 0.18 s before it ends) is dropped, and a roll pressed in the first ~0.02 s of a punch expires before the recovery. Both are tested and are the intended meaning of "a short window".
+
+### T20 — CharacterVisual interface
+
+- **Decision:** Visual feedback goes through `CharacterVisual` (`set_locomotion(speed, on_floor)`, `play_action(action, duration, impact)`, `stop_action()`), referenced by `PlayerController.visual`. The capsule implementation (`PlaceholderCharacterVisual`) tweens on physics ticks. Gameplay timing (hitbox, phases) stays in the states; `impact` lets an animation align its contact frame. Contract and AnimationTree mapping: `docs/ARCHITECTURE.md`, "CharacterVisual extension point".
+- **Rationale:** The task requires that an AnimationTree visual can be plugged in without touching the controller or the states; with the interface, swapping the `Visual` node is enough. Physics-tick tweens keep the placeholder smooth with physics interpolation.
+
+### T21 — Hit detection only
+
+- **Decision:** `Hitbox` (Area3D on the player, open only during the active phase) and `Hurtbox` (Area3D, physics layer 3 "hurtbox"). At most one hit per hurtbox per activation; a hit emits signals and nothing else.
+- **Rationale:** The task excludes damage, NPCs, and knockback; the areas are the minimal reusable contract for later NPCs.
+
+### T22 — Action buttons
+
+- **Decision:** Punch (140 units, starburst icon) left of the run button and roll (124 units, circular-arrow icon) above it, bottom-right inside the safe area; they fire on touch-down and join `MobileInputController`'s priority list after the run button. The roll button fades during the cooldown. Icons are plain SVG shapes, no text, because the UI language is undecided (open question 6) and the default font lacks pictographs.
+- **Rationale:** Keeps the run button (T7) where the user accepted it; both new buttons are within a thumb's reach of the corner without overlapping hit areas. Fading avoids a roll press that seems to do nothing.
+
+### T23 — Debug training dummy
+
+- **Decision:** A static dummy with a `Hurtbox`, toggled by a DUMMY overlay button in debug builds, placed 1.3 m in front of and 0.35 m right of the spawn (in punch reach from the spawn and visible past the capsule). Off by default.
+- **Rationale:** The task asks for a hit-signalling dummy near the spawn that can be switched from the overlay. Off by default keeps benchmarks and tests comparable with earlier runs.
+
 ## Performance findings and proposed measures
 
 Status: **measured on 2026-10-24, nothing applied.** Full tables and protocol: `PROJECT_STATE.md`, "Performance diagnosis pass". Raw data and screenshots: `docs/perf/`.
@@ -310,7 +348,7 @@ See "Requirements by phase". `PROJECT_STATE.md` records which parts exist.
 
 ## Open questions
 
-1. Character model and animations: none exist in the map package. Where will they come from? A placeholder is used until then.
+1. Character model and animations: none exist in the map package. Where will they come from? A placeholder is used until then (D14). The `CharacterVisual` interface (T20) is where they plug in.
 2. Car model: the map has no vehicles. Source needed before Phase 3.
 3. The settings packages are adopted as profiles (D12). Map-level facade work: see question 21.
 4. Target device list beyond the two test devices. Does the Galaxy Tab A7 class stay a 30 FPS target given the measured visual cost?
@@ -331,6 +369,11 @@ See "Requirements by phase". `PROJECT_STATE.md` records which parts exist.
 19. A user-facing graphics settings menu to pick the profile?
 20. Bringing the map generation scripts (`<SOURCE_PACKAGE>/Istanbul_Halic/source/`) into the repository so map-level work is reproducible.
 21. The map-level facade detail work (lighter facades, LODs, smaller cells): awaiting the user's decision and approval to change the map pipeline.
+22. Damage system: punches only signal hits (T21). Health, damage values, and hit reactions are undefined.
+23. NPCs: none yet. What should they do when hit, and should they use `PlayerController` with an AI `PlayerInputSource` (T3)?
+24. Roll damage immunity (invulnerability frames): none for now (D14). Revisit once damage exists.
+25. Punch tuning: the phase timings and the stop-while-punching rule (T18) were chosen by the agent. Should punching allow slow movement, or turn the body toward the stick at the start?
+26. Should a roll be able to cancel the punch startup too (T18 locks it)?
 
 ## Constraints and priorities
 
@@ -338,4 +381,4 @@ See "Requirements by phase". `PROJECT_STATE.md` records which parts exist.
 - The map original in the source package must not be modified or deleted.
 - Physical device results are reported as NOT RUN until actually performed.
 - No store, TestFlight, or Play Console uploads; no release signing without explicit approval.
-- Current priority: review of the quality profiles; then Phase 2, or the map-level facade work first (user decision).
+- Current priority: review of Phase 2 (punch and roll with the placeholder); then Phase 3 (vehicle) once its prerequisites are settled, or the map-level facade work (user decision).

@@ -1,0 +1,71 @@
+{
+  "config": {
+    "experiment": "profile_default_repeat",
+    "profile": "",
+    "settings": {}
+  },
+  "occluders": {
+    "ms": 99,
+    "occluders": 643,
+    "source": "baked",
+    "triangles": 317518
+  },
+  "profile": "low",
+  "results": [
+    {
+      "avg_fps": 30.0,
+      "draw_calls": 101,
+      "experiment": "profile_default_repeat",
+      "frames": 1800,
+      "low1_fps": 26.1,
+      "min_fps": 21.33,
+      "objects": 346,
+      "primitives": 49407,
+      "profile": "low",
+      "renderer": "mobile",
+      "static_mem_mb": 194,
+      "static_peak_mb": 194,
+      "video_mem_mb": 493,
+      "view": "Spawn",
+      "window": "(2000, 1200)"
+    },
+    {
+      "avg_fps": 30.0,
+      "draw_calls": 93,
+      "experiment": "profile_default_repeat",
+      "frames": 1801,
+      "low1_fps": 26.58,
+      "min_fps": 24.15,
+      "objects": 376,
+      "primitives": 56458,
+      "profile": "low",
+      "renderer": "mobile",
+      "static_mem_mb": 194,
+      "static_peak_mb": 210,
+      "video_mem_mb": 493,
+      "view": "Karaköy street, facing north",
+      "window": "(2000, 1200)"
+    },
+    {
+      "avg_fps": 29.99,
+      "draw_calls": 56,
+      "experiment": "profile_default_repeat",
+      "frames": 1800,
+      "low1_fps": 25.6,
+      "min_fps": 18.23,
+      "objects": 337,
+      "primitives": 47851,
+      "profile": "low",
+      "renderer": "mobile",
+      "static_mem_mb": 194,
+      "static_peak_mb": 210,
+      "video_mem_mb": 493,
+      "view": "Galata street, facing south",
+      "window": "(2000, 1200)"
+    }
+  ],
+  "startup": {
+    "first_frame_ms": 8626,
+    "map_ready_ms": 8123
+  }
+}

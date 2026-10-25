@@ -2,15 +2,15 @@
 
 What actually exists in the repository and how it was verified. Plans and decisions belong in `PROJECT_CONTEXT.md`; code structure, build, and test commands are in `docs/ARCHITECTURE.md`.
 
-Last updated: 2026-10-24 (quality profiles, Claude Code)
+Last updated: 2026-10-25 (Phase 2 character actions, Claude Code)
 
 ## Current phase
 
-**Quality profiles applied and measured (before Phase 2).** iOS starts with the **high** profile and Android with **low**, without flags (log and test evidence below). iPhone 13 Pro, high, 10 minutes at 60 FPS cap: **PASS** (Nominal throughout, 60.0 FPS average). Galaxy Tab A7, low: average **PASS** at all viewpoints; 1 % low ≥ 24 **PASS at Spawn and Karaköy, FAIL at Galata** (23.1 and 23.4 in two runs). Occluders are baked and load from a file. Phase 1 controls were accepted on both devices earlier; the performance diagnosis that led to these profiles is kept below.
+**Phase 2 (punch and roll) implemented and checked on both devices, with the placeholder capsule.** Punch and roll are new states with an input buffer, a cooldown, the interplay rules of the task, a hitbox that is open only in the punch's active phase, and a `CharacterVisual` interface for a future animated model. Automated: 110 tests pass (92 unit, 18 on the real map). Devices: every checklist item PASS by the user on the iPhone 13 Pro and the Galaxy Tab A7 (feel: prepared answer "İyi, değişiklik gerekmez"). Performance regression: iPhone high 10 min Nominal, 60.0 FPS (PASS); Tab A7 low 30.0 FPS average at all three viewpoints (PASS); 1 % low within run-to-run spread; +15 draw calls from the new HUD buttons. Quality profiles (D12) and Phase 1 results below are unchanged.
 
 ## Current objective
 
-Review of the profile results; user decision between starting Phase 2 and doing the map-level facade work first. See "Recommended next task".
+Review of Phase 2; next, the prerequisites of Phase 3 (vehicle). See "Recommended next task".
 
 ## Git
 
@@ -28,18 +28,22 @@ Review of the profile results; user decision between starting Phase 2 and doing 
 - `11e98c7`: performance diagnosis results and proposed measures.
 - `5024dd0`: quality profiles (high/low/none) with a per-platform default; shared `RenderSettings`.
 - `526ac6f`: occluders baked once (`tools/bake_occluders.gd`, `maps/istanbul_halic/istanbul_halic_occluders.scn`).
-- Profile measurements and documentation: the commit after `526ac6f` (`git log`).
+- `c77fb03`: profile measurements and documentation.
+- `2f84908`: punch and roll presses on the intent, HUD buttons, J/Space keys.
+- `35f0209`: Punch and Roll states, action buffer, Hitbox/Hurtbox, CharacterVisual, tests.
+- `bd8294d`: debug training dummy (DUMMY overlay button).
+- Phase 2 device results, performance regression, and documentation: the commit after `bd8294d` (`git log`).
 
 ## Repository contents
 
 | Path | Notes |
 |---|---|
-| `game/` | Game code: composition root, world, player, camera, input, HUD with debug overlay. See `docs/ARCHITECTURE.md`. |
+| `game/` | Game code: composition root, world, player (with Punch/Roll states and `CharacterVisual`), combat areas, camera, input, HUD with debug overlay. See `docs/ARCHITECTURE.md`. |
 | `maps/istanbul_halic/` | Game map scene (GLB + sky/ambient + sun + water shader + vertex-color fix) and its `MapDefinition` (with two debug viewpoints). |
 | `project.godot` | Main scene `res://game/main.tscn`; Mobile renderer; sensor landscape; `expand` aspect; physics interpolation; input actions; mouse emulates touch; ETC2/ASTC import (required for Android export); placeholder icon. |
 | `export_presets.cfg` | "Android Debug" (arm64 APK, `com.mirongi.mapsimulator`), "Android Debug Compatibility" (same, with `--rendering-method gl_compatibility`), and "iOS Debug" (`com.mirongi.mapsimulator.dev`, team `8N7RYA42S6`, project-only export). No passwords or keystore paths. |
 | `icon.svg` | Placeholder app icon (capsule character over water). |
-| `tests/` | Headless runner, 46 unit tests, 8 integration tests, flat-map fixture, original map validation. |
+| `tests/` | Headless runner, 92 unit tests, 18 integration tests, flat-map fixture, original map validation. |
 | `tools/capture_screenshot.gd` | Windowed render to PNG with render stats. |
 | `tools/build_ios_debug.sh` | iOS debug build without contacting the Apple Developer portal; optional `devicectl` install. |
 | `game/quality/` | `RenderSettings` (applies render settings; shared by profiles and experiments), `QualityProfile`, `QualityProfiles` (selection rule), `profiles/high.tres`, `profiles/low.tres`. |
@@ -47,7 +51,7 @@ Review of the profile results; user decision between starting Phase 2 and doing 
 | `maps/istanbul_halic/istanbul_halic_occluders.scn` | Baked occluders, 2,300,873 bytes (643 occluders, 317,518 triangles), referenced by the `MapDefinition`. |
 | `tools/bake_occluders.gd` | Headless occluder bake. |
 | `tools/perf/` | Experiment definitions (`experiments/*.json`), device orchestration (`android_bench.sh`, `ios_bench.sh`, `run_batch.sh`), `parse_xctrace.py`, `summarize.py`. |
-| `docs/perf/` | Diagnosis pass: raw results and conditions (`results/`), 480 px screenshots (`android/`, `ios/`). Profile validation: `profiles/`. 2.4 MB in total. |
+| `docs/perf/` | Diagnosis pass: raw results and conditions (`results/`), 480 px screenshots (`android/`, `ios/`). Profile validation: `profiles/`. Phase 2 regression and HUD screenshots: `phase2/`. 2.6 MB in total. |
 | `build/.gdignore` | Keeps Godot from scanning or packing build output. Everything else in `build/` is ignored by Git. |
 | `main.tscn`, `scripts/` | Original explorer demo, unchanged. Desktop only. |
 | `assets/istanbul_halic.glb` | 502 MB, **not tracked**. Restore: `docs/maps/istanbul_halic/README.md`. |
@@ -55,6 +59,8 @@ Review of the profile results; user decision between starting Phase 2 and doing 
 
 ## Implemented features
 
+- **Phase 2 character actions (all builds):** punch button (starburst icon) and roll button (circular arrow) bottom-right, one-shot on touch-down, J / Space on desktop; 0.18 s input buffer; `PunchState` (0.10 s startup, 0.10 s active with the hitbox open, 0.25 s recovery; the body stops and keeps its facing); `RollState` (6 m in 0.6 s at constant speed toward the camera-relative stick or the facing; gravity and collisions stay on; 0.8 s cooldown; the roll button fades during it); a roll cancels only the punch recovery; a punch pressed late in a roll runs after it; nothing starts in the air; focus loss or pause ends an action and returns to Idle. Visual feedback through `CharacterVisual` (placeholder: fist thrust, tuck-and-turn, lean with speed). `Hitbox` / `Hurtbox` (layer 3) report at most one hit per punch per target; no damage. Details: `docs/ARCHITECTURE.md`, "Character actions".
+- Debug builds only: DUMMY overlay button toggles a training dummy next to the spawn that counts hits (`HITS n`, `DUMMY hits=n` log line).
 - Phase 1 controls: native `VirtualJoystick` (left 42 %), camera drag area (right 58 %), run toggle, camera-relative movement, Idle/Walk/Run states, spring-arm third-person camera, safe-area HUD, map loading with spawn, respawn, and bounds. Details in `docs/ARCHITECTURE.md`.
 - Focus loss and pause release the joystick, the `move_*`/`run` actions, and the run toggle.
 - Debug builds only: overlay with FPS, draw calls, primitives, objects, video memory, engine static memory; `PERF` log line every 2 s; `STARTUP` log line; VIEW button cycling Spawn → Karaköy street (facing north) → Galata street (facing south).
@@ -63,6 +69,71 @@ Review of the profile results; user decision between starting Phase 2 and doing 
 - **Quality profiles (all builds):** high (60 FPS cap, occlusion, 200 m visibility range for trees/lamps/decor/facade detail) and low (occlusion, 400 m far plane + depth fog, 100 m ranges, 0.6 render scale, shadows off, LOD threshold 4, 30 FPS cap). Default: iOS → high, Android → low, desktop → none. `--quality=<name>` overrides; debug builds can cycle profiles with the Q button.
 - **Baked occluders** loaded from `maps/istanbul_halic/istanbul_halic_occluders.scn` when a profile enables occlusion; runtime building from collision remains as a fallback with a warning.
 - Debug builds only: performance experiment flags (`PerfConfig`) layered on top of the profile (experiment > profile > defaults), and an automatic benchmark (`PerfBenchmark`) driven by host scripts in `tools/perf/`. Off unless an experiment file or `--perf-config` is given.
+
+## Phase 2 — character actions (2026-10-25)
+
+### Builds and devices
+
+Debug builds from commit `bd8294d` on the same two devices as before (iPhone 13 Pro, iOS 26.6.1; Galaxy Tab A7 SM-T500, Android 12). Android: "Android Debug" APK, 226.0 MB, `adb install`. iOS: `tools/build_ios_debug.sh <udid>` (bundle `com.mirongi.mapsimulator.dev`, team `8N7RYA42S6`, automatic signing **without** `-allowProvisioningUpdates`, `devicectl` install).
+
+### Behaviour and automated evidence
+
+| Behaviour | Evidence (tests, macOS, Godot 4.7.2) |
+|---|---|
+| Buttons on the right, inside the safe area, over the look area, hit areas not overlapping; icons | `test_action_buttons_layout` |
+| One-shot press on touch-down; holding or dragging does not repeat; a drag from the button does not turn the camera; a look drag ending on a button does not press it | `test_action_buttons_fire_once_on_touch_down`, `test_look_drag_over_action_button_stays_look` |
+| Joystick + camera drag + punch + roll at the same time | `test_joystick_look_and_action_buttons_together` |
+| J punches, Space rolls; key repeat ignored | `test_action_keys`, `test_input_actions` |
+| Intent gets a press once | `test_touch_input_fills_one_shot_intent` |
+| Punch: duration 27 ± 1 ticks; hitbox open exactly in the 6 active ticks; back to Idle | `test_punch_phases_and_hitbox_timing` |
+| Punch stops the body, facing locked; Run resumes afterwards at full speed | `test_punch_slows_movement_and_locomotion_resumes`, `test_punch_on_bridge_then_walk` |
+| Roll follows the camera-relative stick (camera turned 90°, rolled toward the camera's forward) | `test_roll_follows_camera_and_camera_follows_roll` |
+| Roll direction from the stick, distance 6 m ± 0.3, body turned; without stick along the facing | `test_roll_follows_move_direction_for_its_distance`, `test_roll_without_stick_goes_where_the_body_faces`, `test_roll_direction` |
+| Punch pressed in the last 0.1 s of a roll runs right after it; pressed early, it expires | `test_punch_pressed_late_in_roll_runs_right_after`, `test_punch_pressed_early_in_roll_expires` |
+| Roll cancels the punch recovery at once; it cannot cancel startup or active (it starts on the first recovery tick) | `test_roll_cancels_punch_recovery`, `test_roll_cannot_cancel_punch_active_phase`, `test_roll_cannot_cancel_punch_startup`, `test_roll_pressed_at_punch_start_expires_before_recovery` |
+| No action starts in the air; expired presses do not fire on landing | `test_actions_do_not_start_in_the_air` |
+| Roll presses during the cooldown (and during the roll) are ignored | `test_roll_press_during_cooldown_is_ignored`, `test_roll_press_during_roll_is_ignored` |
+| Focus loss / pause during a punch or roll: Idle at once, hitbox closed, visual reset, nothing buffered fires, walking works | `test_focus_out_ends_punch`, `test_pause_ends_punch`, `test_focus_out_ends_roll`, `test_pause_ends_roll` |
+| Focus loss / pause: no action button stays down, pending presses dropped | `test_focus_out_releases_held_joystick_and_run`, `test_pause_releases_held_joystick_and_run` |
+| One hit per punch per target, also when the target re-enters during the active phase; nothing behind is hit | `test_hitbox_hits_a_hurtbox_once_per_punch`, `test_target_reentering_during_active_phase_is_hit_once` |
+| Training dummy on the real map: next to the spawn, on the deck, one hit per punch, removed by the second toggle | `test_training_dummy_is_hit_once_per_punch`, `test_debug_dummy_button_requests_the_dummy` |
+| Visual replaceable: a recording visual receives `play punch 0.45 0.10`, `stop`, `play roll 0.60 -1.00`, `stop` and `set_locomotion` every tick | `test_visual_can_be_replaced`; placeholder poses: `test_placeholder_visual_animates_and_resets` |
+| Camera during a roll: pivot on the interpolated player in every frame, never steps backwards, travelled 6.01 m over 89 frames | `test_roll_follows_camera_and_camera_follows_roll` |
+| Real map: roll along Galata Bridge then walk, still on the deck; a roll toward the deck edge falls off and respawns | `test_roll_on_bridge_then_walk`, `test_roll_off_the_deck_edge_respawns` |
+
+Mutation checks (each rule broken on purpose, then restored): recovery not cancellable → 3 tests fail; any phase cancellable → 3 fail; actions allowed in the air → 1 fails; presses kept while blocked → 2 fail; no interrupt on focus loss → 4 fail; no per-activation hit de-duplication → 1 fails (`test_target_reentering_during_active_phase_is_hit_once`, added because the first version of the hit test did not catch it).
+
+### On-device checklist (user, 2026-10-25)
+
+| Item | iPhone 13 Pro | Galaxy Tab A7 |
+|---|---|---|
+| Punch, roll, run buttons reachable with the right thumb; no clash with notch or edges | PASS (user: "Rahat, çakışma yok"); screenshot `docs/perf/phase2/iphone_hud.jpg`: controls inside the notch-side inset and above the home indicator | PASS (user); `docs/perf/phase2/tablet_hud.jpg` (no notch) |
+| Joystick + camera drag + punch/roll together; a drag starting on a button does not turn the camera | PASS (user: "Hepsi çalıştı") | PASS (user) |
+| Roll along the bridge then walk; roll toward the railing falls into the water and respawns | PASS (user: "Üçü de doğru") | PASS (user) |
+| Training dummy: count rises by one per punch | PASS (user; screen afterwards shows `HITS 4`, `docs/perf/phase2/iphone_dummy_hits.jpg`) | PASS (user). The tablet log of the first ~95 minutes of the session had no `DUMMY` line; after the agent asked, the log shows `DUMMY on`, `DUMMY off`, `DUMMY on`, `DUMMY hits=1`, `DUMMY hits=2` |
+| Feel of punch and roll, in the user's words | The user chose the prepared answer "İyi, değişiklik gerekmez"; no free-text sentence | Same |
+
+Answers are the user's; the agent cannot observe touches. The roll on the bridge leaves no log line on the devices, so it rests on the user's answer (and on the integration tests).
+
+### Performance regression (profile_default, cold start, same protocol as the profile validation)
+
+Before = profile validation of 2026-10-24 (`docs/perf/profiles/results/`), after = this build (`docs/perf/phase2/results/`). Tablet runs without PSS sampling; two runs each.
+
+| Device, view | Avg FPS before → after | 1 % low before → after | Min FPS before → after | Draw calls before → after |
+|---|---|---|---|---|
+| Tab A7 low, Spawn | 30.01, 30.00 → 30.01, 30.00 | 24.81, 27.44 → 23.96, 26.10 | 22.37, 25.09 → 21.51, 21.33 | 86 → 101 |
+| Tab A7 low, Karaköy | 30.00, 30.00 → 30.00, 30.00 | 24.80, 24.65 → 23.86, 26.58 | 23.79, 22.86 → 19.88, 24.15 | 78 → 93 |
+| Tab A7 low, Galata | 30.00, 30.00 → 30.00, 29.99 | 23.10, 23.38 → 23.12, 25.60 | 21.89, 22.35 → 22.13, 18.23 | 41 → 56 |
+| iPhone high, Spawn | 59.99 → 59.99 | 42.71 → 42.42 | 37.79 → 40.94 | 248 → 263 |
+| iPhone high, Karaköy | 60.00 → 59.99 | 42.25 → 41.73 | 40.65 → 40.77 | 147 → 162 |
+| iPhone high, Galata | 60.00 → 59.99 | 40.37 → 40.42 | 39.83 → 39.89 | 78 → 93 |
+
+- **iPhone 10-minute session** (Karaköy, `session_profile_default`): 59.98–60.0 FPS every minute (before 59.97–60.0), 1 % low 41.5–42.6 (before 41.4–41.7), thermal state Nominal at all 13 probes (before: Nominal), footprint 1,021–1,022 MiB (before 1,017–1,034). The profile run also stayed Nominal (footprint peak 1,034 MiB, as before). **PASS** (≤ Fair, ≥ 55 FPS).
+- **Tab A7 average ≥ 30 at all three viewpoints: PASS** in both runs. Thermal status 0; battery 23.5 → 26.5 °C and 27.0 → 28.5 °C (before: 28.5 → 30.0 and 31.0 → 31.5 °C).
+- **Draw calls +15 at every viewpoint on both devices:** the three new HUD buttons (punch, roll, DUMMY). On the Mac, hiding them took the frame from 105 to 90 draw calls (the whole HUD: 38). Primitives unchanged.
+- **1 % low:** the largest drop against the earlier first run is 0.94 FPS (Karaköy, run 1); against the earlier repeat, Spawn run 1 is 3.48 lower, but the new repeat is 26.10. Identical runs differ by 2.1–2.7 FPS per viewpoint in both builds, so no systematic regression is visible; the HUD's extra draw calls are a small CPU cost that these runs cannot separate from the spread. D12's 1 % low ≥ 24: run 1 below at all three (23.96 / 23.86 / 23.12, marginal), run 2 above at all three (26.10 / 26.58 / 25.60), Galata included; Galata stays a known deviation (D12).
+- **Startup:** tablet map ready 9,431 and 8,123 ms; iPhone 1,660 ms (before 1,506–1,563 ms; not investigated).
+- **Protocol incident:** the first tablet attempt ran while the tablet was on its lock screen (it has a PIN; `run_batch.sh` only wakes the screen), so the app never came to the foreground and the run timed out after 40 min with no results. It was repeated after the user unlocked the tablet; the failed attempt is not in the tables.
 
 ## Device results (2026-10-24, debug builds)
 
@@ -319,7 +390,8 @@ Thermal state: Nominal at all 13 probes (0–601 s). App footprint 1,022–1,044
 | Behavior | Evidence |
 |---|---|
 | Project imports cleanly. | `godot --headless --path . --import`: exit 0, no errors or warnings (after adding `build/.gdignore`). |
-| Automated tests pass. | `run_tests.gd` → `RESULT 75 passed, 0 failed, 0 skipped`, exit 0; unit only → `RESULT 61 passed, 0 failed, 0 skipped`, exit 0; without the GLB → `RESULT 61 passed, 0 failed, 14 skipped`, exit 2 (2026-10-24, after the quality profiles). |
+| Automated tests pass. | `run_tests.gd` → `RESULT 110 passed, 0 failed, 0 skipped`, exit 0; unit only → `RESULT 92 passed, 0 failed, 0 skipped`, exit 0; without the GLB → `RESULT 92 passed, 0 failed, 18 skipped`, exit 2 (2026-10-25, Phase 2; GLB SHA-256 re-verified afterwards). |
+| Phase 2 actions. | See "Phase 2 — character actions", including the mutation checks. |
 | Quality profiles. | `test_render_settings.gd` (platform rule, `--quality`, profile values equal the measured packages, experiment > profile precedence, low profile applied, switching back restores every default, occluder fallback with warning, shared vertices keep triangles); integration: `test_profiles_switch_on_the_real_map`, `test_profile_uses_baked_occluders`, `test_baked_occluders_match_runtime_build` (643 occluders, 317,518 triangles, same extent). |
 | Performance flags still work and do nothing by default. | `test_perf_experiments.gd` (parsing, only given keys become settings, typo and unknown-profile rejection, every experiment file parses and older ones pin profile none, frame statistics, slugs); integration: `test_perf_categories_cover_every_map_mesh`, `test_no_perf_experiment_by_default`, `test_short_benchmark_on_map`. |
 | Runtime errors fail tests. | Before the fix, a null method call and an error after `await` were both reported PASS (exit 0). After: both FAIL with "logged error: …", exit 1. |
@@ -331,6 +403,12 @@ Thermal state: Nominal at all 13 probes (0–601 s). App footprint 1,022–1,044
 | Phase 1 behaviors (routing, speeds, camera collision on 192 street samples, respawn, safe-area math). | Unit and integration suites; see `docs/ARCHITECTURE.md`. |
 
 ## Unverified behaviors
+
+- Phase 2 feel in the user's own words: the user chose a prepared answer on both devices.
+- Roll on the bridge on devices: no log evidence (user answer only); covered by integration tests on the same map.
+- Focus loss during a punch or roll on a device: covered by unit tests only.
+- Whether the +15 HUD draw calls measurably affect the tablet's 1 % low: below the run-to-run spread.
+- iPhone startup 1,660 ms vs 1,506–1,563 ms before: one run, not investigated.
 
 - iOS process launch time to first frame (only engine-internal times were measured).
 - iPhone single measures without a frame cap and the tablet's 10-minute session: not run (see "Not run").
@@ -346,6 +424,12 @@ Thermal state: Nominal at all 13 probes (0–601 s). App footprint 1,022–1,044
 - Codex reading `AGENTS.md`: not tested.
 
 ## Known bugs and limitations
+
+- Placeholder character: punch and roll are shown with capsule tweens; no model or animations (`CharacterVisual` is ready for them).
+- The debug "DUMMY" label is wider than its 96-unit button on both devices (cosmetic, debug builds only).
+- Punches only signal hits; no damage, reactions, or NPCs (open questions 22–23 in `PROJECT_CONTEXT.md`).
+- A punch pressed more than 0.18 s before a roll ends, or a roll pressed in the first ~0.02 s of a punch, is dropped by design (T19).
+- The perf batch cannot unlock a tablet with a PIN; unlock it before starting (a locked tablet produced a 40-minute run without results).
 
 - Galaxy Tab A7 with the low profile: 1 % low at Galata 23.1–23.4 FPS, below the user's 24 FPS criterion; the visual cost of low (fog, no shadows, 0.6 render scale, blank nearby facades from chunk-granular ranges) is accepted for now (D12).
 - Without a profile (desktop "none", or an experiment pinning "none") the map is as heavy as before: tablet 5.8–7.7 FPS.
@@ -372,19 +456,29 @@ Thermal state: Nominal at all 13 probes (0–601 s). App footprint 1,022–1,044
 
 ## Required manual actions
 
-- **iPhone: set Auto-Lock back to its previous value** if it is still "Never" (set for the measurements).
-- Decide whether the Galata 1 % low shortfall on the tablet blocks Phase 2.
+- **iPhone: set Auto-Lock back to its previous value** (set to "Never" again for the Phase 2 measurements).
+- Phase 3 prerequisites: a car model (source and license) and the vehicle physics decision (open questions 2 and 8 in `PROJECT_CONTEXT.md`).
+- Optionally describe the feel of punch and roll in your own words, and answer open questions 22–26 (damage, NPCs, roll immunity, punch tuning, startup cancel).
 - Decide on the map-level facade work and on bringing the map generation scripts into the repository (open questions 20–21 in `PROJECT_CONTEXT.md`).
 - Later: create the new Apple Developer account, then update the team ID and bundle ID (decision D8).
 - Provide or choose character and car models; decide the app name and icon.
 
 ## Current priorities
 
-1. Review of the profile results.
-2. User decision: Phase 2 now, or the facade work first.
+1. Review of Phase 2.
+2. Phase 3 prerequisites (car model, physics engine), or the facade work first (user decision).
 
 ## Recommended next task
 
-Phase 2 (punch, roll, animation/state) can start: the iPhone meets its criterion with the high profile, and the tablet holds a 30 FPS average with the low profile, so animation and input work can be judged on both devices. The tablet's Galata 1 % low (23.1–23.4 vs 24) is the one open criterion; it is unlikely to be fixed by more settings, since that view already draws only 41 draw calls. Run the profile benchmark (`tools/perf/experiments/profile_default.json`) after Phase 2 to catch regressions from the character model and animations.
+**Phase 3 (vehicle), after two user decisions.** Phase 2 meets its acceptance criteria on both devices, and the performance profiles still hold with it, so the next mechanic can be judged on both devices.
 
-The map-level facade work is the lasting fix for the tablet's quality and the remaining margin. Prerequisites: the user's approval to change the map pipeline; the generation scripts and data from `<SOURCE_PACKAGE>/Istanbul_Halic/source/` brought into the repository (or a reproducible copy), so the GLB can be rebuilt; a decision on the facade approach (lighter geometry, textured or shader windows, smaller cells); and re-baking occluders and re-running the same benchmarks afterwards.
+Prerequisites:
+
+- **Car model (open question 2):** the map has no vehicles. Either the user supplies a model, or a CC0 low-poly car is chosen with its license recorded in `PROJECT_CONTEXT.md`, or Phase 3 starts with a placeholder box car (the specification allows placeholders) and the model is swapped in later. A placeholder lets the controls, camera, and enter/exit logic be built and tested without waiting.
+- **Vehicle physics (open question 8):** the project uses the "DEFAULT" 3D physics engine setting; Godot 4.7.2 also offers the built-in Jolt Physics. Which engine "DEFAULT" maps to in 4.7.2 was not determined in this task. Decide between `VehicleBody3D` (wheel raycasts, engine-independent scene code) and a custom raycast car on a `RigidBody3D`, and whether to switch to Jolt, before writing the controller; a switch would need the Phase 1–2 test suite and a device run repeated.
+- **Collision gaps:** roads and pavements have no collision of their own (the walkable surface is the `Ground_*` terrain) and railings have none (open question 12). A car will drive on the terrain and can leave bridge decks.
+- **Performance budget:** the tablet holds 30 FPS with little 1 % low margin; a car body, wheels, and vehicle physics add CPU work. Re-run `profile_default` afterwards, as in this task.
+
+Suggested acceptance (from the specification): an interaction button appears near the car; entering hides the on-foot controls and shows steering, throttle, brake/reverse, handbrake, and exit; the camera switches to a vehicle `CameraProfile` through `set_target()`; exiting at unsafe speed is blocked and restores the on-foot controls; the vehicle code is structured for other vehicle types; tests for enter/exit, control routing, and the exit-speed rule; device checklist and the same performance regression on both devices.
+
+The map-level facade work remains the lasting fix for the tablet's quality and frame-time margin (prerequisites unchanged: user approval of map pipeline changes; the generation scripts and data from `<SOURCE_PACKAGE>/Istanbul_Halic/source/` brought into the repository; a facade approach; re-baking occluders and re-running the benchmarks).
