@@ -421,3 +421,86 @@ func test_training_dummy_is_hit_once_per_punch() -> void:
 	game.toggle_training_dummy()
 	await physics_frames(2)
 	check(game.training_dummy == null and not is_instance_valid(dummy), "second toggle removes the dummy")
+
+
+func _vehicle() -> VehicleController:
+	return game.world.vehicles[0]
+
+
+## Teleports the player next to the vehicle's driver door and gets in.
+func _get_in() -> void:
+	var vehicle := _vehicle()
+	player.teleport(Transform3D(Basis.IDENTITY, vehicle.to_global(Vector3(2.2, 0.2, 0))))
+	await physics_frames(20)
+	_tap(input.interact_button, 1)
+	await physics_frames(3)
+
+
+func test_vehicle_parked_on_a_flat_karakoy_street() -> void:
+	await _setup()
+	check(game.map_definition.vehicle_spawns.size() == 1 and game.world.vehicles.size() == 1, "one vehicle spawned from the map definition")
+	var vehicle := _vehicle()
+	await physics_frames(60)
+	var spawn: Transform3D = game.map_definition.vehicle_spawns[0]
+	check(Vector2(vehicle.global_position.x - spawn.origin.x, vehicle.global_position.z - spawn.origin.z).length() < 0.3, "at its spawn (%s)" % vehicle.global_position)
+	check(vehicle.global_basis.y.dot(Vector3.UP) > 0.99, "upright")
+	check(vehicle.linear_velocity.length() < 0.1, "at rest")
+	check(vehicle.wheels.all(func(wheel: VehicleWheel3D) -> bool: return wheel.is_in_contact()), "all four wheels on the ground")
+	var ground := player.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(vehicle.global_position + Vector3.UP * 3, vehicle.global_position + Vector3.DOWN * 3, 1))
+	check(not ground.is_empty() and str(ground.collider.get_path()).contains("Ground_"), "on the Ground_ terrain (%s)" % [ground.get("collider")])
+	check((-spawn.basis.z).dot(vehicle.global_basis.z) > 0.999, "faces along the street (the spawn's -Z)")
+	var to_bridge := Vector2(vehicle.global_position.x - SPAWN.x, vehicle.global_position.z - SPAWN.z).length()
+	check(to_bridge > 150.0, "well away from the bridge spawn (%.0f m)" % to_bridge)
+
+
+func test_vehicle_drives_five_seconds_along_the_street() -> void:
+	await _setup()
+	await _get_in()
+	var vehicle := _vehicle()
+	check(game.vehicle_interaction.is_driving(), "in the vehicle")
+	var start := vehicle.global_position
+	_tap(input.throttle_button, 2)
+	touch(2, input.throttle_button.get_global_rect().get_center(), true)
+	var lowest := 1.0
+	for i in 300:
+		await tree.physics_frame
+		lowest = minf(lowest, vehicle.global_basis.y.dot(Vector3.UP))
+	var travelled := Vector2(vehicle.global_position.x - start.x, vehicle.global_position.z - start.z).length()
+	var speed := vehicle.get_forward_speed()
+	touch(2, input.throttle_button.get_global_rect().get_center(), false)
+	print("     vehicle 5 s full throttle: %.1f m, end speed %.1f m/s, lowest up %.3f" % [travelled, speed, lowest])
+	check(travelled >= 35.0, "at least 35 m in 5 s of throttle (%.1f m)" % travelled)
+	check(speed > 10.0, "still accelerating at the end, not stuck on a kerb or wall (%.1f m/s)" % speed)
+	check(lowest > 0.95, "stays upright (%.3f)" % lowest)
+	var heading := Vector2(vehicle.global_basis.z.x, vehicle.global_basis.z.z).normalized()
+	var spawn_forward := -(game.map_definition.vehicle_spawns[0] as Transform3D).basis.z
+	check(heading.dot(Vector2(spawn_forward.x, spawn_forward.z)) > 0.98, "kept straight along the street")
+
+
+func test_vehicle_reset_takes_the_driver_along() -> void:
+	await _setup()
+	await _get_in()
+	var vehicle := _vehicle()
+	vehicle.global_position = Vector3(vehicle.global_position.x, game.map_definition.kill_height - 5.0, vehicle.global_position.z)
+	await physics_frames(3)
+	var spawn: Transform3D = game.map_definition.vehicle_spawns[0]
+	check(Vector2(vehicle.global_position.x - spawn.origin.x, vehicle.global_position.z - spawn.origin.z).length() < 0.5, "vehicle back at its spawn")
+	check(game.vehicle_interaction.is_driving(), "still driving after the reset")
+	check(player.global_position.distance_to(vehicle.seat.global_position) < 0.05, "the driver went along")
+	var respawns := [0]
+	game.world.body_respawned.connect(func(_body: Node3D) -> void: respawns[0] += 1)
+	await physics_frames(30)
+	check(respawns[0] == 0, "the hidden player is not respawned by the world while driving")
+
+
+func test_view_cycle_moves_the_vehicle_while_driving() -> void:
+	await _setup()
+	await _get_in()
+	game.cycle_debug_view()
+	await physics_frames(60)
+	var vehicle := _vehicle()
+	var target: Transform3D = game.map_definition.debug_viewpoints[0]
+	check(Vector2(vehicle.global_position.x - target.origin.x, vehicle.global_position.z - target.origin.z).length() < 0.5, "vehicle moved to the viewpoint and stays there on the slope (%s)" % vehicle.global_position)
+	var heading := Vector2(vehicle.global_basis.z.x, vehicle.global_basis.z.z).normalized()
+	check(heading.dot(Vector2(-target.basis.z.x, -target.basis.z.z).normalized()) > 0.99, "facing the viewpoint direction")
+	check(game.vehicle_interaction.is_driving() and rig.target == vehicle, "still driving, camera on the vehicle")

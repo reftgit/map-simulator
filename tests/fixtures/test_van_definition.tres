@@ -16,6 +16,7 @@ max_reverse_speed = 4.0
 reverse_threshold = 0.8
 brake_force = 45.0
 handbrake_force = 90.0
+hold_speed = 0.5
 coast_brake = 2.0
 max_steer_degrees = 26.0
 steer_at_max_speed_degrees = 10.0

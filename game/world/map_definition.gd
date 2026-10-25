@@ -12,6 +12,10 @@ extends Resource
 @export var bounds := Rect2()
 ## Bodies that fall below this height are respawned.
 @export var kill_height := -5.0
+## Vehicles parked at load, one per entry; they reset here. Like the player
+## spawn, a transform faces its -Z; VehicleController.place_at() turns the
+## vehicle body, which drives along +Z, to match.
+@export var vehicle_spawns: Array[Transform3D] = []
 ## Baked OccluderInstance3D scene (tools/bake_occluders.gd). Without it,
 ## occluders are built from the map's collision at load and a warning is logged.
 @export_file("*.scn", "*.tscn") var occluders_path := ""

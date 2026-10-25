@@ -29,6 +29,9 @@ extends Resource
 @export var handbrake_force := 60.0
 ## Braking when no pedal is pressed (rolling resistance).
 @export var coast_brake := 1.0
+## Below this speed (m/s) with no pedal pressed, the brakes hold the vehicle
+## (it does not roll away on slopes).
+@export var hold_speed := 0.5
 
 @export_group("Steering")
 @export var max_steer_degrees := 30.0

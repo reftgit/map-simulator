@@ -4,6 +4,8 @@ extends Node
 ## other up; they are wired here.
 
 @export var map_definition: MapDefinition
+## Parked at each of the map's vehicle spawns.
+@export var vehicle_scene: PackedScene
 
 ## Debug builds: training dummy position relative to the spawn (m, forward is
 ## -Z). Close enough that a punch from the spawn reaches it, and a little to
@@ -47,6 +49,9 @@ func _ready() -> void:
 	vehicle_interaction.setup(player, camera_rig, hud.input, vehicle_input)
 	vehicle_interaction.entered.connect(_on_vehicle_entered)
 	vehicle_interaction.exited.connect(_on_vehicle_exited)
+	if vehicle_scene:
+		for vehicle in world.spawn_vehicles(vehicle_scene):
+			vehicle_interaction.register_vehicle(vehicle)
 
 	render_settings = RenderSettings.new(world.map_root, camera_rig.camera, get_viewport(), map_definition.occluders_path)
 	if OS.is_debug_build():
@@ -121,12 +126,16 @@ func toggle_training_dummy() -> void:
 	print("DUMMY on")
 
 
-## Moves the player to measurement viewpoint `index` (0 is the spawn).
+## Moves the player (or, while driving, the vehicle) to measurement viewpoint
+## `index` (0 is the spawn).
 func show_debug_view(index: int) -> void:
 	var views: Array[Transform3D] = [world.get_spawn_transform()]
 	views.append_array(map_definition.debug_viewpoints)
 	_view_index = index
-	player.teleport(views[index])
+	if vehicle_interaction.is_driving():
+		vehicle_interaction.vehicle.place_at(views[index])
+	else:
+		player.teleport(views[index])
 	camera_rig.snap_behind_target()
 	hud.view_name = get_view_names()[index]
 	print("VIEW ", hud.view_name)

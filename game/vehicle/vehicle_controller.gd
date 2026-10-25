@@ -133,6 +133,18 @@ func find_exit_transform(shape: Shape3D, shape_height: float, exclude: Array[RID
 	return null
 
 
+## Puts the vehicle at `target`, facing its -Z (the convention of map spawns
+## and viewpoints), at rest. With `as_spawn`, resets come back here.
+func place_at(target: Transform3D, as_spawn := false) -> void:
+	global_transform = Transform3D(target.basis * Basis(Vector3.UP, PI), target.origin)
+	if as_spawn:
+		spawn_transform = global_transform
+	linear_velocity = Vector3.ZERO
+	angular_velocity = Vector3.ZERO
+	steer = 0.0
+	reset_physics_interpolation()
+
+
 func reset_to_spawn() -> void:
 	global_transform = spawn_transform
 	linear_velocity = Vector3.ZERO
@@ -174,7 +186,8 @@ static func steer_angle(input: float, speed: float, def: VehicleDefinition) -> f
 ## rear wheels, from the pedals at forward speed `speed`:
 ## throttle accelerates (and first stops a vehicle rolling backwards); brake
 ## slows a vehicle moving forward faster than reverse_threshold and reverses
-## below it; both pedals brake; the handbrake cuts the engine.
+## below it; both pedals brake; no pedal coasts, or holds below hold_speed;
+## the handbrake cuts the engine.
 static func drive_command(input: VehicleIntent, speed: float, def: VehicleDefinition) -> Dictionary:
 	var engine := 0.0
 	var brake := def.coast_brake
@@ -194,6 +207,8 @@ static func drive_command(input: VehicleIntent, speed: float, def: VehicleDefini
 		else:
 			engine = -def.reverse_force * input.brake * clampf(1.0 + speed / def.max_reverse_speed, 0.0, 1.0)
 			brake = 0.0
+	elif absf(speed) < def.hold_speed:
+		brake = def.brake_force
 	var handbrake := def.handbrake_force if input.handbrake else 0.0
 	if input.handbrake:
 		engine = 0.0

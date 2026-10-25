@@ -1,14 +1,16 @@
 class_name WorldManager
 extends Node3D
 ## Loads the active map and keeps tracked bodies inside it: respawns them below
-## the kill height and holds them inside the playable bounds. Knows nothing
-## about input, camera, or UI.
+## the kill height and holds them inside the playable bounds. Parks the map's
+## vehicles (which reset themselves). Knows nothing about input, camera, or UI.
 
 signal map_loaded(definition: MapDefinition)
 signal body_respawned(body: Node3D)
 
 var definition: MapDefinition
 var map_root: Node
+## Vehicles placed by spawn_vehicles().
+var vehicles: Array[VehicleController] = []
 
 var _tracked: Array[Node3D] = []
 
@@ -27,7 +29,22 @@ func unload_map() -> void:
 	if map_root:
 		map_root.queue_free()
 		map_root = null
+	for vehicle in vehicles:
+		vehicle.queue_free()
+	vehicles.clear()
 	definition = null
+
+
+## Parks an instance of `scene` at each of the map's vehicle spawns; each
+## resets there, and below the map's kill height.
+func spawn_vehicles(scene: PackedScene) -> Array[VehicleController]:
+	for spawn in definition.vehicle_spawns:
+		var vehicle := scene.instantiate() as VehicleController
+		add_child(vehicle)
+		vehicle.place_at(spawn, true)
+		vehicle.kill_height = definition.kill_height
+		vehicles.append(vehicle)
+	return vehicles
 
 
 func get_spawn_transform() -> Transform3D:

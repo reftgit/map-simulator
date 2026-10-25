@@ -66,7 +66,9 @@ func _intent(throttle := 0.0, brake := 0.0, handbrake := false) -> VehicleIntent
 func test_drive_command_rules() -> void:
 	var def: VehicleDefinition = load("res://game/vehicle/definitions/compact_car.tres")
 	var idle := VehicleController.drive_command(_intent(), 5.0, def)
-	check(idle.engine == 0.0 and idle.brake == def.coast_brake and idle.handbrake == 0.0, "no pedal: coast brake only (%s)" % idle)
+	check(idle.engine == 0.0 and idle.brake == def.coast_brake and idle.handbrake == 0.0, "no pedal while rolling: coast brake only (%s)" % idle)
+	var hold := VehicleController.drive_command(_intent(), def.hold_speed * 0.5, def)
+	check(hold.engine == 0.0 and hold.brake == def.brake_force, "no pedal at (almost) standstill: brakes hold (%s)" % hold)
 	var go := VehicleController.drive_command(_intent(1.0), 0.0, def)
 	check(go.engine == def.engine_force and go.brake == 0.0, "throttle from standstill: full engine force (%s)" % go)
 	var top := VehicleController.drive_command(_intent(1.0), def.max_speed, def)
@@ -312,3 +314,22 @@ func _ticks_until(predicate: Callable, max_ticks := 240) -> int:
 			return i
 		await tree.physics_frame
 	return max_ticks if predicate.call() else -1
+
+
+func test_driven_vehicle_holds_on_a_slope_without_pedals() -> void:
+	# 10° ramp falling toward +Z; the vehicle stands on it nose downhill.
+	var ramp := add_static_box(Vector3(40, 1, 60), Vector3(0, -0.5, 0))
+	ramp.rotation.x = deg_to_rad(10.0)
+	vehicle = instantiate(CAR)
+	source = ScriptedVehicleInput.new()
+	add_node(source)
+	vehicle.global_transform = Transform3D(Basis(Vector3.RIGHT, deg_to_rad(10.0)), Vector3(0, 0.6, 0))
+	await physics_frames(90)
+	# Parked (no driver, handbrake) until settled, then a driver who presses nothing.
+	vehicle.input_source = source
+	var settled := vehicle.global_position
+	await physics_frames(120)
+	check(vehicle.global_position.distance_to(settled) < 0.1, "a driven vehicle with no pedal pressed does not roll away on a 10° slope (moved %.2f m)" % vehicle.global_position.distance_to(settled))
+	source.throttle = 1.0
+	await physics_frames(60)
+	check(vehicle.global_position.distance_to(settled) > 1.0, "throttle drives off the hold")

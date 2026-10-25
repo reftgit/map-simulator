@@ -10,6 +10,7 @@ player_spawn_position = Vector3(-109.0365, 6.5477, 204.2572)
 player_spawn_yaw_degrees = -27.0
 bounds = Rect2(-1931.65, -1558.48, 2687.51, 2671.68)
 kill_height = -5.0
+vehicle_spawns = Array[Transform3D]([Transform3D(0.25881907, 0, 0.9659258, 0, 1, 0, -0.9659258, 0, 0.25881907, -88.96, 14.7, 36.14)])
 occluders_path = "res://maps/istanbul_halic/istanbul_halic_occluders.scn"
 debug_viewpoints = Array[Transform3D]([Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.03, 120), Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -20, 39.49, -250)])
 debug_viewpoint_names = Array[String](["Karaköy street, facing north", "Galata street, facing south"])

@@ -73,3 +73,22 @@ func test_untracked_bodies_are_left_alone() -> void:
 	body.global_position = Vector3(0, -50, 0)
 	await physics_frames(2)
 	check(body.global_position == Vector3(0, -50, 0), "untracked body not respawned")
+
+
+func test_spawns_vehicles_from_the_definition() -> void:
+	definition = MapDefinition.new()
+	definition.scene_path = "res://tests/fixtures/flat_map.tscn"
+	definition.kill_height = -7.0
+	definition.vehicle_spawns = [Transform3D(Basis(Vector3.UP, PI * 0.5), Vector3(4, 0.3, -2))] as Array[Transform3D]
+	world = WorldManager.new()
+	add_node(world)
+	world.load_map(definition)
+	var vehicles := world.spawn_vehicles(load("res://game/vehicle/placeholder_car.tscn"))
+	check(vehicles.size() == 1 and vehicles[0].get_parent() == world, "one vehicle under WorldManager")
+	var vehicle := vehicles[0]
+	check(vehicle.global_position.distance_to(Vector3(4, 0.3, -2)) < 0.001, "at the spawn position")
+	check(vehicle.global_basis.z.distance_to(Vector3.LEFT) < 0.0001, "the spawn faces west (-X), so the vehicle's +Z forward points west")
+	check(vehicle.spawn_transform == vehicle.global_transform and vehicle.kill_height == -7.0, "reset target and kill height from the map")
+	world.unload_map()
+	await process_frames(1)
+	check(world.vehicles.is_empty() and not is_instance_valid(vehicle), "vehicles go with the map")
