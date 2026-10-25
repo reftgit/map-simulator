@@ -179,8 +179,10 @@ func test_short_benchmark_on_map() -> void:
 	var results: Array = await bench.finished
 	check(results.size() == 3, "one result per viewpoint (%d)" % results.size())
 	for result: Dictionary in results:
-		for key in ["view", "avg_fps", "low1_fps", "min_fps", "frames", "draw_calls", "primitives", "objects", "video_mem_mb", "static_mem_mb", "experiment", "renderer"]:
+		for key in ["view", "avg_fps", "low1_fps", "min_fps", "frames", "draw_calls", "primitives", "objects", "video_mem_mb", "static_mem_mb", "experiment", "renderer", "physics_ms", "physics_p99_ms", "in_vehicle"]:
 			check(result.has(key), "result has %s" % key)
+		check(result.physics_ms > 0.0 and result.physics_p99_ms >= result.physics_ms, "physics tick time recorded (%s / %s ms)" % [result.get("physics_ms"), result.get("physics_p99_ms")])
+		check(result.in_vehicle == false, "on foot")
 	var report: Dictionary = game.render_settings.occluder_report
 	check(report.get("occluders", 0) > 600, "occluders available for the map (%s)" % [report])
 	check(results[0].get("profile") == "none", "results record the profile")
@@ -504,3 +506,16 @@ func test_view_cycle_moves_the_vehicle_while_driving() -> void:
 	var heading := Vector2(vehicle.global_basis.z.x, vehicle.global_basis.z.z).normalized()
 	check(heading.dot(Vector2(-target.basis.z.x, -target.basis.z.z).normalized()) > 0.99, "facing the viewpoint direction")
 	check(game.vehicle_interaction.is_driving() and rig.target == vehicle, "still driving, camera on the vehicle")
+
+
+func test_short_benchmark_in_the_vehicle() -> void:
+	await _setup()
+	var config := PerfConfig.from_dict({"experiment": "integration_vehicle",
+			"bench": {"warmup_s": 0.5, "measure_s": 0.5, "screenshots": false, "quit_when_done": false, "in_vehicle": true}})
+	var bench: PerfBenchmark = game.apply_perf_experiment(config)
+	var results: Array = await bench.finished
+	check(results.size() == 3 and results.all(func(result: Dictionary) -> bool: return result.in_vehicle), "three in-vehicle results")
+	check(game.vehicle_interaction.is_driving() and rig.target == _vehicle(), "measured from the driver's seat, camera on the vehicle")
+	var last_view: Transform3D = game.map_definition.debug_viewpoints[-1]
+	check(Vector2(_vehicle().global_position.x - last_view.origin.x, _vehicle().global_position.z - last_view.origin.z).length() < 1.0, "vehicle moved to the last viewpoint (%s)" % _vehicle().global_position)
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(PerfBenchmark.RESULTS_PATH))

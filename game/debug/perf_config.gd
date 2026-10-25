@@ -25,8 +25,11 @@ var session_minutes := 0
 var session_view := ""
 var screenshots := true
 var quit_when_done := true
+## Measure from the driver's seat of the map's first vehicle (moved to each
+## viewpoint, no pedal pressed, so it holds still).
+var in_vehicle := false
 
-const _BENCH_KEYS := ["warmup_s", "measure_s", "views", "session_minutes", "session_view", "screenshots", "quit_when_done"]
+const _BENCH_KEYS := ["warmup_s", "measure_s", "views", "session_minutes", "session_view", "screenshots", "quit_when_done", "in_vehicle"]
 
 
 ## Why the last from_dict() call returned null.
@@ -66,6 +69,7 @@ static func from_dict(data: Dictionary) -> PerfConfig:
 		config.session_view = str(bench_data.get("session_view", ""))
 		config.screenshots = bool(bench_data.get("screenshots", true))
 		config.quit_when_done = bool(bench_data.get("quit_when_done", true))
+		config.in_vehicle = bool(bench_data.get("in_vehicle", false))
 	return config
 
 

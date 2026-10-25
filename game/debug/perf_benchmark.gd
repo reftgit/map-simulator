@@ -1,8 +1,9 @@
 class_name PerfBenchmark
 extends Node
 ## Runs a PerfConfig benchmark: for each viewpoint, warm up, then measure
-## frame times and render counters; or one long session at a single viewpoint
-## with per-minute results. Writes user://bench_results.json, logs one
+## frame times, physics tick time, and render counters; or one long session at
+## a single viewpoint with per-minute results. With in_vehicle, the player
+## sits in the map's first vehicle, which is moved to each viewpoint. Writes user://bench_results.json, logs one
 ## "BENCH {json}" line per result, saves screenshots under user://bench/, and
 ## quits the app when done (unless quit_when_done is false). Debug builds only.
 
@@ -46,6 +47,8 @@ func _run() -> void:
 func _go_to(view: String) -> void:
 	var index: int = game.get_view_names().find(view)
 	assert(index >= 0, "Unknown viewpoint: %s" % view)
+	if config.in_vehicle and not game.vehicle_interaction.is_driving():
+		game.vehicle_interaction.enter(game.world.vehicles[0])
 	game.show_debug_view(index)
 	game.hud.view_name = "%s  [BENCH %s]" % [view, config.experiment]
 
@@ -76,6 +79,7 @@ func _sample(seconds: float) -> Dictionary:
 	var frame_us: PackedInt64Array = []
 	var counters := {"draw_calls": 0.0, "primitives": 0.0, "objects": 0.0}
 	var counter_samples := 0
+	var physics_us: PackedInt64Array = []
 	var video_mem_max := 0
 	var start := Time.get_ticks_usec()
 	var last := start
@@ -85,6 +89,7 @@ func _sample(seconds: float) -> Dictionary:
 		var now := Time.get_ticks_usec()
 		frame_us.append(now - last)
 		last = now
+		physics_us.append(roundi(Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1e6))
 		if now >= next_counter:
 			next_counter = now + 1000000
 			counters.draw_calls += RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME)
@@ -96,6 +101,7 @@ func _sample(seconds: float) -> Dictionary:
 	var stats := frame_stats(frame_us, elapsed)
 	for key in counters:
 		stats[key] = roundi(counters[key] / maxi(counter_samples, 1))
+	stats.merge(physics_stats(physics_us))
 	stats["video_mem_mb"] = roundi(video_mem_max / 1048576.0)
 	stats["static_mem_mb"] = roundi(OS.get_static_memory_usage() / 1048576.0)
 	stats["static_peak_mb"] = roundi(OS.get_static_memory_peak_usage() / 1048576.0)
@@ -118,8 +124,26 @@ static func frame_stats(frame_us: PackedInt64Array, elapsed_s: float) -> Diction
 	}
 
 
+## Physics tick time (Performance.TIME_PHYSICS_PROCESS: scene physics
+## callbacks plus the physics server step), sampled once per frame: mean and
+## 99th percentile in milliseconds.
+static func physics_stats(physics_us: PackedInt64Array) -> Dictionary:
+	if physics_us.is_empty():
+		return {"physics_ms": 0.0, "physics_p99_ms": 0.0}
+	var sorted := physics_us.duplicate()
+	sorted.sort()
+	var total := 0
+	for value in sorted:
+		total += value
+	return {
+		"physics_ms": snappedf(total / 1000.0 / sorted.size(), 0.001),
+		"physics_p99_ms": snappedf(sorted[clampi(ceili(sorted.size() * 0.99) - 1, 0, sorted.size() - 1)] / 1000.0, 0.001),
+	}
+
+
 func _record(result: Dictionary) -> void:
 	result["experiment"] = config.experiment
+	result["in_vehicle"] = config.in_vehicle
 	result["profile"] = game.quality_profile
 	result["renderer"] = RenderingServer.get_current_rendering_method()
 	result["window"] = str(DisplayServer.window_get_size())

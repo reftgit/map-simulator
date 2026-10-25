@@ -57,3 +57,17 @@ func test_frame_stats() -> void:
 func test_view_slug() -> void:
 	check(PerfBenchmark.view_slug("Karaköy street, facing north") == "karakoy", "Turkish letters to ASCII")
 	check(PerfBenchmark.view_slug("Spawn") == "spawn", "plain name")
+
+
+func test_physics_stats() -> void:
+	var samples := PackedInt64Array([1000, 2000, 3000, 4000])
+	var stats := PerfBenchmark.physics_stats(samples)
+	check_near(stats.physics_ms, 2.5, 0.0001, "mean physics tick time in ms")
+	check_near(stats.physics_p99_ms, 4.0, 0.0001, "99th percentile in ms")
+	check(PerfBenchmark.physics_stats(PackedInt64Array()).physics_ms == 0.0, "empty window")
+
+
+func test_in_vehicle_bench_key() -> void:
+	var config := PerfConfig.from_dict({"experiment": "x", "bench": {"in_vehicle": true}})
+	check(config != null and config.in_vehicle, "in_vehicle parsed")
+	check(not PerfConfig.from_dict({"experiment": "x", "bench": {}}).in_vehicle, "off by default")
