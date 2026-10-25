@@ -10,13 +10,19 @@ extends Control
 ## release, so camera drags and buttons never interfere. Touches no control
 ## claims fall through to the GUI, where the joystick picks them up.
 ##
-## Punch and roll are one-shot presses: a tap on their button (on touch-down)
-## or a press of their key is kept until gameplay consumes it once. Holding
-## does not repeat.
+## Punch, roll, and interact (get in / get out) are one-shot presses: a tap on
+## their button (on touch-down) or a press of their key is kept until gameplay
+## consumes it once. Holding does not repeat.
+##
+## The on-foot and vehicle controls are two groups; set_vehicle_mode() shows
+## one and hides the other. Hidden controls never take a finger.
 
-const ACTIONS: Array[StringName] = [&"move_left", &"move_right", &"move_forward", &"move_back", &"run", &"punch", &"roll"]
+const ACTIONS: Array[StringName] = [&"move_left", &"move_right", &"move_forward", &"move_back", &"run", &"punch", &"roll",
+		&"interact", &"vehicle_throttle", &"vehicle_brake", &"vehicle_left", &"vehicle_right", &"vehicle_handbrake"]
 ## Actions delivered as one-shot presses (consume_action_press()).
-const ACTION_PRESSES: Array[StringName] = [&"punch", &"roll"]
+const ACTION_PRESSES: Array[StringName] = [&"punch", &"roll", &"interact"]
+## One-shot actions that exist only on foot; ignored while driving.
+const ON_FOOT_PRESSES: Array[StringName] = [&"punch", &"roll"]
 ## Touch indices released on the joystick when input is reset.
 const MAX_TOUCHES := 10
 
@@ -25,6 +31,20 @@ const MAX_TOUCHES := 10
 @export var run_button: TouchButton
 @export var punch_button: TouchButton
 @export var roll_button: TouchButton
+## Shown only while a vehicle is in reach (set_interact_available()).
+@export var interact_button: TouchButton
+@export_group("Vehicle controls")
+@export var steer_left_button: TouchButton
+@export var steer_right_button: TouchButton
+@export var throttle_button: TouchButton
+@export var brake_button: TouchButton
+@export var handbrake_button: TouchButton
+@export var exit_button: TouchButton
+@export_group("Control groups")
+## Containers shown one at a time.
+@export var on_foot_controls: Control
+@export var vehicle_controls: Control
+@export_group("")
 ## Further controls (e.g. debug buttons), routed after the action buttons and
 ## before the look area.
 @export var extra_controls: Array[TouchControl] = []
@@ -33,6 +53,9 @@ const MAX_TOUCHES := 10
 ## Camera rotation in radians for a drag across the full viewport height.
 @export var look_sensitivity := 2.6
 
+## True while the vehicle controls are shown.
+var vehicle_mode := false
+
 var _owners := {}  # touch index -> TouchControl
 var _priority: Array[TouchControl] = []
 var _presses := {}  # action StringName -> true, until consumed
@@ -40,7 +63,8 @@ var _presses := {}  # action StringName -> true, until consumed
 
 func _ready() -> void:
 	mouse_filter = MOUSE_FILTER_IGNORE
-	var ordered: Array[TouchControl] = [run_button, punch_button, roll_button]
+	var ordered: Array[TouchControl] = [run_button, punch_button, roll_button, interact_button,
+			steer_left_button, steer_right_button, throttle_button, brake_button, handbrake_button, exit_button]
 	ordered.append_array(extra_controls)
 	ordered.append(look_area)
 	for control in ordered:
@@ -50,6 +74,12 @@ func _ready() -> void:
 		punch_button.pressed.connect(press_action.bind(&"punch"))
 	if roll_button:
 		roll_button.pressed.connect(press_action.bind(&"roll"))
+	if interact_button:
+		interact_button.pressed.connect(press_action.bind(&"interact"))
+		interact_button.visible = false
+	if exit_button:
+		exit_button.pressed.connect(press_action.bind(&"interact"))
+	_show_group(false)
 	if joystick:
 		joystick.released.connect(_on_joystick_released)
 
@@ -112,9 +142,42 @@ func get_move_vector() -> Vector2:
 	return Input.get_vector(&"move_left", &"move_right", &"move_forward", &"move_back")
 
 
-## Records a one-shot press of `action` (one of ACTION_PRESSES).
+## Records a one-shot press of `action` (one of ACTION_PRESSES). On-foot
+## actions are ignored while driving.
 func press_action(action: StringName) -> void:
+	if vehicle_mode and action in ON_FOOT_PRESSES:
+		return
 	_presses[action] = true
+
+
+## Shows the vehicle controls (or the on-foot controls) and drops every
+## finger and pending press, so nothing carries over between the groups.
+func set_vehicle_mode(on: bool) -> void:
+	vehicle_mode = on
+	_show_group(on)
+	release_all_touches()
+
+
+func set_interact_available(available: bool) -> void:
+	if interact_button:
+		interact_button.visible = available
+
+
+## Vehicle steering from the buttons or keys: -1 left, 1 right.
+func get_vehicle_steer() -> float:
+	return float(_held(steer_right_button, &"vehicle_right")) - float(_held(steer_left_button, &"vehicle_left"))
+
+
+func get_vehicle_throttle() -> float:
+	return 1.0 if _held(throttle_button, &"vehicle_throttle") else 0.0
+
+
+func get_vehicle_brake() -> float:
+	return 1.0 if _held(brake_button, &"vehicle_brake") else 0.0
+
+
+func is_vehicle_handbrake_held() -> bool:
+	return _held(handbrake_button, &"vehicle_handbrake")
 
 
 ## True once per press of `action` since the last call.
@@ -152,6 +215,17 @@ func _end_touch(index: int, touch_position: Vector2) -> bool:
 	_owners.erase(index)
 	control.touch_released(index, touch_position)
 	return true
+
+
+func _held(button: TouchButton, action: StringName) -> bool:
+	return (button != null and button.is_down) or Input.is_action_pressed(action)
+
+
+func _show_group(vehicle: bool) -> void:
+	if on_foot_controls:
+		on_foot_controls.visible = not vehicle
+	if vehicle_controls:
+		vehicle_controls.visible = vehicle
 
 
 func _on_joystick_released(_input_vector: Vector2) -> void:

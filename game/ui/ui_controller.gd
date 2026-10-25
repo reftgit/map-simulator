@@ -2,7 +2,8 @@ class_name UIController
 extends CanvasLayer
 ## HUD root. Keeps the controls inside the device safe area (notch, rounded
 ## corners, home indicator), fades the roll button while the bound player's
-## roll is on cooldown, and, in debug builds only, shows a performance
+## roll is on cooldown and the exit button while the bound vehicle is too fast
+## to get out, and, in debug builds only, shows a performance
 ## overlay, logs the same numbers as "PERF" lines (readable from adb logcat or
 ## the Xcode console), and offers VIEW (measurement viewpoints), Q (quality
 ## profile), and DUMMY (training dummy) buttons.
@@ -25,6 +26,7 @@ var view_name := ""
 var profile_name := ""
 
 var _player: PlayerController
+var _vehicle: VehicleController
 var _ticks := 0
 
 @onready var input: MobileInputController = $SafeArea/Controls
@@ -56,9 +58,16 @@ func bind_player(player: PlayerController) -> void:
 	_player = player
 
 
+## The vehicle being driven, or null on foot.
+func bind_vehicle(vehicle: VehicleController) -> void:
+	_vehicle = vehicle
+
+
 func _process(_delta: float) -> void:
 	if _player and input.roll_button:
 		input.roll_button.dimmed = _player.actions.is_blocked(&"roll")
+	if _vehicle and input.exit_button:
+		input.exit_button.dimmed = not _vehicle.can_exit_at_current_speed()
 
 
 func apply_safe_area() -> void:

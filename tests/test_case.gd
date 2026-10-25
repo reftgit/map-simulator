@@ -83,10 +83,7 @@ func cleanup() -> void:
 		if is_instance_valid(node):
 			node.queue_free()
 	_nodes.clear()
-	Input.action_release(&"move_forward")
-	Input.action_release(&"move_back")
-	Input.action_release(&"move_left")
-	Input.action_release(&"move_right")
-	Input.action_release(&"run")
+	for action in MobileInputController.ACTIONS:
+		Input.action_release(action)
 	await tree.process_frame
 	await tree.physics_frame

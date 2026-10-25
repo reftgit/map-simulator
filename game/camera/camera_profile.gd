@@ -11,3 +11,7 @@ extends Resource
 @export_range(-89.0, 89.0) var default_pitch_degrees := -15.0
 ## Smoothing of the pivot's vertical follow (steps, curbs). Higher is tighter.
 @export var vertical_sharpness := 12.0
+## Follow mode: turn the yaw back behind the target this sharply once no look
+## input came for follow_delay seconds. 0 keeps the yaw where the player left it.
+@export var follow_yaw_sharpness := 0.0
+@export var follow_delay := 1.0

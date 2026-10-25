@@ -10,6 +10,8 @@ var run := false
 ## button is held. PlayerController keeps them briefly in its action buffer.
 var punch := false
 var roll := false
+## One-shot: get into a nearby vehicle.
+var interact := false
 
 
 func clear() -> void:
@@ -17,6 +19,7 @@ func clear() -> void:
 	run = false
 	punch = false
 	roll = false
+	interact = false
 
 
 func has_move() -> bool:

@@ -2,7 +2,7 @@ class_name TouchPlayerInput
 extends PlayerInputSource
 ## Turns MobileInputController's screen-space stick into a world direction
 ## relative to the camera, so "stick up" always moves away from the camera.
-## Punch and roll taps reach the intent once, on the next physics tick.
+## Punch, roll, and interact taps reach the intent once, on the next physics tick.
 
 var input: MobileInputController
 var camera: ThirdPersonCamera
@@ -16,6 +16,7 @@ func fill_intent(intent: PlayerIntent, _player: PlayerController) -> void:
 	intent.run = input.is_run_active()
 	intent.punch = input.consume_action_press(&"punch")
 	intent.roll = input.consume_action_press(&"roll")
+	intent.interact = input.consume_action_press(&"interact")
 
 
 ## Rotates a screen-space stick (y down = backward) by the camera yaw.

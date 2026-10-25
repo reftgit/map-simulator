@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="Script" path="res://game/game.gd" id="1_game"]
 [ext_resource type="Resource" path="res://maps/istanbul_halic/istanbul_halic.tres" id="2_map"]
@@ -7,6 +7,8 @@
 [ext_resource type="PackedScene" path="res://game/camera/third_person_camera.tscn" id="5_camera"]
 [ext_resource type="Script" path="res://game/player/touch_player_input.gd" id="6_input"]
 [ext_resource type="PackedScene" path="res://game/ui/hud.tscn" id="7_hud"]
+[ext_resource type="Script" path="res://game/vehicle/touch_vehicle_input.gd" id="8_vehicle_input"]
+[ext_resource type="Script" path="res://game/vehicle/vehicle_interaction.gd" id="9_interaction"]
 
 [node name="Main" type="Node"]
 script = ExtResource("1_game")
@@ -21,5 +23,11 @@ script = ExtResource("3_world")
 
 [node name="TouchPlayerInput" type="Node" parent="."]
 script = ExtResource("6_input")
+
+[node name="TouchVehicleInput" type="Node" parent="."]
+script = ExtResource("8_vehicle_input")
+
+[node name="VehicleInteraction" type="Node" parent="."]
+script = ExtResource("9_interaction")
 
 [node name="HUD" parent="." instance=ExtResource("7_hud")]

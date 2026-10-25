@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="Script" path="res://game/ui/ui_controller.gd" id="1_ui"]
 [ext_resource type="Script" path="res://game/input/mobile_input_controller.gd" id="2_input"]
@@ -6,6 +6,12 @@
 [ext_resource type="Script" path="res://game/input/touch_button.gd" id="5_button"]
 [ext_resource type="Texture2D" path="res://game/ui/icons/punch.svg" id="6_punch_icon"]
 [ext_resource type="Texture2D" path="res://game/ui/icons/roll.svg" id="7_roll_icon"]
+[ext_resource type="Texture2D" path="res://game/ui/icons/car.svg" id="8_car_icon"]
+[ext_resource type="Texture2D" path="res://game/ui/icons/steer_left.svg" id="9_left_icon"]
+[ext_resource type="Texture2D" path="res://game/ui/icons/steer_right.svg" id="10_right_icon"]
+[ext_resource type="Texture2D" path="res://game/ui/icons/throttle.svg" id="11_throttle_icon"]
+[ext_resource type="Texture2D" path="res://game/ui/icons/brake.svg" id="12_brake_icon"]
+[ext_resource type="Texture2D" path="res://game/ui/icons/exit.svg" id="13_exit_icon"]
 
 [node name="HUD" type="CanvasLayer"]
 script = ExtResource("1_ui")
@@ -19,7 +25,7 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="Controls" type="Control" parent="SafeArea" node_paths=PackedStringArray("joystick", "look_area", "run_button", "punch_button", "roll_button", "extra_controls")]
+[node name="Controls" type="Control" parent="SafeArea" node_paths=PackedStringArray("joystick", "look_area", "run_button", "punch_button", "roll_button", "interact_button", "steer_left_button", "steer_right_button", "throttle_button", "brake_button", "handbrake_button", "exit_button", "on_foot_controls", "vehicle_controls", "extra_controls")]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -28,11 +34,20 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("2_input")
-joystick = NodePath("Joystick")
+joystick = NodePath("OnFootControls/Joystick")
 look_area = NodePath("LookArea")
-run_button = NodePath("RunButton")
-punch_button = NodePath("PunchButton")
-roll_button = NodePath("RollButton")
+run_button = NodePath("OnFootControls/RunButton")
+punch_button = NodePath("OnFootControls/PunchButton")
+roll_button = NodePath("OnFootControls/RollButton")
+interact_button = NodePath("OnFootControls/InteractButton")
+steer_left_button = NodePath("VehicleControls/SteerLeftButton")
+steer_right_button = NodePath("VehicleControls/SteerRightButton")
+throttle_button = NodePath("VehicleControls/ThrottleButton")
+brake_button = NodePath("VehicleControls/BrakeButton")
+handbrake_button = NodePath("VehicleControls/HandbrakeButton")
+exit_button = NodePath("VehicleControls/ExitButton")
+on_foot_controls = NodePath("OnFootControls")
+vehicle_controls = NodePath("VehicleControls")
 extra_controls = [NodePath("DebugViewButton"), NodePath("DebugQualityButton"), NodePath("DebugDummyButton")]
 
 [node name="LookArea" type="Control" parent="SafeArea/Controls"]
@@ -45,7 +60,16 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("3_look")
 
-[node name="Joystick" type="VirtualJoystick" parent="SafeArea/Controls"]
+[node name="OnFootControls" type="Control" parent="SafeArea/Controls"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Joystick" type="VirtualJoystick" parent="SafeArea/Controls/OnFootControls"]
 layout_mode = 1
 anchor_right = 0.42
 anchor_bottom = 1.0
@@ -59,7 +83,7 @@ action_right = &"move_right"
 action_up = &"move_forward"
 action_down = &"move_back"
 
-[node name="RunButton" type="Control" parent="SafeArea/Controls"]
+[node name="RunButton" type="Control" parent="SafeArea/Controls/OnFootControls"]
 layout_mode = 1
 anchors_preset = 3
 anchor_left = 1.0
@@ -77,7 +101,7 @@ script = ExtResource("5_button")
 mode = 1
 label = "»"
 
-[node name="PunchButton" type="Control" parent="SafeArea/Controls"]
+[node name="PunchButton" type="Control" parent="SafeArea/Controls/OnFootControls"]
 layout_mode = 1
 anchors_preset = 3
 anchor_left = 1.0
@@ -94,7 +118,7 @@ mouse_filter = 2
 script = ExtResource("5_button")
 icon = ExtResource("6_punch_icon")
 
-[node name="RollButton" type="Control" parent="SafeArea/Controls"]
+[node name="RollButton" type="Control" parent="SafeArea/Controls/OnFootControls"]
 layout_mode = 1
 anchors_preset = 3
 anchor_left = 1.0
@@ -110,6 +134,127 @@ grow_vertical = 0
 mouse_filter = 2
 script = ExtResource("5_button")
 icon = ExtResource("7_roll_icon")
+
+[node name="InteractButton" type="Control" parent="SafeArea/Controls/OnFootControls"]
+layout_mode = 1
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -422.0
+offset_top = -392.0
+offset_right = -298.0
+offset_bottom = -268.0
+grow_horizontal = 0
+grow_vertical = 0
+mouse_filter = 2
+script = ExtResource("5_button")
+icon = ExtResource("8_car_icon")
+
+[node name="VehicleControls" type="Control" parent="SafeArea/Controls"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="SteerLeftButton" type="Control" parent="SafeArea/Controls/VehicleControls"]
+layout_mode = 1
+anchor_left = 0.0
+anchor_top = 1.0
+anchor_right = 0.0
+anchor_bottom = 1.0
+offset_left = 30.0
+offset_top = -230.0
+offset_right = 180.0
+offset_bottom = -80.0
+grow_horizontal = 1
+grow_vertical = 0
+mouse_filter = 2
+script = ExtResource("5_button")
+icon = ExtResource("9_left_icon")
+
+[node name="SteerRightButton" type="Control" parent="SafeArea/Controls/VehicleControls"]
+layout_mode = 1
+anchor_left = 0.0
+anchor_top = 1.0
+anchor_right = 0.0
+anchor_bottom = 1.0
+offset_left = 220.0
+offset_top = -230.0
+offset_right = 370.0
+offset_bottom = -80.0
+grow_horizontal = 1
+grow_vertical = 0
+mouse_filter = 2
+script = ExtResource("5_button")
+icon = ExtResource("10_right_icon")
+
+[node name="ThrottleButton" type="Control" parent="SafeArea/Controls/VehicleControls"]
+layout_mode = 1
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -200.0
+offset_top = -240.0
+offset_right = -40.0
+offset_bottom = -80.0
+grow_horizontal = 0
+grow_vertical = 0
+mouse_filter = 2
+script = ExtResource("5_button")
+icon = ExtResource("11_throttle_icon")
+
+[node name="BrakeButton" type="Control" parent="SafeArea/Controls/VehicleControls"]
+layout_mode = 1
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -390.0
+offset_top = -220.0
+offset_right = -250.0
+offset_bottom = -80.0
+grow_horizontal = 0
+grow_vertical = 0
+mouse_filter = 2
+script = ExtResource("5_button")
+icon = ExtResource("12_brake_icon")
+
+[node name="HandbrakeButton" type="Control" parent="SafeArea/Controls/VehicleControls"]
+layout_mode = 1
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -372.0
+offset_top = -380.0
+offset_right = -256.0
+offset_bottom = -264.0
+grow_horizontal = 0
+grow_vertical = 0
+mouse_filter = 2
+script = ExtResource("5_button")
+label = "P"
+
+[node name="ExitButton" type="Control" parent="SafeArea/Controls/VehicleControls"]
+layout_mode = 1
+anchor_left = 1.0
+anchor_top = 0.0
+anchor_right = 1.0
+anchor_bottom = 0.0
+offset_left = -146.0
+offset_top = 20.0
+offset_right = -30.0
+offset_bottom = 136.0
+grow_horizontal = 0
+grow_vertical = 1
+mouse_filter = 2
+script = ExtResource("5_button")
+icon = ExtResource("13_exit_icon")
 
 [node name="DebugViewButton" type="Control" parent="SafeArea/Controls"]
 visible = false

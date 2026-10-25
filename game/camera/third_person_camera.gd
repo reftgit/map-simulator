@@ -2,7 +2,10 @@ class_name ThirdPersonCamera
 extends Node3D
 ## Orbit camera that follows a target. Look input turns yaw and pitch; a
 ## SpringArm3D pulls the camera in front of walls. Target and profile can be
-## swapped at runtime (on foot now, vehicle follow later).
+## swapped at runtime (on foot, vehicle). "Behind" the target is its yaw, or
+## its get_follow_yaw() if it has one (vehicles face +Z). A profile with
+## follow_yaw_sharpness swings the camera back behind the target after a
+## pause in look input (vehicle follow mode).
 
 @export var profile: CameraProfile
 
@@ -10,6 +13,8 @@ var target: Node3D
 var input: MobileInputController
 var yaw := 0.0
 var pitch := 0.0
+
+var _since_look := 0.0
 
 @onready var _pitch_pivot: Node3D = $PitchPivot
 @onready var _arm: SpringArm3D = $PitchPivot/SpringArm3D
@@ -45,7 +50,8 @@ func apply_profile(new_profile: CameraProfile) -> void:
 func snap_behind_target() -> void:
 	if target == null:
 		return
-	yaw = target.global_rotation.y
+	yaw = _target_yaw()
+	_since_look = 0.0
 	global_position = _pivot_goal()
 	_apply_rotation()
 
@@ -62,13 +68,24 @@ func get_arm_length() -> float:
 
 
 func _process(delta: float) -> void:
+	_since_look += delta
 	if input:
-		add_look(input.consume_look_delta())
+		var look := input.consume_look_delta()
+		if look != Vector2.ZERO:
+			_since_look = 0.0
+		add_look(look)
 	if target == null:
 		return
+	if profile.follow_yaw_sharpness > 0.0 and _since_look >= profile.follow_delay:
+		yaw = lerp_angle(yaw, _target_yaw(), 1.0 - exp(-profile.follow_yaw_sharpness * delta))
+		_apply_rotation()
 	var goal := _pivot_goal()
 	var y := lerpf(global_position.y, goal.y, 1.0 - exp(-profile.vertical_sharpness * delta))
 	global_position = Vector3(goal.x, y, goal.z)
+
+
+func _target_yaw() -> float:
+	return target.get_follow_yaw() if target.has_method(&"get_follow_yaw") else target.global_rotation.y
 
 
 func _pivot_goal() -> Vector3:

@@ -338,3 +338,69 @@ func test_debug_dummy_button_requests_the_dummy() -> void:
 	await process_frames(1)
 	check(requests[0] == 1, "tap requests the dummy toggle once")
 	check(input.get_move_vector() == Vector2.ZERO, "the joystick does not get the button's finger")
+
+
+func test_vehicle_controls_layout_and_group_switch() -> void:
+	await _setup()
+	check(input.on_foot_controls.visible and not input.vehicle_controls.visible, "on foot by default")
+	check(not input.interact_button.visible, "interact hidden until a vehicle is in reach")
+	input.set_vehicle_mode(true)
+	await process_frames(1)
+	check(not input.on_foot_controls.visible and input.vehicle_controls.visible, "vehicle mode swaps the groups")
+	var view := hud.get_viewport().get_visible_rect()
+	var safe: Rect2 = hud.get_node("SafeArea").get_global_rect()
+	var buttons: Array[TouchButton] = [input.steer_left_button, input.steer_right_button, input.throttle_button, input.brake_button, input.handbrake_button, input.exit_button]
+	for button in buttons:
+		check(button.is_visible_in_tree(), "%s visible" % button.name)
+		check(safe.encloses(button.get_global_rect()), "%s inside the safe area" % button.name)
+		check(button.size.x >= 110.0, "%s at least 110 units" % button.name)
+	for i in buttons.size():
+		for j in range(i + 1, buttons.size()):
+			var a := buttons[i]
+			var b := buttons[j]
+			var gap := a.get_global_rect().get_center().distance_to(b.get_global_rect().get_center()) - a.size.x * 0.5 * a.hit_scale - b.size.x * 0.5 * b.hit_scale
+			check(gap > 0.0, "%s and %s hit areas do not overlap (gap %.0f)" % [a.name, b.name, gap])
+	check(input.steer_left_button.get_global_rect().get_center().x < view.size.x * 0.5 and input.steer_right_button.get_global_rect().get_center().x < view.size.x * 0.5, "steering on the left")
+	for button in [input.throttle_button, input.brake_button, input.handbrake_button, input.exit_button]:
+		check(button.get_global_rect().get_center().x > view.size.x * 0.5, "%s on the right" % button.name)
+	# Hidden on-foot buttons never take a finger.
+	var punch := input.punch_button.get_global_rect().get_center()
+	touch(0, punch, true)
+	touch(0, punch, false)
+	check(not input.consume_action_press(&"punch"), "hidden punch button ignored in vehicle mode")
+	var stick := input.joystick.get_global_rect().position + input.joystick.get_global_rect().size * Vector2(0.6, 0.3)
+	touch(1, stick, true)
+	drag(1, stick, stick + Vector2(0, -200))
+	await process_frames(1)
+	check(input.get_move_vector() == Vector2.ZERO, "hidden joystick does not move")
+	touch(1, stick + Vector2(0, -200), false)
+	# Held vehicle button, then back on foot: nothing stays down.
+	touch(2, input.throttle_button.get_global_rect().get_center(), true)
+	check(input.get_vehicle_throttle() == 1.0, "throttle button held")
+	drag(2, input.throttle_button.get_global_rect().get_center(), input.throttle_button.get_global_rect().get_center() + Vector2(-200, -100))
+	check(input.consume_look_delta() == Vector2.ZERO, "a drag from a vehicle button does not turn the camera")
+	input.set_vehicle_mode(false)
+	await process_frames(1)
+	check(input.on_foot_controls.visible and not input.vehicle_controls.visible, "back on foot")
+	check(input.get_vehicle_throttle() == 0.0 and not input.throttle_button.is_down, "switching groups releases held vehicle buttons")
+
+
+func test_vehicle_keys_and_steer_buttons() -> void:
+	await _setup()
+	input.set_vehicle_mode(true)
+	await process_frames(1)
+	_key(KEY_A, true)
+	check(input.get_vehicle_steer() == -1.0, "A steers left")
+	_key(KEY_A, false)
+	touch(0, input.steer_right_button.get_global_rect().get_center(), true)
+	check(input.get_vehicle_steer() == 1.0, "right button steers right")
+	touch(1, input.steer_left_button.get_global_rect().get_center(), true)
+	check(input.get_vehicle_steer() == 0.0, "both steering buttons cancel out")
+	touch(0, input.steer_right_button.get_global_rect().get_center(), false)
+	touch(1, input.steer_left_button.get_global_rect().get_center(), false)
+	_key(KEY_S, true)
+	check(input.get_vehicle_brake() == 1.0, "S brakes")
+	_key(KEY_S, false)
+	_key(KEY_SPACE, true)
+	check(input.is_vehicle_handbrake_held() and not input.consume_action_press(&"roll"), "Space is the handbrake, not a roll, while driving")
+	_key(KEY_SPACE, false)

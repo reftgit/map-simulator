@@ -3,7 +3,11 @@ extends CharacterBody3D
 ## On-foot character body. Each physics tick it reads a PlayerIntent from its
 ## input source, buffers punch and roll presses, lets the PlayerStateMachine
 ## pick speeds and transitions, then moves. Visual feedback goes through a
-## CharacterVisual. Forward is -Z.
+## CharacterVisual. Forward is -Z. While seated in a vehicle it is hidden and
+## takes no part in physics.
+
+## The intent asked to get into a vehicle (VehicleInteraction decides).
+signal interact_requested
 
 @export var walk_speed := 4.5
 @export var run_speed := 8.0
@@ -24,8 +28,11 @@ var input_source: PlayerInputSource
 var intent := PlayerIntent.new()
 ## Pending punch and roll presses, and the roll cooldown.
 var actions := ActionBuffer.new()
+## True while driving a vehicle (set_seated()).
+var seated := false
 
 @onready var state_machine: PlayerStateMachine = $StateMachine
+@onready var body_shape: CollisionShape3D = $CollisionShape3D
 
 
 func _ready() -> void:
@@ -44,6 +51,8 @@ func _physics_process(delta: float) -> void:
 		actions.press(&"punch")
 	if intent.roll:
 		actions.press(&"roll")
+	if intent.interact:
+		interact_requested.emit()
 	state_machine.physics_update(delta)
 	actions.tick(delta)
 	move_and_slide()
@@ -88,6 +97,18 @@ func get_horizontal_speed() -> float:
 func interrupt_actions() -> void:
 	actions.clear_presses()
 	state_machine.transition_to(&"Idle")
+
+
+## Seated: hidden, collision off, no physics processing, actions and
+## pending presses dropped (getting into a vehicle). Unseated: the reverse;
+## call teleport() to place the body afterwards.
+func set_seated(on: bool) -> void:
+	seated = on
+	interrupt_actions()
+	velocity = Vector3.ZERO
+	visible = not on
+	body_shape.disabled = on
+	set_physics_process(not on)
 
 
 ## Moves the player instantly, e.g. to a spawn point. Stops all motion and

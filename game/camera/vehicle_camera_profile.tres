@@ -10,3 +10,5 @@ min_pitch_degrees = -60.0
 max_pitch_degrees = 25.0
 default_pitch_degrees = -14.0
 vertical_sharpness = 8.0
+follow_yaw_sharpness = 2.5
+follow_delay = 1.0

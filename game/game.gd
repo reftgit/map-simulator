@@ -25,6 +25,8 @@ var _experiment: PerfConfig
 @onready var player: PlayerController = $Player
 @onready var camera_rig: ThirdPersonCamera = $ThirdPersonCamera
 @onready var player_input: TouchPlayerInput = $TouchPlayerInput
+@onready var vehicle_input: TouchVehicleInput = $TouchVehicleInput
+@onready var vehicle_interaction: VehicleInteraction = $VehicleInteraction
 @onready var hud: UIController = $HUD
 
 
@@ -41,6 +43,11 @@ func _ready() -> void:
 	camera_rig.set_target(player)
 	hud.bind_player(player)
 
+	vehicle_input.input = hud.input
+	vehicle_interaction.setup(player, camera_rig, hud.input, vehicle_input)
+	vehicle_interaction.entered.connect(_on_vehicle_entered)
+	vehicle_interaction.exited.connect(_on_vehicle_exited)
+
 	render_settings = RenderSettings.new(world.map_root, camera_rig.camera, get_viewport(), map_definition.occluders_path)
 	if OS.is_debug_build():
 		_experiment = _load_perf_experiment()
@@ -54,6 +61,18 @@ func _ready() -> void:
 		_log_startup()
 		if _experiment and _experiment.bench:
 			_start_benchmark(_experiment)
+
+
+## While driving, the vehicle (not the hidden player) is the body that falls
+## or flips; it resets itself, so the world stops tracking the player.
+func _on_vehicle_entered(vehicle: VehicleController) -> void:
+	world.untrack(player)
+	hud.bind_vehicle(vehicle)
+
+
+func _on_vehicle_exited(_vehicle: VehicleController) -> void:
+	world.track(player)
+	hud.bind_vehicle(null)
 
 
 ## Applies a quality profile, with the debug experiment (if any) on top.
