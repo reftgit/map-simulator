@@ -3,9 +3,12 @@ extends Node
 ## Runs a PerfConfig benchmark: for each viewpoint, warm up, then measure
 ## frame times, physics tick time, and render counters; or one long session at
 ## a single viewpoint with per-minute results. With in_vehicle, the player
-## sits in the map's first vehicle, which is moved to each viewpoint. Writes user://bench_results.json, logs one
-## "BENCH {json}" line per result, saves screenshots under user://bench/, and
-## quits the app when done (unless quit_when_done is false). Debug builds only.
+## sits in the map's first vehicle, which is moved to each viewpoint.
+## Writes user://bench_results.json, logs one "BENCH {json}" line per result,
+## saves screenshots under user://bench/, and quits the app when done (unless
+## quit_when_done is false). On Android the results and screenshots also go to
+## the app-specific external folder (PerfConfig.external_dir()). Runs in debug
+## builds and in release builds with the perf_bench feature (BuildFeatures).
 
 signal finished(results: Array)
 
@@ -21,6 +24,8 @@ var results: Array = []
 func _ready() -> void:
 	# A results file signals completion to the host scripts, so drop stale ones.
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(RESULTS_PATH))
+	if not PerfConfig.external_dir().is_empty():
+		DirAccess.remove_absolute(PerfConfig.external_dir().path_join("bench_results.json"))
 	_run.call_deferred()
 
 
@@ -164,8 +169,12 @@ func _screenshot(view: String) -> void:
 	var image := get_viewport().get_texture().get_image()
 	var size := image.get_size()
 	image.resize(SCREENSHOT_WIDTH, roundi(SCREENSHOT_WIDTH * float(size.y) / size.x), Image.INTERPOLATE_BILINEAR)
+	var file_name := "%s_%s.jpg" % [config.experiment, view_slug(view)]
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(SCREENSHOT_DIR))
-	image.save_jpg("%s/%s_%s.jpg" % [SCREENSHOT_DIR, config.experiment, view_slug(view)], 0.7)
+	image.save_jpg(SCREENSHOT_DIR.path_join(file_name), 0.7)
+	if not PerfConfig.external_dir().is_empty():
+		DirAccess.make_dir_recursive_absolute(PerfConfig.external_dir().path_join("bench"))
+		image.save_jpg(PerfConfig.external_dir().path_join("bench").path_join(file_name), 0.7)
 
 
 ## ASCII file-name slug from a viewpoint's first word ("Karaköy street…" -> "karakoy").
@@ -181,7 +190,12 @@ static func view_slug(view: String) -> String:
 
 
 func _write_results() -> void:
-	var file := FileAccess.open(RESULTS_PATH, FileAccess.WRITE)
-	if file:
-		file.store_string(JSON.stringify({"config": config.to_dict(), "profile": game.quality_profile,
-				"occluders": game.render_settings.occluder_report, "startup": game.startup, "results": results}, "  "))
+	var text := JSON.stringify({"config": config.to_dict(), "profile": game.quality_profile,
+			"occluders": game.render_settings.occluder_report, "startup": game.startup, "results": results}, "  ")
+	var paths: Array[String] = [RESULTS_PATH]
+	if not PerfConfig.external_dir().is_empty():
+		paths.append(PerfConfig.external_dir().path_join("bench_results.json"))
+	for path in paths:
+		var file := FileAccess.open(path, FileAccess.WRITE)
+		if file:
+			file.store_string(text)

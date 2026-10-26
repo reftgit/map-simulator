@@ -44,7 +44,7 @@ var _ticks := 0
 func _ready() -> void:
 	get_viewport().size_changed.connect(apply_safe_area)
 	apply_safe_area()
-	var debug := OS.is_debug_build()
+	var debug := BuildFeatures.is_debug()
 	_debug_label.visible = debug
 	_debug_view_button.visible = debug
 	_debug_quality_button.visible = debug

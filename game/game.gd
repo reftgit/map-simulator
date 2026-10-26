@@ -15,7 +15,8 @@ const DUMMY_OFFSET := Vector3(0.35, 0.0, -1.3)
 var render_settings: RenderSettings
 ## Active quality profile name ("none", "high", "low").
 var quality_profile := QualityProfiles.NONE
-## Engine-start-to-map-ready and first-frame times, filled in debug builds.
+## Engine-start-to-map-ready and first-frame times plus build and runtime
+## settings, filled when performance features are enabled (BuildFeatures).
 var startup := {}
 ## Debug builds: punching target near the spawn, toggled from the overlay.
 var training_dummy: TrainingDummy
@@ -54,16 +55,17 @@ func _ready() -> void:
 			vehicle_interaction.register_vehicle(vehicle)
 
 	render_settings = RenderSettings.new(world.map_root, camera_rig.camera, get_viewport(), map_definition.occluders_path)
-	if OS.is_debug_build():
+	if BuildFeatures.perf_enabled():
 		_experiment = _load_perf_experiment()
 	set_quality_profile(_initial_profile())
 
-	if OS.is_debug_build():
+	if BuildFeatures.is_debug():
 		hud.view_name = get_view_names()[0]
 		hud.debug_view_requested.connect(cycle_debug_view)
 		hud.debug_quality_requested.connect(cycle_quality_profile)
 		hud.debug_dummy_requested.connect(toggle_training_dummy)
 		hud.debug_car_requested.connect(walk_up_to_vehicle)
+	if BuildFeatures.perf_enabled():
 		_log_startup()
 		if _experiment and _experiment.bench:
 			_start_benchmark(_experiment)
@@ -179,13 +181,18 @@ func _initial_profile() -> String:
 	return requested if not requested.is_empty() else QualityProfiles.default_name()
 
 
-## Debug builds: an experiment from `--perf-config=<path>` on the command line,
-## or a one-shot user://perf_bench.json pushed to the device (deleted on read).
+## An experiment from `--perf-config=<path>` on the command line, or a
+## one-shot perf_bench.json pushed to the device (deleted on read): in user://
+## (debug builds, iOS), or in the app-specific external folder on Android,
+## which a release build can read without `run-as`.
 func _load_perf_experiment() -> PerfConfig:
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--perf-config="):
 			return PerfConfig.load_file(arg.trim_prefix("--perf-config="))
-	return PerfConfig.load_file(PerfConfig.USER_PATH, true)
+	var config := PerfConfig.load_file(PerfConfig.USER_PATH, true)
+	if config == null and not PerfConfig.external_dir().is_empty():
+		config = PerfConfig.load_file(PerfConfig.external_dir().path_join("perf_bench.json"), true)
+	return config
 
 
 ## Name of the active 3D physics engine. Godot has no getter for it and the
@@ -200,13 +207,34 @@ static func physics_engine_name(space_state: PhysicsDirectSpaceState3D) -> Strin
 	return type
 
 
-## Logs engine-start-to-map-ready and first-frame times and the physics
-## engine (debug builds).
+## Logs engine-start-to-map-ready and first-frame times, the physics engine,
+## and what kind of build this is with its frame and physics settings, so a
+## result file shows the conditions it was measured under.
 func _log_startup() -> void:
 	var map_ready_ms := Time.get_ticks_msec()
-	await RenderingServer.frame_post_draw
+	if DisplayServer.get_name() == "headless":
+		# No frame is drawn headless (tests); the first processed frame stands in.
+		await get_tree().process_frame
+	else:
+		await RenderingServer.frame_post_draw
 	var physics := physics_engine_name(world.get_world_3d().direct_space_state)
 	startup = {"map_ready_ms": map_ready_ms, "first_frame_ms": Time.get_ticks_msec(), "physics_3d": physics}
-	print("STARTUP map_ready_ms=%d first_frame_ms=%d profile=%s occluders=%s physics_3d=%s (setting %s) user_dir=%s" % [map_ready_ms,
+	startup.merge(build_info())
+	print("STARTUP map_ready_ms=%d first_frame_ms=%d profile=%s occluders=%s physics_3d=%s (setting %s) build=%s user_dir=%s" % [map_ready_ms,
 			startup.first_frame_ms, quality_profile, JSON.stringify(render_settings.occluder_report), physics,
-			ProjectSettings.get_setting("physics/3d/physics_engine"), OS.get_user_data_dir()])
+			ProjectSettings.get_setting("physics/3d/physics_engine"), JSON.stringify(build_info()), OS.get_user_data_dir()])
+
+
+## Build kind and the frame and physics settings in effect.
+func build_info() -> Dictionary:
+	return {
+		"debug_build": OS.is_debug_build(),
+		"perf_feature": OS.has_feature(BuildFeatures.PERF_FEATURE),
+		"physics_ticks": Engine.physics_ticks_per_second,
+		"physics_interpolation": get_tree().physics_interpolation,
+		"max_fps": Engine.max_fps,
+		"vsync_mode": DisplayServer.window_get_vsync_mode(),
+		"screen_refresh_rate": DisplayServer.screen_get_refresh_rate(),
+		"ios_allow_high_refresh_rate": ProjectSettings.get_setting("display/window/ios/allow_high_refresh_rate"),
+		"android_frame_pacing": ProjectSettings.get_setting("display/window/frame_pacing/android/enable_frame_pacing"),
+	}

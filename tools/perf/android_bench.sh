@@ -7,6 +7,10 @@
 # SAMPLE_PSS=0 (skip `dumpsys meminfo` sampling, which can cause frame hitches).
 # Output in <out>: <name>.json (app results), <name>.log (engine log),
 # <name>.meta.json (temperatures, thermal status, peak PSS), shots/*.jpg.
+# A debug APK is reached with `run-as` (user://). A release perf APK is not
+# debuggable, so the experiment and the results go through the app-specific
+# external folder instead (PerfConfig.external_dir()); the app creates that
+# folder on its first launch, which this script triggers if it is missing.
 set -eu
 
 EXP=$1
@@ -27,10 +31,23 @@ if [ -n "${COOL_MAX_C:-}" ]; then
 	done
 fi
 
+EXT=/sdcard/Android/data/$PKG/files/Documents
 adb shell am force-stop "$PKG"
-adb shell run-as "$PKG" rm -rf files/bench files/bench_results.json
-adb push "$EXP" /data/local/tmp/perf_bench.json > /dev/null
-adb shell run-as "$PKG" cp /data/local/tmp/perf_bench.json files/perf_bench.json
+if adb shell run-as "$PKG" true > /dev/null 2>&1; then
+	debuggable=1
+	adb shell run-as "$PKG" rm -rf files/bench files/bench_results.json
+	adb push "$EXP" /data/local/tmp/perf_bench.json > /dev/null
+	adb shell run-as "$PKG" cp /data/local/tmp/perf_bench.json files/perf_bench.json
+else
+	debuggable=0
+	if ! adb shell ls "$EXT" > /dev/null 2>&1; then
+		adb shell am start -n "$PKG/com.godot.game.GodotAppLauncher" > /dev/null
+		sleep 20
+		adb shell am force-stop "$PKG"
+	fi
+	adb shell rm -rf "$EXT/bench" "$EXT/bench_results.json"
+	adb push "$EXP" "$EXT/perf_bench.json" > /dev/null
+fi
 adb logcat -c
 start_c=$(battery_c)
 start_status=$(thermal_status)
@@ -52,10 +69,17 @@ while :; do
 done
 
 adb logcat -d -s godot:V > "$OUT/$NAME.log"
-adb exec-out run-as "$PKG" cat files/bench_results.json > "$OUT/$NAME.json" || true
-for shot in $(adb shell run-as "$PKG" ls files/bench 2> /dev/null); do
-	adb exec-out run-as "$PKG" cat "files/bench/$shot" > "$OUT/shots/$shot"
-done
+if [ "$debuggable" = 1 ]; then
+	adb exec-out run-as "$PKG" cat files/bench_results.json > "$OUT/$NAME.json" || true
+	for shot in $(adb shell run-as "$PKG" ls files/bench 2> /dev/null); do
+		adb exec-out run-as "$PKG" cat "files/bench/$shot" > "$OUT/shots/$shot"
+	done
+else
+	adb pull "$EXT/bench_results.json" "$OUT/$NAME.json" > /dev/null 2>&1 || true
+	for shot in $(adb shell ls "$EXT/bench" 2> /dev/null); do
+		adb pull "$EXT/bench/$shot" "$OUT/shots/$shot" > /dev/null 2>&1 || true
+	done
+fi
 cat > "$OUT/$NAME.meta.json" << EOF
 {"experiment": "$NAME", "device": "android", "battery_c_start": $start_c, "battery_c_end": $(battery_c),
  "thermal_status_start": "$start_status", "thermal_status_end": "$(thermal_status)",

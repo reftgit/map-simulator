@@ -532,3 +532,41 @@ func test_debug_car_button_walks_up_to_the_vehicle() -> void:
 	_tap(input.interact_button, 1)
 	await physics_frames(3)
 	check(game.vehicle_interaction.is_driving(), "can get in right away")
+
+
+func _write_perf_bench_file() -> void:
+	var file := FileAccess.open(PerfConfig.USER_PATH, FileAccess.WRITE)
+	file.store_string(JSON.stringify({"experiment": "gating", "profile": "none",
+			"bench": {"warmup_s": 0.2, "measure_s": 0.3, "screenshots": false, "quit_when_done": false}}))
+	file.close()
+
+
+func test_release_perf_build_runs_benchmarks_without_debug_ui() -> void:
+	BuildFeatures.debug_override = 0
+	BuildFeatures.perf_feature_override = 1
+	_write_perf_bench_file()
+	await _setup()
+	check(not FileAccess.file_exists(PerfConfig.USER_PATH), "experiment file read and consumed")
+	var benches := game.find_children("*", "PerfBenchmark", false, false)
+	check(benches.size() == 1, "benchmark started")
+	if benches.size() == 1 and (benches[0] as PerfBenchmark).results.size() < 3:
+		await (benches[0] as PerfBenchmark).finished
+	if benches.size() == 1:
+		check((benches[0] as PerfBenchmark).results.size() == 3, "benchmark produced results")
+	check(game.startup.has("debug_build") and game.startup.has("physics_ticks"), "STARTUP data with build info (%s)" % [game.startup.keys()])
+	check(not game.hud.get_node("SafeArea/DebugLabel").visible and not game.hud.get_node("SafeArea/Controls/DebugCarButton").visible, "no debug overlay or buttons")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(PerfBenchmark.RESULTS_PATH))
+	BuildFeatures.reset_overrides()
+
+
+func test_normal_release_ignores_experiments() -> void:
+	BuildFeatures.debug_override = 0
+	BuildFeatures.perf_feature_override = 0
+	_write_perf_bench_file()
+	await _setup()
+	check(FileAccess.file_exists(PerfConfig.USER_PATH), "experiment file left alone")
+	check(game.find_children("*", "PerfBenchmark", false, false).is_empty(), "no benchmark")
+	check(game.startup.is_empty(), "no STARTUP measurement")
+	check(not game.hud.get_node("SafeArea/DebugLabel").visible, "no debug overlay")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(PerfConfig.USER_PATH))
+	BuildFeatures.reset_overrides()
