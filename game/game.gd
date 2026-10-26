@@ -288,6 +288,7 @@ func _log_startup() -> void:
 ## settings are read with their feature-tag overrides applied (what the
 ## engine uses); plain get_setting() would report the untagged value.
 func build_info() -> Dictionary:
+	var allow_high_refresh_rate: bool = ProjectSettings.get_setting_with_override("display/window/ios/allow_high_refresh_rate")
 	return {
 		"debug_build": OS.is_debug_build(),
 		"perf_feature": OS.has_feature(BuildFeatures.PERF_FEATURE),
@@ -296,7 +297,18 @@ func build_info() -> Dictionary:
 		"max_fps": Engine.max_fps,
 		"vsync_mode": DisplayServer.window_get_vsync_mode(),
 		"screen_refresh_rate": DisplayServer.screen_get_refresh_rate(),
+		"display_refresh_rate": display_refresh_rate(DisplayServer.screen_get_refresh_rate(), OS.has_feature("ios"), allow_high_refresh_rate),
 		"physics_engine_setting": ProjectSettings.get_setting_with_override("physics/3d/physics_engine"),
-		"ios_allow_high_refresh_rate": ProjectSettings.get_setting_with_override("display/window/ios/allow_high_refresh_rate"),
+		"ios_allow_high_refresh_rate": allow_high_refresh_rate,
 		"android_frame_pacing": ProjectSettings.get_setting_with_override("display/window/frame_pacing/android/enable_frame_pacing"),
 	}
+
+
+## Refresh rate the frames are paced to. On iOS the engine's display link
+## runs at 120 Hz when display/window/ios/allow_high_refresh_rate is on and at
+## 60 Hz when it is off (Godot 4.7.2, platform/ios/godot_view_ios.mm), while
+## screen_get_refresh_rate() reports the panel's maximum (120 on ProMotion
+## iPhones). The setting is read only by the iOS platform code; elsewhere the
+## screen rate applies.
+static func display_refresh_rate(screen_rate: float, ios: bool, allow_high_refresh_rate: bool) -> float:
+	return minf(screen_rate, 60.0) if ios and not allow_high_refresh_rate else screen_rate

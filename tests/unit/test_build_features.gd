@@ -63,4 +63,5 @@ func test_measurement_tags_only_in_their_presets() -> void:
 		var name: String = presets.get_value(section, "name")
 		var features := str(presets.get_value(section, "custom_features", "")).split(",", false)
 		check(("perf_jolt" in features) == (name == "Android Release Perf Jolt"), "%s: perf_jolt only in the Jolt measurement preset" % name)
-		check(("perf_60hz" in features) == (name == "iOS Release Perf 60Hz"), "%s: perf_60hz only in the 60 Hz measurement preset" % name)
+		# 60 Hz on iOS is the default since D20; its measurement preset was removed.
+		check("perf_60hz" not in features and name != "iOS Release Perf 60Hz", "%s: no obsolete 60 Hz measurement preset" % name)

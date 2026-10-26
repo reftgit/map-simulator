@@ -84,9 +84,19 @@ func test_active_physics_engine_is_detected() -> void:
 
 func test_measurement_overrides_do_not_touch_defaults() -> void:
 	# Feature-tagged overrides apply only in the perf presets that carry the tag.
-	check(not OS.has_feature("perf_jolt") and not OS.has_feature("perf_60hz"), "no measurement feature tag in normal runs")
-	check(ProjectSettings.get_setting("display/window/ios/allow_high_refresh_rate") == true, "high refresh rate allowed by default")
+	check(not OS.has_feature("perf_jolt"), "no measurement feature tag in normal runs")
 	check(ProjectSettings.get_setting("physics/common/physics_ticks_per_second") == 60, "60 Hz physics")
 	var text := FileAccess.get_file_as_string("res://project.godot")
 	check(text.contains('3d/physics_engine.perf_jolt="Jolt Physics"'), "Jolt only behind the perf_jolt tag")
-	check(text.contains("window/ios/allow_high_refresh_rate.perf_60hz=false"), "60 Hz only behind the perf_60hz tag")
+	check(not text.contains("perf_60hz"), "the 60 Hz measurement tag is gone (60 Hz is the default, D20)")
+
+
+func test_ios_display_runs_at_60_hz() -> void:
+	# P1 (D20): ProMotion iPhones would otherwise run the display link at 120 Hz,
+	# and the 60 FPS cap alternated 8.3 / 25 ms frames (Phase 4a).
+	check(ProjectSettings.get_setting_with_override("display/window/ios/allow_high_refresh_rate") == false, "high refresh rate off in every build")
+	var game_script: GDScript = load("res://game/game.gd")
+	check(game_script.display_refresh_rate(120.0, true, false) == 60.0, "ProMotion iPhone: frames paced at 60 Hz")
+	check(game_script.display_refresh_rate(60.0, true, false) == 60.0, "60 Hz iPhone (or Low Power Mode) stays at 60")
+	check(game_script.display_refresh_rate(120.0, true, true) == 120.0, "with the setting on, 120 Hz")
+	check(game_script.display_refresh_rate(90.0, false, false) == 90.0, "the setting is iOS only: other platforms keep the screen rate")

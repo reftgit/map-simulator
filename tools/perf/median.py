@@ -10,8 +10,8 @@ value, so the spread stays visible.
 
 --pacing prints frame-time distributions instead: percentiles, long frames
 (more than 1.25 x the median), and the share of frames at each multiple of the
-display refresh interval (from the results' startup.screen_refresh_rate),
-summed over the runs.
+display refresh interval (from the results' startup.display_refresh_rate, or
+screen_refresh_rate in older results), summed over the runs.
 """
 import json
 import pathlib
@@ -35,7 +35,8 @@ def load(directory):
             data = json.loads(path.read_text())
         except json.JSONDecodeError:
             continue
-        refresh = data.get("startup", {}).get("screen_refresh_rate") or 60.0
+        startup = data.get("startup", {})
+        refresh = startup.get("display_refresh_rate") or startup.get("screen_refresh_rate") or 60.0
         rows = {}
         for result in data.get("results", []):
             key = (SHORT.get(result["view"], result["view"]), result.get("minute", 0))
