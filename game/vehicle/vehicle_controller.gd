@@ -15,7 +15,8 @@ extends VehicleBody3D
 
 signal exit_requested
 signal respawned
-## The vehicle fell asleep or woke up (reported on the next physics tick).
+## The vehicle fell asleep or woke up (a wake by the physics engine is seen on
+## the next physics tick).
 signal sleep_changed(asleep: bool)
 
 ## Tolerance for "no input" comparisons.
@@ -56,7 +57,7 @@ var _hold_handbrake := false
 ## Seconds parked at rest (sleeps at definition.sleep_after_seconds).
 var _rest_time := 0.0
 var _ground_check_in := 0.0
-## Sleep state seen on the previous tick (for sleep_changed).
+## Put to sleep by the parking rule and not woken since.
 var _asleep := false
 
 
@@ -73,17 +74,15 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
-	var asleep := is_asleep()
-	if asleep != _asleep:
-		_asleep = asleep
-		_rest_time = 0.0
-		_ground_check_in = GROUND_CHECK_INTERVAL
-		sleep_changed.emit(asleep)
-	if asleep:
-		# Engine, brake, and steering values stay as they were (a parked
-		# vehicle keeps its brakes on), and so does the visual.
-		_check_ground(delta)
-		return
+	if _asleep:
+		if not _server_asleep():
+			# Woken by the physics engine: a hit, a new transform or velocity.
+			_set_asleep(false)
+		else:
+			# Engine, brake, and steering values stay as they were (a parked
+			# vehicle keeps its brakes on), and so does the visual.
+			_check_ground(delta)
+			return
 	intent.clear()
 	if input_source:
 		input_source.fill_intent(intent, self)
@@ -127,12 +126,14 @@ func release_controls() -> void:
 	engine_force = 0.0
 
 
-## True while the physics server does not simulate the vehicle (parked and
-## asleep). RigidBody3D.sleeping cannot tell: VehicleBody3D's wheel impulses
-## wake the body in the same step in which the engine's own sleep test sends
-## it to sleep, so `sleeping` reads true while the body keeps being simulated.
+## True while the parking rule has put the vehicle to sleep and the physics
+## server still does not simulate it. Neither RigidBody3D.sleeping nor the
+## server state alone can tell: the engine's own sleep test marks a resting
+## vehicle inactive at the end of every step (and `sleeping` true), and its
+## wheel impulses wake it again in the next state callback, so between steps
+## an awake vehicle looks asleep.
 func is_asleep() -> bool:
-	return PhysicsServer3D.body_get_state(get_rid(), PhysicsServer3D.BODY_STATE_SLEEPING)
+	return _asleep and _server_asleep()
 
 
 ## Wakes the vehicle and restarts the rest timer: a driver gets in, it is
@@ -140,6 +141,8 @@ func is_asleep() -> bool:
 func wake_up() -> void:
 	_rest_time = 0.0
 	sleeping = false
+	if _asleep:
+		_set_asleep(false)
 
 
 ## Whether every wheel has a floor within its suspension reach, one ray per
@@ -228,6 +231,17 @@ func _update_rest(delta: float) -> void:
 	if _rest_time >= definition.sleep_after_seconds:
 		_rest_time = 0.0
 		sleeping = true
+		_set_asleep(true)
+
+
+func _set_asleep(asleep: bool) -> void:
+	_asleep = asleep
+	_ground_check_in = GROUND_CHECK_INTERVAL
+	sleep_changed.emit(asleep)
+
+
+func _server_asleep() -> bool:
+	return PhysicsServer3D.body_get_state(get_rid(), PhysicsServer3D.BODY_STATE_SLEEPING)
 
 
 func _all_wheels_in_contact() -> bool:

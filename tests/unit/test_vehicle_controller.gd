@@ -388,6 +388,13 @@ func test_vehicle_with_a_driver_stays_awake() -> void:
 	await physics_frames(roundi(_definition().sleep_after_seconds / TICK) + 120)
 	check(not vehicle.is_asleep(), "a driver who presses nothing keeps the vehicle awake")
 	check(PhysicsServer3D.get_process_info(PhysicsServer3D.INFO_ACTIVE_OBJECTS) == 1, "simulated (active objects %d)" % PhysicsServer3D.get_process_info(PhysicsServer3D.INFO_ACTIVE_OBJECTS))
+	# Read between physics steps too, as the overlay and the benchmark do: the
+	# engine's own sleep test would mark a resting body inactive after a step.
+	var asleep_reads := 0
+	for i in 120:
+		await tree.process_frame
+		asleep_reads += int(vehicle.is_asleep())
+	check(asleep_reads == 0, "never reads as asleep between steps (%d of 120 frames)" % asleep_reads)
 
 
 func test_driver_wakes_a_sleeping_vehicle() -> void:
