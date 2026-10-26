@@ -190,6 +190,12 @@ func apply_runtime_settings(runtime: Dictionary) -> void:
 	if runtime.has("vehicles"):
 		for vehicle in world.vehicles:
 			vehicle.process_mode = PROCESS_MODE_INHERIT if runtime.vehicles else PROCESS_MODE_DISABLED
+	if runtime.has("vehicle_sleep"):
+		for vehicle in world.vehicles:
+			# A copy, so the shared definition resource stays unchanged.
+			vehicle.definition = vehicle.definition.duplicate()
+			vehicle.definition.sleep_when_parked = runtime.vehicle_sleep
+			vehicle.wake_up()
 	if runtime.has("vsync_mode"):
 		DisplayServer.window_set_vsync_mode(PerfConfig.VSYNC_MODES[runtime.vsync_mode])
 	_collider_radius = runtime.get("collider_radius", -1.0)

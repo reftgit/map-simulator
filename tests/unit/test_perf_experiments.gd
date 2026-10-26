@@ -78,7 +78,7 @@ func test_in_vehicle_bench_key() -> void:
 
 
 func test_runtime_keys_parse_and_reject_typos() -> void:
-	var config := PerfConfig.from_dict({"experiment": "x", "runtime": {"physics_ticks": 30, "physics_interpolation": false, "player_physics": false, "vehicles": false, "collider_radius": 100, "vsync_mode": "mailbox"}})
+	var config := PerfConfig.from_dict({"experiment": "x", "runtime": {"physics_ticks": 30, "physics_interpolation": false, "player_physics": false, "vehicles": false, "vehicle_sleep": false, "collider_radius": 100, "vsync_mode": "mailbox"}})
 	check(config != null, "all runtime keys accepted (%s)" % PerfConfig.last_error)
 	if config:
 		check(config.runtime.physics_ticks == 30 and config.runtime.physics_interpolation == false and is_equal_approx(config.runtime.collider_radius, 100.0), "values typed (%s)" % [config.runtime])

@@ -1,0 +1,1 @@
+{"experiment": "c_vehicle_sleep_off", "profile": "low", "runtime": {"vehicle_sleep": false}, "bench": {"warmup_s": 20, "measure_s": 40}}

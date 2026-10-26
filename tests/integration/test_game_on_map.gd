@@ -607,3 +607,19 @@ func test_runtime_experiment_keys_apply_on_the_map() -> void:
 	Engine.physics_ticks_per_second = 60
 	tree.physics_interpolation = true
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(PerfBenchmark.RESULTS_PATH))
+
+
+func test_vehicle_sleep_runtime_key() -> void:
+	await _setup()
+	var vehicle := _vehicle()
+	game.apply_runtime_settings({"vehicle_sleep": false})
+	await physics_frames(180)
+	check(not vehicle.is_asleep() and not vehicle.definition.sleep_when_parked, "parking sleep off: the parked car stays awake")
+	var shared: VehicleDefinition = load("res://game/vehicle/definitions/compact_car.tres")
+	check(shared.sleep_when_parked, "the shared definition resource is unchanged")
+	game.apply_runtime_settings({"vehicle_sleep": true})
+	var ticks := 0
+	while not vehicle.is_asleep() and ticks < 300:
+		await tree.physics_frame
+		ticks += 1
+	check(vehicle.is_asleep(), "parking sleep on again: asleep after %d ticks" % ticks)
