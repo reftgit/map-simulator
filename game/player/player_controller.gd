@@ -53,6 +53,9 @@ func _physics_process(delta: float) -> void:
 		actions.press(&"roll")
 	if intent.interact:
 		interact_requested.emit()
+		if seated:
+			# Got into a vehicle during this tick: skip the rest of it.
+			return
 	state_machine.physics_update(delta)
 	actions.tick(delta)
 	move_and_slide()

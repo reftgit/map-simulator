@@ -289,3 +289,20 @@ func test_second_vehicle_type_enter_and_exit() -> void:
 	await physics_frames(3)
 	check(not interaction.is_driving(), "out of the van")
 	check(vehicle.to_local(player.global_position).x > 1.4, "beside the van's own exit point")
+
+
+func test_entering_while_walking_leaves_the_player_idle() -> void:
+	await _setup()
+	player.teleport(Transform3D(Basis.IDENTITY, NEAR))
+	await physics_frames(15)
+	var rect := input.joystick.get_global_rect()
+	var stick := rect.position + rect.size * Vector2(0.4, 0.6)
+	touch(0, stick, true)
+	drag(0, stick, stick + Vector2(0, -60))
+	await physics_frames(2)
+	_tap(input.interact_button)
+	await physics_frames(3)
+	check(interaction.is_driving(), "got in while the stick was held")
+	check(player.state_machine.get_state_name() == &"Idle", "seated player is Idle, not walking (%s)" % player.state_machine.get_state_name())
+	check(player.velocity == Vector3.ZERO, "no velocity while seated")
+	touch(0, stick + Vector2(0, -60), false)
