@@ -306,3 +306,74 @@ func test_entering_while_walking_leaves_the_player_idle() -> void:
 	check(player.state_machine.get_state_name() == &"Idle", "seated player is Idle, not walking (%s)" % player.state_machine.get_state_name())
 	check(player.velocity == Vector3.ZERO, "no velocity while seated")
 	touch(0, stick + Vector2(0, -60), false)
+
+
+class ScriptedWalk extends PlayerInputSource:
+	var move := Vector3.ZERO
+
+	func fill_intent(intent: PlayerIntent, _player: PlayerController) -> void:
+		intent.move = move
+
+
+## Steps physics ticks until the vehicle is asleep; false if it is not
+## within 10 s.
+func _until_asleep() -> bool:
+	for i in 600:
+		if vehicle.is_asleep():
+			return true
+		await tree.physics_frame
+	return vehicle.is_asleep()
+
+
+func test_interact_button_works_while_the_vehicle_sleeps() -> void:
+	await _setup()
+	check(await _until_asleep(), "parked car asleep")
+	player.teleport(Transform3D(Basis.IDENTITY, NEAR))
+	await physics_frames(15)
+	check(input.interact_button.visible, "in reach of the sleeping car: interact button shown")
+	check(vehicle.is_asleep(), "being in reach does not wake it")
+	_tap(input.interact_button)
+	await physics_frames(3)
+	check(interaction.is_driving() and not vehicle.is_asleep(), "got in: awake")
+	_hold(input.throttle_button, 5, true)
+	await physics_frames(60)
+	_hold(input.throttle_button, 5, false)
+	check(vehicle.get_forward_speed() > 2.0, "drives off from sleep (%.2f m/s)" % vehicle.get_forward_speed())
+
+
+func test_walking_into_a_sleeping_vehicle_wakes_it() -> void:
+	await _setup()
+	var walk := ScriptedWalk.new()
+	add_node(walk)
+	player.input_source = walk
+	player.teleport(Transform3D(Basis.IDENTITY, Vector3(3.2, 0.1, 0)))
+	check(await _until_asleep(), "parked car asleep")
+	var parked := vehicle.global_position
+	walk.move = Vector3(-1, 0, 0)
+	var woke := -1
+	for i in 90:
+		await tree.physics_frame
+		if not vehicle.is_asleep():
+			woke = i
+			break
+	check(woke >= 0, "walking into its side wakes it (after %d ticks)" % woke)
+	check(player.global_position.x > 0.9 + 0.3, "the player is stopped by the car (x %.2f)" % player.global_position.x)
+	await physics_frames(60)
+	check(not vehicle.is_asleep(), "stays awake while the player keeps pushing")
+	check(vehicle.global_position.distance_to(parked) < 0.01, "the player does not move the car (vehicles do not collide with the player layer)")
+	walk.move = Vector3.ZERO
+	check(await _until_asleep(), "asleep again after the player stops")
+
+
+func test_overlay_status_shows_the_vehicle_while_driving() -> void:
+	await _setup()
+	hud.vehicles.append(vehicle)
+	check(await _until_asleep(), "parked car asleep")
+	check(hud.status_text() == "Idle 0.0 m/s | car asleep", "on foot: player state and speed, car asleep (%s)" % hud.status_text())
+	await _enter()
+	_hold(input.throttle_button, 5, true)
+	await physics_frames(60)
+	var text := hud.status_text()
+	var expected := "Driving %.1f m/s | car awake" % vehicle.get_forward_speed()
+	_hold(input.throttle_button, 5, false)
+	check(text == expected and vehicle.get_forward_speed() > 2.0, "driving: the vehicle's speed, not the player's (%s, expected %s)" % [text, expected])

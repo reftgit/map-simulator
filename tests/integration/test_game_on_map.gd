@@ -179,8 +179,9 @@ func test_short_benchmark_on_map() -> void:
 	var results: Array = await bench.finished
 	check(results.size() == 3, "one result per viewpoint (%d)" % results.size())
 	for result: Dictionary in results:
-		for key in ["view", "avg_fps", "low1_fps", "min_fps", "frames", "draw_calls", "primitives", "objects", "video_mem_mb", "static_mem_mb", "experiment", "renderer", "physics_ms", "physics_p99_ms", "in_vehicle"]:
+		for key in ["view", "avg_fps", "low1_fps", "min_fps", "frames", "draw_calls", "primitives", "objects", "video_mem_mb", "static_mem_mb", "experiment", "renderer", "physics_ms", "physics_p99_ms", "in_vehicle", "vehicles_asleep"]:
 			check(result.has(key), "result has %s" % key)
+		check(result.vehicles_asleep >= 0.0 and result.vehicles_asleep <= 1.0, "share of frames with the parked car asleep (%s)" % result.get("vehicles_asleep"))
 		check(result.physics_ms > 0.0 and result.physics_p99_ms >= result.physics_ms, "physics tick time recorded (%s / %s ms)" % [result.get("physics_ms"), result.get("physics_p99_ms")])
 		check(result.in_vehicle == false, "on foot")
 	var report: Dictionary = game.render_settings.occluder_report
@@ -450,6 +451,14 @@ func test_vehicle_parked_on_a_flat_karakoy_street() -> void:
 	check(vehicle.wheels.all(func(wheel: VehicleWheel3D) -> bool: return wheel.is_in_contact()), "all four wheels on the ground")
 	var ground := player.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(vehicle.global_position + Vector3.UP * 3, vehicle.global_position + Vector3.DOWN * 3, 1))
 	check(not ground.is_empty() and str(ground.collider.get_path()).contains("Ground_"), "on the Ground_ terrain (%s)" % [ground.get("collider")])
+	var slept := 0
+	while not vehicle.is_asleep() and slept < 300:
+		await tree.physics_frame
+		slept += 1
+	check(vehicle.is_asleep(), "asleep at its spawn (P2), %d ticks after the checks" % slept)
+	var parked := vehicle.global_position
+	await physics_frames(120)
+	check(vehicle.is_asleep() and vehicle.global_position.distance_to(parked) < 0.001, "stays asleep and in place on the street")
 	check((-spawn.basis.z).dot(vehicle.global_basis.z) > 0.999, "faces along the street (the spawn's -Z)")
 	var to_bridge := Vector2(vehicle.global_position.x - SPAWN.x, vehicle.global_position.z - SPAWN.z).length()
 	check(to_bridge > 150.0, "well away from the bridge spawn (%.0f m)" % to_bridge)
@@ -457,9 +466,14 @@ func test_vehicle_parked_on_a_flat_karakoy_street() -> void:
 
 func test_vehicle_drives_five_seconds_along_the_street() -> void:
 	await _setup()
-	await _get_in()
 	var vehicle := _vehicle()
-	check(game.vehicle_interaction.is_driving(), "in the vehicle")
+	for i in 300:
+		if vehicle.is_asleep():
+			break
+		await tree.physics_frame
+	check(vehicle.is_asleep(), "starts from a sleeping car")
+	await _get_in()
+	check(game.vehicle_interaction.is_driving() and not vehicle.is_asleep(), "in the vehicle, awake")
 	var start := vehicle.global_position
 	_tap(input.throttle_button, 2)
 	touch(2, input.throttle_button.get_global_rect().get_center(), true)
@@ -554,6 +568,7 @@ func test_release_perf_build_runs_benchmarks_without_debug_ui() -> void:
 	if benches.size() == 1:
 		check((benches[0] as PerfBenchmark).results.size() == 3, "benchmark produced results")
 	check(game.startup.has("debug_build") and game.startup.has("physics_ticks"), "STARTUP data with build info (%s)" % [game.startup.keys()])
+	check(game.startup.has("vehicles") and game.startup.has("display_refresh_rate"), "STARTUP data with vehicle state and display refresh rate (%s)" % [game.startup.keys()])
 	check(not game.hud.get_node("SafeArea/DebugLabel").visible and not game.hud.get_node("SafeArea/Controls/DebugCarButton").visible, "no debug overlay or buttons")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(PerfBenchmark.RESULTS_PATH))
 	BuildFeatures.reset_overrides()

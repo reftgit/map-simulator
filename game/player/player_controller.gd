@@ -4,7 +4,7 @@ extends CharacterBody3D
 ## input source, buffers punch and roll presses, lets the PlayerStateMachine
 ## pick speeds and transitions, then moves. Visual feedback goes through a
 ## CharacterVisual. Forward is -Z. While seated in a vehicle it is hidden and
-## takes no part in physics.
+## takes no part in physics. Walking into a sleeping vehicle wakes it.
 
 ## The intent asked to get into a vehicle (VehicleInteraction decides).
 signal interact_requested
@@ -59,7 +59,19 @@ func _physics_process(delta: float) -> void:
 	state_machine.physics_update(delta)
 	actions.tick(delta)
 	move_and_slide()
+	if is_on_wall():
+		_wake_bodies_touched()
 	visual.set_locomotion(get_horizontal_speed(), is_on_floor())
+
+
+## Wakes bodies that sleep until touched (a parked vehicle, which has
+## wake_up()) when the body walks into them; a kinematic body does not wake
+## them by itself. Checked only against walls, so a free walk costs nothing.
+func _wake_bodies_touched() -> void:
+	for i in get_slide_collision_count():
+		var body := get_slide_collision(i).get_collider()
+		if body and body.has_method(&"wake_up"):
+			body.wake_up()
 
 
 func _notification(what: int) -> void:

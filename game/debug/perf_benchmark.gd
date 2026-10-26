@@ -93,6 +93,8 @@ func _sample(seconds: float) -> Dictionary:
 	var physics_us: PackedInt64Array = []
 	var process_us: PackedInt64Array = []
 	var video_mem_max := 0
+	var vehicles: Array[VehicleController] = game.world.vehicles
+	var asleep_samples := 0
 	var start := Time.get_ticks_usec()
 	var last := start
 	var next_counter := start
@@ -103,6 +105,8 @@ func _sample(seconds: float) -> Dictionary:
 		last = now
 		physics_us.append(roundi(Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1e6))
 		process_us.append(roundi(Performance.get_monitor(Performance.TIME_PROCESS) * 1e6))
+		for vehicle in vehicles:
+			asleep_samples += int(vehicle.is_asleep())
 		if now >= next_counter:
 			next_counter = now + 1000000
 			counters.draw_calls += RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME)
@@ -116,6 +120,8 @@ func _sample(seconds: float) -> Dictionary:
 		stats[key] = roundi(counters[key] / maxi(counter_samples, 1))
 	stats.merge(physics_stats(physics_us))
 	stats.merge(timing_stats("process", process_us))
+	# Share of frames in which the map's vehicles were asleep (averaged over them).
+	stats["vehicles_asleep"] = snappedf(asleep_samples / float(maxi(frame_us.size() * vehicles.size(), 1)), 0.001)
 	stats["video_mem_mb"] = roundi(video_mem_max / 1048576.0)
 	stats["static_mem_mb"] = roundi(OS.get_static_memory_usage() / 1048576.0)
 	stats["static_peak_mb"] = roundi(OS.get_static_memory_peak_usage() / 1048576.0)

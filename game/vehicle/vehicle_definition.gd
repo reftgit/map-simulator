@@ -52,6 +52,16 @@ extends Resource
 @export var flip_reset_seconds := 2.0
 @export var flip_reset_max_speed := 2.0
 
+@export_group("Parking")
+## A vehicle without a driver that stands on all its wheels, slower than
+## sleep_linear_speed (m/s) and sleep_angular_speed (rad/s), for
+## sleep_after_seconds is put to sleep: the physics server stops simulating
+## it (no wheel raycasts, suspension, or solver work) until something wakes it.
+@export var sleep_when_parked := true
+@export var sleep_after_seconds := 1.0
+@export var sleep_linear_speed := 0.1
+@export var sleep_angular_speed := 0.1
+
 @export_group("Camera")
 ## Framing while driving.
 @export var camera_profile: CameraProfile

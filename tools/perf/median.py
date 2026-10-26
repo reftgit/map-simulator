@@ -21,7 +21,7 @@ import sys
 SHORT = {"Spawn": "Spawn", "Karaköy street, facing north": "Karaköy", "Galata street, facing south": "Galata"}
 FIELDS = [("avg_fps", "Avg FPS", 2), ("low1_fps", "1% low", 2), ("min_fps", "Min FPS", 2),
           ("draw_calls", "Draw calls", 0), ("physics_ms", "Physics ms", 3), ("physics_p99_ms", "Physics p99 ms", 3),
-          ("process_ms", "Process ms", 3)]
+          ("process_ms", "Process ms", 3), ("vehicles_asleep", "Vehicles asleep", 3)]
 PACING = [("frame_p50_ms", "p50 ms", 2), ("frame_p90_ms", "p90 ms", 2), ("frame_p99_ms", "p99 ms", 2),
           ("long_frames", "Long frames", 0), ("frames", "Frames", 0)]
 

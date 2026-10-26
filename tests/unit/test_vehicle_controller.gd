@@ -333,3 +333,133 @@ func test_driven_vehicle_holds_on_a_slope_without_pedals() -> void:
 	source.throttle = 1.0
 	await physics_frames(60)
 	check(vehicle.global_position.distance_to(settled) > 1.0, "throttle drives off the hold")
+
+
+## A vehicle without a driver on a floor (a 600 m one unless `floor` is
+## given), waited until it falls asleep.
+func _park(start := Transform3D.IDENTITY, floor: StaticBody3D = null) -> void:
+	if floor == null:
+		add_static_box(Vector3(600, 1, 600))
+	vehicle = instantiate(CAR)
+	vehicle.global_transform = start
+	vehicle.spawn_transform = start
+	source = ScriptedVehicleInput.new()
+	add_node(source)
+	check(await _ticks_until(vehicle.is_asleep, 600) >= 0, "the parked vehicle falls asleep")
+
+
+func test_parked_vehicle_falls_asleep_after_resting() -> void:
+	add_static_box(Vector3(600, 1, 600))
+	vehicle = instantiate(CAR)
+	var changes: Array[bool] = []
+	vehicle.sleep_changed.connect(func(asleep: bool) -> void: changes.append(asleep))
+	var rest := roundi(_definition().sleep_after_seconds / TICK)
+	var ticks := await _ticks_until(vehicle.is_asleep, 600)
+	check(ticks >= rest and ticks < rest + 120, "no driver, at rest: asleep after its rest time (%d ticks, rest %d)" % [ticks, rest])
+	var settled := vehicle.global_position
+	await physics_frames(120)
+	check(vehicle.is_asleep() and changes == [true], "stays asleep on flat ground; one sleep_changed (%s)" % [changes])
+	check(vehicle.global_position.distance_to(settled) < 0.001, "does not move while asleep")
+	check(PhysicsServer3D.get_process_info(PhysicsServer3D.INFO_ACTIVE_OBJECTS) == 0, "the physics server simulates nothing (active objects %d)" % PhysicsServer3D.get_process_info(PhysicsServer3D.INFO_ACTIVE_OBJECTS))
+	for wheel in vehicle.wheels:
+		if not wheel.use_as_steering:
+			check(wheel.brake == _definition().handbrake_force, "the handbrake stays on while asleep")
+
+
+func test_rolling_vehicle_sleeps_only_after_it_has_stopped() -> void:
+	await _park()
+	# A push without a driver (as from a hit): it rolls, the handbrake stops it.
+	vehicle.linear_velocity = vehicle.global_basis.z * 6.0
+	var rest := roundi(_definition().sleep_after_seconds / TICK)
+	var speeds: Array[float] = []
+	for i in 600:
+		await tree.physics_frame
+		if vehicle.is_asleep():
+			break
+		speeds.append(vehicle.linear_velocity.length())
+	check(vehicle.is_asleep(), "asleep again after stopping")
+	check(speeds.size() > rest and speeds[0] > 1.0, "it rolled before sleeping (%d awake ticks, first %.2f m/s)" % [speeds.size(), speeds[0] if speeds else 0.0])
+	var window := speeds.slice(maxi(speeds.size() - rest + 1, 0))
+	check(window.max() < _definition().sleep_linear_speed, "at rest for its whole rest time before sleeping (fastest %.3f m/s)" % window.max())
+
+
+func test_vehicle_with_a_driver_stays_awake() -> void:
+	await _setup()
+	await physics_frames(roundi(_definition().sleep_after_seconds / TICK) + 120)
+	check(not vehicle.is_asleep(), "a driver who presses nothing keeps the vehicle awake")
+	check(PhysicsServer3D.get_process_info(PhysicsServer3D.INFO_ACTIVE_OBJECTS) == 1, "simulated (active objects %d)" % PhysicsServer3D.get_process_info(PhysicsServer3D.INFO_ACTIVE_OBJECTS))
+
+
+func test_driver_wakes_a_sleeping_vehicle() -> void:
+	await _park()
+	vehicle.input_source = source
+	check(not vehicle.is_asleep(), "awake as soon as a driver gets in")
+	source.throttle = 1.0
+	await physics_frames(60)
+	check(vehicle.get_forward_speed() > 2.0, "drives off (%.2f m/s)" % vehicle.get_forward_speed())
+
+
+func test_moving_or_resetting_wakes_a_sleeping_vehicle() -> void:
+	await _park(Transform3D(Basis.IDENTITY, Vector3(5, 0.1, 0)))
+	vehicle.place_at(Transform3D(Basis.IDENTITY, Vector3(20, 0.1, 0)))
+	check(not vehicle.is_asleep(), "placed elsewhere (teleport, VIEW): awake")
+	check(await _ticks_until(vehicle.is_asleep, 600) >= 0, "asleep again at the new place")
+	check(Vector2(vehicle.global_position.x - 20, vehicle.global_position.z).length() < 0.05, "rests where it was placed (%s)" % vehicle.global_position)
+	vehicle.reset_to_spawn()
+	check(not vehicle.is_asleep(), "reset: awake")
+	check(await _ticks_until(vehicle.is_asleep, 600) >= 0, "asleep again at the spawn")
+	check(Vector2(vehicle.global_position.x - 5, vehicle.global_position.z).length() < 0.05, "at the spawn (%s)" % vehicle.global_position)
+
+
+func test_a_body_hitting_a_sleeping_vehicle_wakes_it() -> void:
+	await _park()
+	var box := RigidBody3D.new()
+	box.mass = 400.0
+	box.collision_mask = 9
+	var shape := CollisionShape3D.new()
+	shape.shape = BoxShape3D.new()
+	box.add_child(shape)
+	# Placed before entering the tree, so it never overlaps the vehicle.
+	box.position = Vector3(0, 1.0, -4.0)
+	box.linear_velocity = Vector3(0, 0, 8)
+	add_node(box)
+	var woke := await _ticks_until(func() -> bool: return not vehicle.is_asleep(), 120)
+	check(woke >= 0, "a 400 kg box thrown at it wakes it (after %d ticks)" % woke)
+	check(box.global_position.z < -2.1 - 0.4, "the box did not pass through (z %.2f)" % box.global_position.z)
+	check(await _ticks_until(vehicle.is_asleep, 600) >= 0, "back asleep once at rest")
+
+
+func test_losing_the_ground_wakes_a_sleeping_vehicle() -> void:
+	var floor := add_static_box(Vector3(40, 1, 40))
+	await _park(Transform3D.IDENTITY, floor)
+	floor.process_mode = Node.PROCESS_MODE_DISABLED
+	var woke := await _ticks_until(func() -> bool: return not vehicle.is_asleep(), roundi(VehicleController.GROUND_CHECK_INTERVAL / TICK) + 5)
+	check(woke >= 0, "floor switched off: awake within one ground check (%d ticks)" % woke)
+	await physics_frames(30)
+	check(vehicle.global_position.y < -0.5, "falls once awake (y %.2f)" % vehicle.global_position.y)
+
+
+func test_sleeping_vehicle_stays_on_a_slope_and_the_hill_hold_takes_over() -> void:
+	# 10° ramp falling toward +Z; the vehicle stands on it nose downhill.
+	var ramp := add_static_box(Vector3(40, 1, 60), Vector3(0, -0.5, 0))
+	ramp.rotation.x = deg_to_rad(10.0)
+	await _park(Transform3D(Basis(Vector3.RIGHT, deg_to_rad(10.0)), Vector3(0, 0.6, 0)), ramp)
+	var parked := vehicle.global_position
+	var wakes := [0]
+	vehicle.sleep_changed.connect(func(asleep: bool) -> void: wakes[0] += int(not asleep))
+	await physics_frames(300)
+	check(vehicle.is_asleep() and wakes[0] == 0, "stays asleep on the slope for 5 s (woke %d times)" % wakes[0])
+	check(vehicle.global_position.distance_to(parked) < 0.001, "does not slide while asleep (moved %.4f m)" % vehicle.global_position.distance_to(parked))
+	vehicle.wake_up()
+	await physics_frames(30)
+	check(vehicle.global_position.distance_to(parked) < 0.02, "woken without a driver (a bump): the parked brakes hold (moved %.3f m)" % vehicle.global_position.distance_to(parked))
+	check(await _ticks_until(vehicle.is_asleep, 600) >= 0, "and it falls asleep again")
+	# Same rule and limit as test_driven_vehicle_holds_on_a_slope_without_pedals
+	# (the hold brakes let the car creep ~2 cm/s on 10°, asleep before or not).
+	var held := vehicle.global_position
+	vehicle.input_source = source
+	await physics_frames(120)
+	check(vehicle.global_position.distance_to(held) < 0.1, "awake with a driver who presses nothing: the hill hold keeps it (moved %.3f m)" % vehicle.global_position.distance_to(held))
+	source.throttle = 1.0
+	await physics_frames(60)
+	check(vehicle.global_position.distance_to(held) > 1.0, "throttle drives off")

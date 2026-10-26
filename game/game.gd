@@ -57,6 +57,9 @@ func _ready() -> void:
 	if vehicle_scene:
 		for vehicle in world.spawn_vehicles(vehicle_scene):
 			vehicle_interaction.register_vehicle(vehicle)
+			if BuildFeatures.perf_enabled():
+				vehicle.sleep_changed.connect(_log_vehicle_sleep.bind(vehicle))
+	hud.vehicles = world.vehicles
 
 	render_settings = RenderSettings.new(world.map_root, camera_rig.camera, get_viewport(), map_definition.occluders_path)
 	if BuildFeatures.perf_enabled():
@@ -87,6 +90,10 @@ func _on_vehicle_entered(vehicle: VehicleController) -> void:
 func _on_vehicle_exited(_vehicle: VehicleController) -> void:
 	world.track(player)
 	hud.bind_vehicle(null)
+
+
+func _log_vehicle_sleep(asleep: bool, vehicle: VehicleController) -> void:
+	print("VEHICLE %s %s" % [vehicle.name, "asleep" if asleep else "awake"])
 
 
 ## Applies a quality profile, with the debug experiment (if any) on top.
@@ -277,11 +284,12 @@ func _log_startup() -> void:
 	else:
 		await RenderingServer.frame_post_draw
 	var physics := physics_engine_name(world.get_world_3d().direct_space_state)
-	startup = {"map_ready_ms": map_ready_ms, "first_frame_ms": Time.get_ticks_msec(), "physics_3d": physics}
+	startup = {"map_ready_ms": map_ready_ms, "first_frame_ms": Time.get_ticks_msec(), "physics_3d": physics,
+			"vehicles": hud.vehicle_states()}
 	startup.merge(build_info())
-	print("STARTUP map_ready_ms=%d first_frame_ms=%d profile=%s occluders=%s physics_3d=%s (setting %s) build=%s user_dir=%s" % [map_ready_ms,
+	print("STARTUP map_ready_ms=%d first_frame_ms=%d profile=%s occluders=%s physics_3d=%s (setting %s) vehicles=%s build=%s user_dir=%s" % [map_ready_ms,
 			startup.first_frame_ms, quality_profile, JSON.stringify(render_settings.occluder_report), physics,
-			ProjectSettings.get_setting("physics/3d/physics_engine"), JSON.stringify(build_info()), OS.get_user_data_dir()])
+			ProjectSettings.get_setting("physics/3d/physics_engine"), startup.vehicles, JSON.stringify(build_info()), OS.get_user_data_dir()])
 
 
 ## Build kind and the frame and physics settings in effect. Project

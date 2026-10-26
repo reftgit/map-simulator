@@ -4,9 +4,11 @@ extends CanvasLayer
 ## corners, home indicator), fades the roll button while the bound player's
 ## roll is on cooldown and the exit button while the bound vehicle is too fast
 ## to get out, and, in debug builds only, shows a performance
-## overlay, logs the same numbers as "PERF" lines (readable from adb logcat or
-## the Xcode console), and offers VIEW (measurement viewpoints), Q (quality
-## profile), DUMMY (training dummy), and CAR (walk-up to the vehicle) buttons.
+## overlay (with the player's or the driven vehicle's speed and whether each
+## vehicle is awake or asleep), logs the same numbers as "PERF" lines
+## (readable from adb logcat or the Xcode console), and offers VIEW
+## (measurement viewpoints), Q (quality profile), DUMMY (training dummy), and
+## CAR (walk-up to the vehicle) buttons.
 
 ## Emitted when the debug VIEW button is tapped.
 signal debug_view_requested
@@ -26,6 +28,8 @@ signal debug_car_requested
 var view_name := ""
 ## Active quality profile, shown in the overlay.
 var profile_name := ""
+## The map's vehicles; the overlay and PERF lines show whether each is awake.
+var vehicles: Array[VehicleController] = []
 
 var _player: PlayerController
 var _vehicle: VehicleController
@@ -110,18 +114,36 @@ static func perf_stats() -> Dictionary:
 	}
 
 
+## Overlay status: the player's state and speed on foot, the vehicle's
+## forward speed while driving, then each vehicle's physics state.
+func status_text() -> String:
+	var text := ""
+	if _vehicle:
+		text = "Driving %.1f m/s" % _vehicle.get_forward_speed()
+	elif _player:
+		text = "%s %.1f m/s" % [_player.state_machine.get_state_name(), _player.get_horizontal_speed()]
+	if not vehicles.is_empty():
+		text += " | car %s" % vehicle_states()
+	return text
+
+
+## "asleep" or "awake" per vehicle, comma separated.
+func vehicle_states() -> String:
+	var states: Array[String] = []
+	for vehicle in vehicles:
+		states.append("asleep" if vehicle.is_asleep() else "awake")
+	return ",".join(states)
+
+
 func _update_debug() -> void:
 	var stats := perf_stats()
-	var state := ""
-	if _player:
-		state = "%s %.1f m/s" % [_player.state_machine.get_state_name(), _player.get_horizontal_speed()]
 	_debug_label.text = "FPS %d | %d draw calls | %.2f M prims | %d objects\n%s | vram %.0f MB | mem %.0f MB (peak %.0f)\n%s" % [
 		stats.fps, stats.draw_calls, stats.primitives / 1e6, stats.objects,
-		state, stats.video_mem_mb, stats.static_mem_mb, stats.static_peak_mb, "%s  |  quality %s" % [view_name, profile_name],
+		status_text(), stats.video_mem_mb, stats.static_mem_mb, stats.static_peak_mb, "%s  |  quality %s" % [view_name, profile_name],
 	]
 	_ticks += 1
 	if _ticks % perf_log_every == 0:
-		print("PERF profile=%s view=\"%s\" fps=%d draw_calls=%d primitives=%d objects=%d video_mem_mb=%.0f static_mem_mb=%.0f static_peak_mb=%.0f" % [
+		print("PERF profile=%s view=\"%s\" fps=%d draw_calls=%d primitives=%d objects=%d video_mem_mb=%.0f static_mem_mb=%.0f static_peak_mb=%.0f vehicles=%s" % [
 			profile_name, view_name, stats.fps, stats.draw_calls, stats.primitives, stats.objects,
-			stats.video_mem_mb, stats.static_mem_mb, stats.static_peak_mb,
+			stats.video_mem_mb, stats.static_mem_mb, stats.static_peak_mb, vehicle_states(),
 		])

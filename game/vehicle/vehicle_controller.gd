@@ -7,12 +7,23 @@ extends VehicleBody3D
 ## VehicleBody3D drives along +Z, so a vehicle's forward is +Z (the player's
 ## is -Z); cameras use get_follow_yaw() to sit behind it. Positive
 ## VehicleBody3D steering turns left, so intent steering is negated.
+## A parked vehicle at rest goes to sleep (VehicleDefinition, "Parking"): the
+## physics server stops simulating it, so its wheels stop raycasting. It wakes
+## when a driver gets in, when it is moved or reset, when a body hits it
+## (rigid bodies through the physics engine, the player through
+## PlayerController), or when the ground under a wheel goes away.
 
 signal exit_requested
 signal respawned
+## The vehicle fell asleep or woke up (reported on the next physics tick).
+signal sleep_changed(asleep: bool)
 
 ## Tolerance for "no input" comparisons.
 const EPSILON := 0.001
+## While asleep, the ground under the wheels is checked this often (s).
+const GROUND_CHECK_INTERVAL := 0.25
+## Ground check ray length below a wheel beyond its radius and rest length (m).
+const GROUND_MARGIN := 0.15
 
 @export var definition: VehicleDefinition
 @export var visual: VehicleVisual
@@ -23,7 +34,12 @@ const EPSILON := 0.001
 ## Detects a player close enough to get in.
 @export var interaction_area: Area3D
 
-var input_source: VehicleInputSource
+## The driver's input; null while parked. Setting one wakes the vehicle.
+var input_source: VehicleInputSource:
+	set(value):
+		input_source = value
+		if value:
+			wake_up()
 var intent := VehicleIntent.new()
 ## VehicleWheel3D children in scene order.
 var wheels: Array[VehicleWheel3D] = []
@@ -37,6 +53,11 @@ var kill_height := -INF
 
 var _flipped_for := 0.0
 var _hold_handbrake := false
+## Seconds parked at rest (sleeps at definition.sleep_after_seconds).
+var _rest_time := 0.0
+var _ground_check_in := 0.0
+## Sleep state seen on the previous tick (for sleep_changed).
+var _asleep := false
 
 
 func _ready() -> void:
@@ -52,6 +73,17 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	var asleep := is_asleep()
+	if asleep != _asleep:
+		_asleep = asleep
+		_rest_time = 0.0
+		_ground_check_in = GROUND_CHECK_INTERVAL
+		sleep_changed.emit(asleep)
+	if asleep:
+		# Engine, brake, and steering values stay as they were (a parked
+		# vehicle keeps its brakes on), and so does the visual.
+		_check_ground(delta)
+		return
 	intent.clear()
 	if input_source:
 		input_source.fill_intent(intent, self)
@@ -73,6 +105,7 @@ func _physics_process(delta: float) -> void:
 		wheel.brake = command.brake if wheel.use_as_steering else maxf(command.brake, command.handbrake)
 	reversing = command.engine < 0.0
 	_check_reset(delta)
+	_update_rest(delta)
 	if visual:
 		visual.set_drive_state(speed, steer, command.brake > definition.coast_brake or command.handbrake > 0.0, reversing)
 		var poses: Array[Transform3D] = []
@@ -92,6 +125,34 @@ func _notification(what: int) -> void:
 func release_controls() -> void:
 	_hold_handbrake = true
 	engine_force = 0.0
+
+
+## True while the physics server does not simulate the vehicle (parked and
+## asleep). RigidBody3D.sleeping cannot tell: VehicleBody3D's wheel impulses
+## wake the body in the same step in which the engine's own sleep test sends
+## it to sleep, so `sleeping` reads true while the body keeps being simulated.
+func is_asleep() -> bool:
+	return PhysicsServer3D.body_get_state(get_rid(), PhysicsServer3D.BODY_STATE_SLEEPING)
+
+
+## Wakes the vehicle and restarts the rest timer: a driver gets in, it is
+## moved or reset, the player walks into it, or its ground is gone.
+func wake_up() -> void:
+	_rest_time = 0.0
+	sleeping = false
+
+
+## Whether every wheel has a floor within its suspension reach, one ray per
+## wheel along the body's down axis (the direction the wheels raycast).
+func has_ground_under_wheels() -> bool:
+	var space := get_world_3d().direct_space_state
+	var down := -global_basis.y
+	for wheel in wheels:
+		var reach := wheel.wheel_radius + wheel.wheel_rest_length + GROUND_MARGIN
+		var ray := PhysicsRayQueryParameters3D.create(wheel.global_position, wheel.global_position + down * reach, collision_mask, [get_rid()])
+		if space.intersect_ray(ray).is_empty():
+			return false
+	return true
 
 
 ## Speed along the vehicle's forward (+Z) axis; negative when reversing.
@@ -143,6 +204,7 @@ func place_at(target: Transform3D, as_spawn := false) -> void:
 	angular_velocity = Vector3.ZERO
 	steer = 0.0
 	reset_physics_interpolation()
+	wake_up()
 
 
 func reset_to_spawn() -> void:
@@ -152,7 +214,38 @@ func reset_to_spawn() -> void:
 	steer = 0.0
 	_flipped_for = 0.0
 	reset_physics_interpolation()
+	wake_up()
 	respawned.emit()
+
+
+## Puts the vehicle to sleep once it has stood on all its wheels without a
+## driver, slower than the definition's sleep speeds, for sleep_after_seconds.
+func _update_rest(delta: float) -> void:
+	var resting := definition.sleep_when_parked and input_source == null \
+			and linear_velocity.length() < definition.sleep_linear_speed \
+			and angular_velocity.length() < definition.sleep_angular_speed and _all_wheels_in_contact()
+	_rest_time = _rest_time + delta if resting else 0.0
+	if _rest_time >= definition.sleep_after_seconds:
+		_rest_time = 0.0
+		sleeping = true
+
+
+func _all_wheels_in_contact() -> bool:
+	for wheel in wheels:
+		if not wheel.is_in_contact():
+			return false
+	return true
+
+
+## While asleep: every GROUND_CHECK_INTERVAL, wakes the vehicle when a wheel
+## has lost its ground (the floor was removed or switched off).
+func _check_ground(delta: float) -> void:
+	_ground_check_in -= delta
+	if _ground_check_in > 0.0:
+		return
+	_ground_check_in = GROUND_CHECK_INTERVAL
+	if not has_ground_under_wheels():
+		wake_up()
 
 
 func _check_reset(delta: float) -> void:
