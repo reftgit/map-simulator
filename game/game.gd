@@ -284,7 +284,9 @@ func _log_startup() -> void:
 			ProjectSettings.get_setting("physics/3d/physics_engine"), JSON.stringify(build_info()), OS.get_user_data_dir()])
 
 
-## Build kind and the frame and physics settings in effect.
+## Build kind and the frame and physics settings in effect. Project
+## settings are read with their feature-tag overrides applied (what the
+## engine uses); plain get_setting() would report the untagged value.
 func build_info() -> Dictionary:
 	return {
 		"debug_build": OS.is_debug_build(),
@@ -294,6 +296,7 @@ func build_info() -> Dictionary:
 		"max_fps": Engine.max_fps,
 		"vsync_mode": DisplayServer.window_get_vsync_mode(),
 		"screen_refresh_rate": DisplayServer.screen_get_refresh_rate(),
-		"ios_allow_high_refresh_rate": ProjectSettings.get_setting("display/window/ios/allow_high_refresh_rate"),
-		"android_frame_pacing": ProjectSettings.get_setting("display/window/frame_pacing/android/enable_frame_pacing"),
+		"physics_engine_setting": ProjectSettings.get_setting_with_override("physics/3d/physics_engine"),
+		"ios_allow_high_refresh_rate": ProjectSettings.get_setting_with_override("display/window/ios/allow_high_refresh_rate"),
+		"android_frame_pacing": ProjectSettings.get_setting_with_override("display/window/frame_pacing/android/enable_frame_pacing"),
 	}

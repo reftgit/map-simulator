@@ -56,10 +56,16 @@ adb shell input keyevent KEYCODE_WAKEUP
 adb shell am start -n "$PKG/com.godot.game.GodotAppLauncher" > /dev/null
 
 # Wait for the app to finish (it quits itself), sampling PSS every 15 s.
+# An adb dropout (the server has restarted mid-run) must not count as the app
+# having quit: an empty pid only counts while the device answers.
 peak_pss=0
 while :; do
 	sleep 15
-	pid=$(adb shell pidof "$PKG" || true)
+	pid=$(adb shell pidof "$PKG" 2> /dev/null || true)
+	if [ -z "$pid" ] && ! adb get-state > /dev/null 2>&1; then
+		echo "adb not answering; waiting" >&2
+		continue
+	fi
 	[ -z "$pid" ] && break
 	if [ "${SAMPLE_PSS:-1}" != 0 ]; then
 		pss=$(adb shell dumpsys meminfo "$PKG" | awk '/TOTAL PSS:/ { print $3; exit }')
@@ -75,7 +81,10 @@ if [ "$debuggable" = 1 ]; then
 		adb exec-out run-as "$PKG" cat "files/bench/$shot" > "$OUT/shots/$shot"
 	done
 else
-	adb pull "$EXT/bench_results.json" "$OUT/$NAME.json" > /dev/null 2>&1 || true
+	for attempt in 1 2 3; do
+		adb pull "$EXT/bench_results.json" "$OUT/$NAME.json" > /dev/null 2>&1 && break
+		sleep 5
+	done
 	for shot in $(adb shell ls "$EXT/bench" 2> /dev/null); do
 		adb pull "$EXT/bench/$shot" "$OUT/shots/$shot" > /dev/null 2>&1 || true
 	done

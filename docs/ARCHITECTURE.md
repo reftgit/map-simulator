@@ -207,7 +207,7 @@ Physics engine: the project runs **GodotPhysics3D** (the `"DEFAULT"` setting in 
 
 `tests/fixtures/test_van.tscn` + `test_van_definition.tres` are a second type made this way (heavier, 14 m/s top speed, other wheelbase and exit points); `test_second_vehicle_type_from_definition_and_scene` and `test_second_vehicle_type_enter_and_exit` drive it and get in and out without any code change.
 
-## Debug measurement tools (debug builds only)
+## Debug measurement tools (debug builds only; STARTUP also in Release Perf builds)
 
 - Overlay (top left): FPS, draw calls, primitives, objects, video memory, engine static memory (current and peak), player state and speed, current viewpoint, quality profile.
 - Log lines: `PERF profile=… view="…" fps=… draw_calls=… …` every 2 s; `QUALITY profile=… experiment=… occluders={…} effective={…}` whenever settings are applied; `STARTUP map_ready_ms=… first_frame_ms=… profile=… occluders={…} physics_3d=<engine> (setting <value>)` once; `VIEW <name>` on each switch.
@@ -238,6 +238,8 @@ godot --headless --path . --script res://tests/map/validate_scene.gd # original 
 - Output: one `PASS`, `FAIL`, or `SKIP` line per test, then `RESULT <n> passed, <n> failed, <n> skipped`.
 - A test fails when a check fails **or** when any engine or script error is logged while it runs (captured with a `Logger` via `OS.add_logger`). GDScript runtime errors abort only the failing function, so a test that crashes halfway would otherwise look like a pass. Warnings are printed but do not fail a test. A test file that fails to load counts as a failure.
 - Exit code: `0` no failures and no skips; `1` any failure, an error logged outside a test, or nothing passed; `2` no failures but some tests skipped.
+- Other engine settings for a one-off run (measurement only): put a temporary `override.cfg` in the project root and delete it afterwards, e.g. `[physics]` `3d/physics_engine="Jolt Physics"` or `common/physics_ticks_per_second=30`. Results of 2026-10-26: `docs/perf/phase4a/headless/`. Many timing tests count 60 Hz ticks, so a 30 Hz run fails them without a gameplay change; see `PROJECT_STATE.md`.
+- Collider census (types, triangles, bodies near each viewpoint): `godot --headless --path . --script res://tools/perf/collider_census.gd`.
 - `tests/unit/` runs without the map. `tests/integration/` loads the real map; when `assets/istanbul_halic.glb` is missing its tests are reported as `SKIP` (via the file's `skip_reason()`), and the full run exits 2.
 - Tests send touches through `Input.parse_input_event`, the same pipeline device touches use, with positions converted from canvas units to window pixels.
 - Visual check without a device (opens a window):
@@ -272,11 +274,12 @@ Permanent render settings per device class, applied in every build.
 
   Output for İstanbul • Haliç: `maps/istanbul_halic/istanbul_halic_occluders.scn`, compressed binary, 2,300,873 bytes; 643 occluders, 317,518 triangles, 206,048 shared vertices (the runtime build has 952,554 unshared). `test_baked_occluders_match_runtime_build` checks count, triangles, and extent against the runtime build.
 
-## Performance experiments (debug builds only)
+## Performance experiments (debug and Release Perf builds)
 
-Temporary settings layered on top of a profile for measurements. With no experiment and the "none" profile the game runs with scene defaults (`test_no_perf_experiment_by_default`).
+Temporary settings layered on top of a profile for measurements. They run in debug builds and in release builds exported with the `perf_bench` custom feature (see "Build features"); normal release builds ignore them. With no experiment and the "none" profile the game runs with scene defaults (`test_no_perf_experiment_by_default`).
 
-- **Flags:** `PerfConfig` (`game/debug/perf_config.gd`) holds one experiment, parsed from JSON; unknown keys, categories, or profiles are rejected. Keys: `experiment`, `profile` (`none`/`high`/`low`; omitted = platform default), the `RenderSettings` keys `hide` (categories), `visibility_end` ({category: metres}), `camera_far` + `fog`, `shadows` (`default`/`off`/`single`), `render_scale` + `scaling_mode` (`bilinear`/`metalfx`; FSR is Forward+ only in Godot 4.7.2), `max_fps`, `occlusion`, `lod_threshold`, and an optional `bench` section (`warmup_s` 30, `measure_s` 60, `views`, `session_minutes`, `session_view`, `screenshots`, `quit_when_done`). Experiments from the 2026-10-24 diagnosis pin `"profile": "none"`, the condition they were measured under.
+- **Flags:** `PerfConfig` (`game/debug/perf_config.gd`) holds one experiment, parsed from JSON; unknown keys, categories, or profiles are rejected. Keys: `experiment`, `profile` (`none`/`high`/`low`; omitted = platform default), the `RenderSettings` keys `hide` (categories), `visibility_end` ({category: metres}), `camera_far` + `fog`, `shadows` (`default`/`off`/`single`), `render_scale` + `scaling_mode` (`bilinear`/`metalfx`; FSR is Forward+ only in Godot 4.7.2), `max_fps`, `occlusion`, `lod_threshold`, a `runtime` section (below), and an optional `bench` section (`warmup_s` 30, `measure_s` 60, `views`, `session_minutes`, `session_view`, `screenshots`, `quit_when_done`, `in_vehicle`). Experiments from the 2026-10-24 diagnosis pin `"profile": "none"`, the condition they were measured under; Phase 4 experiments (`c_*`, `pacing_*`, `jolt_*`, `session_pacing_*`) name the device profile (`low` tablet, `high` iPhone).
+- **Runtime keys** (`PerfConfig.RUNTIME_KEYS`, applied by `Main.apply_runtime_settings()`, measurement only): `physics_ticks` (Engine physics rate), `physics_interpolation`, `player_physics` (false pauses the player's `_physics_process`, so no `move_and_slide`), `vehicles` (false takes the parked vehicles out of the simulation), `collider_radius` (map static bodies whose ground-plane bounds are farther than this from the player are disabled and leave the physics space; re-evaluated at each viewpoint; 0 = all off, which needs `player_physics: false`), `vsync_mode` (`disabled`/`enabled`/`adaptive`/`mailbox`). Keys an experiment leaves out keep their defaults; the result's `config.runtime` records them.
 - **Applying:** `game.apply_perf_experiment()` merges the experiment over its profile and applies it through the same `RenderSettings`; there is no separate experiment code path.
 - **Categories** (by node-name prefix, checked in this order; every one of the 3,055 map meshes matches one, enforced by `test_perf_categories_cover_every_map_mesh`; defined in `RenderSettings.CATEGORIES`):
 
@@ -290,8 +293,8 @@ Temporary settings layered on top of a profile for measurements. With no experim
   | ground | `Ground_`, `Road_`, `Pavement_`, `Quays_`, `Gardens_`, bridge decks | 1,031 | 678,214 (9.6 %) |
   | water | `Water` | 1 | 2 |
 
-- **Loading:** `game.gd` reads `--perf-config=<path>` from the command line (desktop) or a one-shot `user://perf_bench.json` (devices; deleted when read). Experiment definitions live in `tools/perf/experiments/*.json`.
-- **Benchmark:** `PerfBenchmark` visits each viewpoint, waits `warmup_s`, then records every frame time for `measure_s`: average FPS (frames / time), 1 % low (FPS at the 99th-percentile frame time), minimum FPS (longest frame), and per-second averages of draw calls, primitives, and objects, plus peak video memory and engine static memory. Each result records the active profile. It logs `BENCH {json}` lines, writes `user://bench_results.json` (with the profile, the occluder source and load time, and the startup times), saves 640 px JPEG screenshots to `user://bench/`, then quits (Android) or hides the map and drops to 5 FPS until the host terminates it (iOS ignores `quit()`).
+- **Loading:** `game.gd` reads `--perf-config=<path>` from the command line (desktop) or a one-shot `perf_bench.json` (devices; deleted when read) from `user://`, or on Android from the app-specific external folder `OS.get_system_dir(SYSTEM_DIR_DOCUMENTS, false)` (`/sdcard/Android/data/<package>/files/Documents`): a release APK is not debuggable, so `run-as` cannot reach `user://`, but adb reaches that folder directly. Experiment definitions live in `tools/perf/experiments/*.json`.
+- **Benchmark:** `PerfBenchmark` visits each viewpoint, waits `warmup_s`, then records every frame time for `measure_s`: average FPS (frames / time), 1 % low (FPS at the 99th-percentile frame time), minimum FPS (longest frame), frame-time percentiles (`frame_p50_ms`, `frame_p90_ms`, `frame_p99_ms`), a 1 ms histogram (`frame_hist_ms`, 0–99 ms plus one bin for longer frames), `long_frames` (over 1.25 × the median, i.e. at least one display refresh late), the physics step and process times (`physics_ms`/`physics_p99_ms`, `process_ms`/`process_p99_ms`: `Performance.TIME_PHYSICS_PROCESS` and `TIME_PROCESS` sampled every frame), and per-second averages of draw calls, primitives, and objects, plus peak video memory and engine static memory. Each result records the active profile and `in_vehicle`; the results file also has `startup` with the build kind and frame/physics settings (`debug_build`, `perf_feature`, `physics_ticks`, `physics_interpolation`, `max_fps`, `vsync_mode`, `screen_refresh_rate`, `ios_allow_high_refresh_rate`, `android_frame_pacing`). It logs `BENCH {json}` lines, writes `user://bench_results.json` (with the profile, the occluder source and load time, and the startup times), saves 640 px JPEG screenshots to `user://bench/`, then quits (Android) or hides the map and drops to 5 FPS until the host terminates it (iOS ignores `quit()`).
 
 ### Measurement protocol and host scripts
 
@@ -317,6 +320,20 @@ python3 -I tools/perf/median.py build/perf/<task>/android/run1 build/perf/<task>
 - Results, conditions, and screenshots of the 2026-10-24 pass are kept in `docs/perf/` (`results/<device>/<experiment>.json` and `.meta.json`; 480 px screenshots); the profile validation in `docs/perf/profiles/`, the Phase 2 regression in `docs/perf/phase2/`. Regenerate the tables with `python3 -I tools/perf/summarize.py docs/perf/results/android --compact` (or the other `results/<device>` folders).
 - Renderer comparison: Android uses the "Android Debug Compatibility" preset (`--rendering-method gl_compatibility` embedded); iOS passes the same argument at launch (`APP_ARGS`).
 
+## Build features
+
+`BuildFeatures` (`game/debug/build_features.gd`) decides what a build may do beyond gameplay:
+
+| Build | Debug overlay, VIEW/Q/DUMMY/CAR | Experiments, benchmark, STARTUP log |
+|---|---|---|
+| Debug (editor, debug export templates) | yes | yes |
+| Release with custom feature `perf_bench` (the `* Release Perf*` presets only) | no | yes |
+| Normal release | no | no |
+
+Tests force both answers with `BuildFeatures.debug_override` / `perf_feature_override` (`test_build_features.gd`, `test_release_perf_build_runs_benchmarks_without_debug_ui`, `test_normal_release_ignores_experiments`). `test_perf_bench_only_in_release_perf_presets` reads `export_presets.cfg`: only presets named "… Release Perf …" carry `perf_bench`, keystore fields are empty, and no option holds a personal path.
+
+Measurement-only variants use feature-tagged project overrides, resolved at runtime when the export carries the tag: `physics/3d/physics_engine.perf_jolt="Jolt Physics"` ("Android Release Perf Jolt") and `display/window/ios/allow_high_refresh_rate.perf_60hz=false` ("iOS Release Perf 60Hz", the display at 60 Hz on ProMotion iPhones). Normal runs keep `DEFAULT` (GodotPhysics3D) and 120 Hz (`test_measurement_overrides_do_not_touch_defaults`, `test_measurement_tags_only_in_their_presets`).
+
 ## Device builds (debug)
 
 Never upload to a store, TestFlight, or Play Console from these steps.
@@ -334,6 +351,21 @@ tools/build_ios_debug.sh <device-udid> # build and install with devicectl
 - Identifiers: Android `com.mirongi.mapsimulator`; iOS debug `com.mirongi.mapsimulator.dev` on the temporary team in `export_presets.cfg`. The final iOS ID `com.mirongi.mapsimulator` must not be registered from this Mac (`PROJECT_CONTEXT.md` D8–D9).
 - Requirements: Godot 4.7.2 export templates; Android SDK, JDK, and debug keystore configured in the Godot editor settings; Xcode with a signing identity and a matching team profile.
 - The imported map is about 195 MB of the 224 MB APK.
+
+### Release Perf builds (measurement only)
+
+```bash
+# Android release-template APK, signed with the editor's debug keystore via GODOT_ANDROID_KEYSTORE_RELEASE_*
+tools/build_android_perf.sh                                     # "Android Release Perf"
+tools/build_android_perf.sh "Android Release Perf Jolt" build/android/map-simulator-release-perf-jolt.apk
+# iOS Xcode Release configuration, automatic signing WITHOUT -allowProvisioningUpdates
+tools/build_ios_perf.sh "iOS Release Perf" <device-udid>
+tools/build_ios_perf.sh "iOS Release Perf 60Hz" <device-udid>   # display at 60 Hz
+```
+
+- Release templates: the Android APK is not debuggable (`run-as: package not debuggable`); the iOS app links the template's `libgodot.ios.release.xcframework`. `STARTUP … build={"debug_build":false,"perf_feature":true,…}` and every result file's `startup.debug_build` prove it.
+- The keystore path and password come from the local editor settings at build time and never enter the repository. This is not a release signing setup; nothing is uploaded anywhere.
+- Same package / bundle ID as the debug builds, so installing one replaces the other.
 
 ## Conventions
 

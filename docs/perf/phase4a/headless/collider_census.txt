@@ -1,0 +1,5 @@
+CENSUS bodies=827 shapes={"ConcavePolygonShape3D":827} concave_triangles=438012
+CENSUS by_category={"buildings":{"bodies":371,"triangles":144716},"ground":{"bodies":272,"triangles":172802},"trees":{"bodies":184,"triangles":120494}}
+CENSUS near "Spawn": 25m: 1 bodies, 740 triangles, 50m: 2 bodies, 1177 triangles, 100m: 7 bodies, 2362 triangles, 200m: 16 bodies, 7656 triangles
+CENSUS near "Karaköy street, facing north": 25m: 5 bodies, 1574 triangles, 50m: 6 bodies, 2314 triangles, 100m: 11 bodies, 5143 triangles, 200m: 27 bodies, 10236 triangles
+CENSUS near "Galata street, facing south": 25m: 4 bodies, 2787 triangles, 50m: 10 bodies, 5696 triangles, 100m: 12 bodies, 6691 triangles, 200m: 37 bodies, 20751 triangles

@@ -1,0 +1,188 @@
+PASS test_build_features.gd::test_feature_logic
+PASS test_build_features.gd::test_release_hud_has_no_debug_controls
+PASS test_build_features.gd::test_perf_bench_only_in_release_perf_presets
+PASS test_build_features.gd::test_measurement_tags_only_in_their_presets
+PASS test_perf_experiments.gd::test_default_config_changes_nothing
+PASS test_perf_experiments.gd::test_only_given_keys_become_settings
+PASS test_perf_experiments.gd::test_rejects_typos
+PASS test_perf_experiments.gd::test_experiment_files_parse
+PASS test_perf_experiments.gd::test_frame_stats
+PASS test_perf_experiments.gd::test_view_slug
+PASS test_perf_experiments.gd::test_physics_stats
+PASS test_perf_experiments.gd::test_in_vehicle_bench_key
+PASS test_perf_experiments.gd::test_runtime_keys_parse_and_reject_typos
+PASS test_perf_experiments.gd::test_frame_time_distribution
+PASS test_player_actions.gd::test_action_buffer_keeps_presses_for_the_window
+FAIL test_player_actions.gd::test_punch_phases_and_hitbox_timing
+     - punch lasts its duration (15 ticks, expected 27 ± 1)
+     - hitbox open for exactly the active phase (3 ticks)
+     - startup passes before the hitbox opens (tick 4)
+FAIL test_player_actions.gd::test_punch_slows_movement_and_locomotion_resumes
+     - still punching after 20 ticks
+     - the punch stops the body (2.93 m/s)
+     - facing does not follow the stick during the punch
+PASS test_player_actions.gd::test_roll_direction
+FAIL test_player_actions.gd::test_roll_follows_move_direction_for_its_distance
+     - roll lasts its duration (18 ticks)
+PASS test_player_actions.gd::test_roll_without_stick_goes_where_the_body_faces
+FAIL test_player_actions.gd::test_punch_pressed_late_in_roll_runs_right_after
+     - still rolling when punch is pressed
+     - Roll -> Punch -> Idle (got [&"Punch", &"Idle"])
+PASS test_player_actions.gd::test_punch_pressed_early_in_roll_expires
+PASS test_player_actions.gd::test_roll_cancels_punch_recovery
+FAIL test_player_actions.gd::test_roll_cannot_cancel_punch_active_phase
+     - roll pressed in phase 1 (got 2)
+     - the buffered roll starts later ([&"Roll", &"Idle"])
+PASS test_player_actions.gd::test_roll_cannot_cancel_punch_startup
+PASS test_player_actions.gd::test_roll_pressed_at_punch_start_expires_before_recovery
+PASS test_player_actions.gd::test_actions_do_not_start_in_the_air
+FAIL test_player_actions.gd::test_roll_press_during_cooldown_is_ignored
+     - presses during the cooldown never start a roll, even after it ends
+     - cooldown over
+     - a press after the cooldown rolls
+FAIL test_player_actions.gd::test_roll_press_during_roll_is_ignored
+     - rolls do not chain ([&"Idle"])
+PASS test_player_actions.gd::test_focus_out_ends_punch
+PASS test_player_actions.gd::test_pause_ends_punch
+PASS test_player_actions.gd::test_focus_out_ends_roll
+PASS test_player_actions.gd::test_pause_ends_roll
+PASS test_player_actions.gd::test_hitbox_hits_a_hurtbox_once_per_punch
+PASS test_player_actions.gd::test_visual_can_be_replaced
+FAIL test_player_actions.gd::test_placeholder_visual_animates_and_resets
+     - tucked and turning mid-roll (rotation -6.28)
+     camera frames during roll=92 travelled=6.12 m max frame speed=10.0 m/s
+PASS test_player_actions.gd::test_roll_follows_camera_and_camera_follows_roll
+FAIL test_player_actions.gd::test_target_reentering_during_active_phase_is_hit_once
+     - target left and came back while the hitbox was still open
+PASS test_player_controller.gd::test_starts_idle_on_floor
+PASS test_player_controller.gd::test_walk_reaches_walk_speed
+PASS test_player_controller.gd::test_half_stick_walks_at_half_speed
+PASS test_player_controller.gd::test_run_reaches_run_speed
+PASS test_player_controller.gd::test_release_stops_and_returns_to_idle
+PASS test_player_controller.gd::test_state_sequence_is_reported
+PASS test_player_controller.gd::test_turns_to_face_movement
+PASS test_player_controller.gd::test_teleport_resets_motion
+PASS test_player_controller.gd::test_slides_along_wall_instead_of_passing_through
+PASS test_project_settings.gd::test_main_scene_is_game
+PASS test_project_settings.gd::test_mobile_renderer
+PASS test_project_settings.gd::test_landscape_layout
+PASS test_project_settings.gd::test_physics_interpolation_enabled
+PASS test_project_settings.gd::test_mouse_emulates_touch_for_desktop_testing
+PASS test_project_settings.gd::test_no_packed_string_array_exports
+PASS test_project_settings.gd::test_input_actions
+PASS test_project_settings.gd::test_active_physics_engine_is_detected
+FAIL test_project_settings.gd::test_measurement_overrides_do_not_touch_defaults
+     - 60 Hz physics
+PASS test_render_settings.gd::test_platform_rule
+PASS test_render_settings.gd::test_quality_argument
+PASS test_render_settings.gd::test_profile_values_match_measured_packages
+PASS test_render_settings.gd::test_experiment_overrides_profile_keys
+PASS test_render_settings.gd::test_apply_low_profile
+PASS test_render_settings.gd::test_switching_to_none_restores_defaults
+PASS test_render_settings.gd::test_occluder_fallback_builds_from_collision
+PASS test_render_settings.gd::test_shared_vertices_keep_triangles
+PASS test_render_settings.gd::test_category_matching
+PASS test_third_person_camera.gd::test_starts_behind_target_at_profile_distance
+PASS test_third_person_camera.gd::test_look_rotates_yaw_and_clamps_pitch
+PASS test_third_person_camera.gd::test_follows_target
+PASS test_third_person_camera.gd::test_spring_arm_keeps_camera_in_front_of_wall
+PASS test_third_person_camera.gd::test_spring_arm_ignores_the_followed_body
+PASS test_third_person_camera.gd::test_profile_swap_changes_framing
+PASS test_third_person_camera.gd::test_snap_uses_the_targets_follow_yaw
+PASS test_third_person_camera.gd::test_follow_mode_swings_back_after_look_input_pauses
+PASS test_third_person_camera.gd::test_on_foot_profile_keeps_the_yaw
+PASS test_touch_player_input.gd::test_stick_up_moves_away_from_camera
+PASS test_touch_player_input.gd::test_stick_right_strafes_right_of_camera
+PASS test_touch_player_input.gd::test_magnitude_is_kept_and_limited
+PASS test_touch_routing.gd::test_layout_splits_screen
+PASS test_touch_routing.gd::test_joystick_drives_move_vector
+PASS test_touch_routing.gd::test_look_drag_turns_camera_input
+PASS test_touch_routing.gd::test_joystick_and_look_work_simultaneously
+PASS test_touch_routing.gd::test_run_button_toggles_without_turning_camera
+PASS test_touch_routing.gd::test_look_drag_over_button_stays_look
+PASS test_touch_routing.gd::test_second_finger_in_look_area_is_ignored
+PASS test_touch_routing.gd::test_run_resets_when_joystick_released
+PASS test_touch_routing.gd::test_debug_view_button_is_routed_before_joystick_zone
+PASS test_touch_routing.gd::test_focus_out_releases_held_joystick_and_run
+PASS test_touch_routing.gd::test_pause_releases_held_joystick_and_run
+PASS test_touch_routing.gd::test_release_all_touches_clears_state
+PASS test_touch_routing.gd::test_action_buttons_layout
+PASS test_touch_routing.gd::test_action_buttons_fire_once_on_touch_down
+PASS test_touch_routing.gd::test_joystick_look_and_action_buttons_together
+PASS test_touch_routing.gd::test_look_drag_over_action_button_stays_look
+PASS test_touch_routing.gd::test_action_keys
+PASS test_touch_routing.gd::test_touch_input_fills_one_shot_intent
+PASS test_touch_routing.gd::test_debug_dummy_button_requests_the_dummy
+PASS test_touch_routing.gd::test_vehicle_controls_layout_and_group_switch
+PASS test_touch_routing.gd::test_vehicle_keys_and_steer_buttons
+PASS test_ui_controller.gd::test_iphone_landscape_safe_area
+PASS test_ui_controller.gd::test_missing_safe_area_falls_back_to_full_screen
+PASS test_ui_controller.gd::test_desktop_hud_uses_edge_margin_only
+PASS test_vehicle_controller.gd::test_drive_command_rules
+PASS test_vehicle_controller.gd::test_steering_input_and_angle
+PASS test_vehicle_controller.gd::test_parked_without_driver
+FAIL test_vehicle_controller.gd::test_throttle_accelerates_forward_up_to_max_speed
+     - never above max speed (58.72)
+     - stays upright
+     - full steering at top speed for 3 s does not roll it over (lowest up -0.951)
+PASS test_vehicle_controller.gd::test_brake_slows_then_reverses
+PASS test_vehicle_controller.gd::test_positive_steer_turns_right
+PASS test_vehicle_controller.gd::test_handbrake_stops_the_vehicle
+PASS test_vehicle_controller.gd::test_focus_out_drops_throttle_and_holds_handbrake
+FAIL test_vehicle_controller.gd::test_flipped_vehicle_resets_to_spawn
+     - no reset before the flip time
+PASS test_vehicle_controller.gd::test_falling_below_kill_height_resets
+PASS test_vehicle_controller.gd::test_visual_gets_drive_state_and_wheels
+PASS test_vehicle_controller.gd::test_placeholder_lights_and_wheels_follow
+PASS test_vehicle_controller.gd::test_exit_point_prefers_driver_side_and_avoids_obstacles
+PASS test_vehicle_controller.gd::test_exit_needs_a_floor
+PASS test_vehicle_controller.gd::test_second_vehicle_type_from_definition_and_scene
+FAIL test_vehicle_controller.gd::test_driven_vehicle_holds_on_a_slope_without_pedals
+     - a driven vehicle with no pedal pressed does not roll away on a 10° slope (moved 0.10 m)
+PASS test_vehicle_interaction.gd::test_interact_button_only_in_reach_and_on_floor
+PASS test_vehicle_interaction.gd::test_enter_and_exit_switch_hud_camera_and_player
+PASS test_vehicle_interaction.gd::test_drive_with_touch_buttons
+PASS test_vehicle_interaction.gd::test_exit_refused_while_too_fast
+PASS test_vehicle_interaction.gd::test_exit_tries_the_other_side_then_refuses
+PASS test_vehicle_interaction.gd::test_focus_out_while_driving_releases_controls
+PASS test_vehicle_interaction.gd::test_on_foot_actions_are_inert_while_driving
+PASS test_vehicle_interaction.gd::test_keyboard_enters_drives_and_exits
+PASS test_vehicle_interaction.gd::test_second_vehicle_type_enter_and_exit
+PASS test_vehicle_interaction.gd::test_entering_while_walking_leaves_the_player_idle
+PASS test_world_manager.gd::test_loads_map_scene
+PASS test_world_manager.gd::test_spawn_transform
+PASS test_world_manager.gd::test_respawns_bodies_below_kill_height
+PASS test_world_manager.gd::test_holds_bodies_inside_bounds
+PASS test_world_manager.gd::test_freed_tracked_body_is_skipped
+PASS test_world_manager.gd::test_untracked_bodies_are_left_alone
+PASS test_world_manager.gd::test_spawns_vehicles_from_the_definition
+PASS test_game_on_map.gd::test_map_scene_setup
+PASS test_game_on_map.gd::test_spawns_on_galata_bridge
+PASS test_game_on_map.gd::test_touch_walk_on_bridge
+PASS test_game_on_map.gd::test_touch_run_on_bridge
+PASS test_game_on_map.gd::test_debug_viewpoints_stand_on_ground
+PASS test_game_on_map.gd::test_perf_categories_cover_every_map_mesh
+PASS test_game_on_map.gd::test_no_perf_experiment_by_default
+PASS test_game_on_map.gd::test_short_benchmark_on_map
+PASS test_game_on_map.gd::test_profiles_switch_on_the_real_map
+PASS test_game_on_map.gd::test_baked_occluders_match_runtime_build
+PASS test_game_on_map.gd::test_profile_uses_baked_occluders
+PASS test_game_on_map.gd::test_falling_into_water_respawns
+PASS test_game_on_map.gd::test_movement_follows_camera_direction
+     camera samples=192 shortened_by_walls=47 obstructed=0
+PASS test_game_on_map.gd::test_camera_stays_out_of_geometry_on_streets
+PASS test_game_on_map.gd::test_roll_on_bridge_then_walk
+PASS test_game_on_map.gd::test_punch_on_bridge_then_walk
+PASS test_game_on_map.gd::test_roll_off_the_deck_edge_respawns
+PASS test_game_on_map.gd::test_training_dummy_is_hit_once_per_punch
+PASS test_game_on_map.gd::test_vehicle_parked_on_a_flat_karakoy_street
+     vehicle 5 s full throttle: 126.5 m, end speed 16.2 m/s, lowest up 0.980
+PASS test_game_on_map.gd::test_vehicle_drives_five_seconds_along_the_street
+PASS test_game_on_map.gd::test_vehicle_reset_takes_the_driver_along
+PASS test_game_on_map.gd::test_view_cycle_moves_the_vehicle_while_driving
+PASS test_game_on_map.gd::test_short_benchmark_in_the_vehicle
+PASS test_game_on_map.gd::test_debug_car_button_walks_up_to_the_vehicle
+PASS test_game_on_map.gd::test_release_perf_build_runs_benchmarks_without_debug_ui
+PASS test_game_on_map.gd::test_normal_release_ignores_experiments
+PASS test_game_on_map.gd::test_runtime_experiment_keys_apply_on_the_map
+RESULT 148 passed, 13 failed, 0 skipped

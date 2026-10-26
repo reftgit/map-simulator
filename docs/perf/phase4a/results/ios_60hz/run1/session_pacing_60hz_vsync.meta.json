@@ -1,0 +1,83 @@
+{
+ "experiment": "session_pacing_60hz_vsync",
+ "device": "ios",
+ "wall_s": 617,
+ "cooldown_s": 0,
+ "app_args": "",
+ "thermal_start": "Nominal",
+ "thermal_end": "Nominal",
+ "thermal_max": "Nominal",
+ "footprint_peak_mib": 993,
+ "probes": [
+  {
+   "t": 0,
+   "thermal": "Nominal",
+   "footprint_mib": null
+  },
+  {
+   "t": 40,
+   "thermal": "Nominal",
+   "footprint_mib": 993
+  },
+  {
+   "t": 92,
+   "thermal": "Nominal",
+   "footprint_mib": 993
+  },
+  {
+   "t": 143,
+   "thermal": "Nominal",
+   "footprint_mib": 993
+  },
+  {
+   "t": 195,
+   "thermal": "Nominal",
+   "footprint_mib": 993
+  },
+  {
+   "t": 246,
+   "thermal": "Nominal",
+   "footprint_mib": 993
+  },
+  {
+   "t": 297,
+   "thermal": "Nominal",
+   "footprint_mib": 993
+  },
+  {
+   "t": 349,
+   "thermal": "Nominal",
+   "footprint_mib": 993
+  },
+  {
+   "t": 400,
+   "thermal": "Nominal",
+   "footprint_mib": 993
+  },
+  {
+   "t": 451,
+   "thermal": "Nominal",
+   "footprint_mib": 993
+  },
+  {
+   "t": 503,
+   "thermal": "Nominal",
+   "footprint_mib": 993
+  },
+  {
+   "t": 554,
+   "thermal": "Nominal",
+   "footprint_mib": 993
+  },
+  {
+   "t": 606,
+   "thermal": "Nominal",
+   "footprint_mib": 987
+  },
+  {
+   "t": 617,
+   "thermal": "Nominal",
+   "footprint_mib": null
+  }
+ ]
+}

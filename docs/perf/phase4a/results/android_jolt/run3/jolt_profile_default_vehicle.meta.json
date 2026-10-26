@@ -1,0 +1,3 @@
+{"experiment": "jolt_profile_default_vehicle", "device": "android", "battery_c_start": 38.5, "battery_c_end": 38.5,
+ "thermal_status_start": "0", "thermal_status_end": "0",
+ "pss_peak_kb": 0, "wall_s": 288, "started": "2026-10-26 17:38:04"}

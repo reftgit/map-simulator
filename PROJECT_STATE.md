@@ -2,15 +2,15 @@
 
 What actually exists in the repository and how it was verified. Plans and decisions belong in `PROJECT_CONTEXT.md`; code structure, build, and test commands are in `docs/ARCHITECTURE.md`.
 
-Last updated: 2026-10-26 (Phase 3 vehicle system, Claude Code)
+Last updated: 2026-10-26 (Phase 4a measurements, Claude Code)
 
 ## Current phase
 
-**Phase 3 (vehicle) implemented and checked on both devices, with a placeholder car.** The project runs **GodotPhysics3D** (the "DEFAULT" setting; logged at startup); the car is a `VehicleBody3D` with an intent-based controller, a `VehicleDefinition`, a `VehicleVisual` interface, getting in and out with separate HUD control groups, a vehicle camera with follow mode, a spawn on a Karaköy street, and resets after falling or flipping. Automated: 151 tests pass (127 unit, 24 on the real map), including a second vehicle type and mutation checks. Devices: every checklist item PASS by the user on the iPhone 13 Pro and the Galaxy Tab A7 (driving feel: prepared answer "İyi, değişiklik gerekmez", no own sentence). Performance (three runs, medians): iPhone high 60.0 FPS and Nominal through three 10-minute in-vehicle sessions (PASS); Tab A7 low 30.0 FPS at all viewpoints on foot and in the vehicle (PASS). Phases 1–2 and the quality profiles are unchanged.
+**Phase 4a (release baseline and diagnosis, measurement only) done.** Release builds for measurement ("* Release Perf*" presets, `perf_bench` feature) run on both devices and are proven non-debug. Release changes little against debug. The iPhone's ~41 FPS "1 % low" is a frame-pacing artefact of the 60 FPS limiter on the 120 Hz display (frames alternate 8.3 / 25 ms); at 60 Hz the frames are an even 16.7 ms. On the Galaxy Tab A7 the physics step (≈ 4.7–5.7 ms, two per frame) splits into ≈ 1 ms for the player's `move_and_slide`, ≈ 1 ms for the parked car, and smaller parts; 30 Hz physics destabilizes the car, and Jolt is ~2 ms per step slower. No default was changed; the measured proposals are in `PROJECT_CONTEXT.md`, "Phase 4 proposals". Phases 1–3 and the quality profiles are unchanged.
 
 ## Current objective
 
-Review of Phase 3; then Phase 4 or the map-level facade work. See "Recommended next task".
+User decision on the Phase 4 proposals (60 Hz display on ProMotion iPhones first). See "Recommended next task".
 
 ## Git
 
@@ -40,7 +40,10 @@ Review of Phase 3; then Phase 4 or the map-level facade work. See "Recommended n
 - `2e68916`: physics step timing and in-vehicle benchmarks, `tools/perf/median.py`.
 - `59aa62b`: debug CAR button (walk up to the vehicle).
 - `9dd53df`: fix: the player's tick stops once it gets into a vehicle.
-- Phase 3 device results and documentation: the commit after `9dd53df` (`git log`).
+- `37050e3`: Phase 3 device results and documentation.
+- `ef1e33e`: `perf_bench` feature gating, Release Perf presets, Android external-folder transport, perf build scripts.
+- `0e1a35a`: runtime experiment flags, frame-time statistics, collider census, Jolt and 60 Hz measurement presets.
+- Phase 4a results and documentation: the commit after `0e1a35a` (`git log`).
 
 ## Repository contents
 
@@ -51,15 +54,16 @@ Review of Phase 3; then Phase 4 or the map-level facade work. See "Recommended n
 | `project.godot` | Main scene `res://game/main.tscn`; Mobile renderer; sensor landscape; `expand` aspect; physics interpolation; input actions; mouse emulates touch; ETC2/ASTC import (required for Android export); placeholder icon. |
 | `export_presets.cfg` | "Android Debug" (arm64 APK, `com.mirongi.mapsimulator`), "Android Debug Compatibility" (same, with `--rendering-method gl_compatibility`), and "iOS Debug" (`com.mirongi.mapsimulator.dev`, team `8N7RYA42S6`, project-only export). No passwords or keystore paths. |
 | `icon.svg` | Placeholder app icon (capsule character over water). |
-| `tests/` | Headless runner, 127 unit tests, 24 integration tests, fixtures (flat map, second vehicle type `test_van`), original map validation. |
+| `tests/` | Headless runner, 134 unit tests, 27 integration tests, fixtures (flat map, second vehicle type `test_van`), original map validation. |
 | `tools/capture_screenshot.gd` | Windowed render to PNG with render stats. |
 | `tools/build_ios_debug.sh` | iOS debug build without contacting the Apple Developer portal; optional `devicectl` install. |
+| `tools/build_android_perf.sh`, `tools/build_ios_perf.sh` | Release Perf builds for measurements only (debug keystore via environment variables; Xcode Release without `-allowProvisioningUpdates`). |
 | `game/quality/` | `RenderSettings` (applies render settings; shared by profiles and experiments), `QualityProfile`, `QualityProfiles` (selection rule), `profiles/high.tres`, `profiles/low.tres`. |
 | `game/debug/` | Debug-only: `PerfConfig` (experiment flags from JSON, layered on a profile), `PerfBenchmark` (automatic measurement). |
 | `maps/istanbul_halic/istanbul_halic_occluders.scn` | Baked occluders, 2,300,873 bytes (643 occluders, 317,518 triangles), referenced by the `MapDefinition`. |
 | `tools/bake_occluders.gd` | Headless occluder bake. |
 | `tools/perf/` | Experiment definitions (`experiments/*.json`), device orchestration (`android_bench.sh`, `ios_bench.sh`, `run_batch.sh`), `parse_xctrace.py`, `summarize.py`. |
-| `docs/perf/` | Diagnosis pass: raw results and conditions (`results/`), 480 px screenshots (`android/`, `ios/`). Profile validation: `profiles/`. Phase 2 regression and HUD screenshots: `phase2/`. Phase 3 three-run results and screenshots: `phase3/`. 2.8 MB in total. |
+| `docs/perf/` | Diagnosis pass: raw results and conditions (`results/`), 480 px screenshots (`android/`, `ios/`). Profile validation: `profiles/`. Phase 2 regression and HUD screenshots: `phase2/`. Phase 3 three-run results and screenshots: `phase3/`. Phase 4a release, diagnosis, and pacing results plus headless Jolt / 30 Hz / collider census: `phase4a/`. 3.6 MB in total. |
 | `build/.gdignore` | Keeps Godot from scanning or packing build output. Everything else in `build/` is ignored by Git. |
 | `main.tscn`, `scripts/` | Original explorer demo, unchanged. Desktop only. |
 | `assets/istanbul_halic.glb` | 502 MB, **not tracked**. Restore: `docs/maps/istanbul_halic/README.md`. |
@@ -67,6 +71,7 @@ Review of Phase 3; then Phase 4 or the map-level facade work. See "Recommended n
 
 ## Implemented features
 
+- **Measurement builds (Phase 4a):** `BuildFeatures` gates the debug overlay (debug builds) and experiments/benchmarks/STARTUP (debug builds and release builds with `perf_bench`); "Android Release Perf", "iOS Release Perf", and the measurement-only variants "Android Release Perf Jolt" and "iOS Release Perf 60Hz" (feature-tagged overrides). Experiments gain runtime keys (physics rate, interpolation, player physics, vehicles, collider radius, V-Sync) and results gain frame-time percentiles, a histogram, long frames, physics and process times. None of this changes normal builds.
 - **Phase 3 vehicle (all builds):** placeholder car (box body, cylinder wheels, brake and reverse lights) parked on a Karaköy street; interact button (car icon, E) while in reach and standing; vehicle controls ◀ ▶ (left), throttle, brake/reverse, handbrake "P" (bottom right), exit (top right); exit only at ≤ 1.5 m/s and beside the car (driver's side, else passenger side, else refused; the exit button fades while too fast); focus loss or pause releases the controls and holds the handbrake; hill hold when no pedal is pressed; reset to the spawn after falling below the kill height or 2 s flipped, with the driver; vehicle camera 7.5 m behind with follow mode. Details: `docs/ARCHITECTURE.md`, "Vehicles (Phase 3)".
 - Debug builds: `STARTUP` reports the physics engine; CAR overlay button puts the player beside the vehicle; VIEW moves the vehicle while driving; benchmarks can run from the driver's seat and record physics step time.
 - **Phase 2 character actions (all builds):** punch button (starburst icon) and roll button (circular arrow) bottom-right, one-shot on touch-down, J / Space on desktop; 0.18 s input buffer; `PunchState` (0.10 s startup, 0.10 s active with the hitbox open, 0.25 s recovery; the body stops and keeps its facing); `RollState` (6 m in 0.6 s at constant speed toward the camera-relative stick or the facing; gravity and collisions stay on; 0.8 s cooldown; the roll button fades during it); a roll cancels only the punch recovery; a punch pressed late in a roll runs after it; nothing starts in the air; focus loss or pause ends an action and returns to Idle. Visual feedback through `CharacterVisual` (placeholder: fist thrust, tuck-and-turn, lean with speed). `Hitbox` / `Hurtbox` (layer 3) report at most one hit per punch per target; no damage. Details: `docs/ARCHITECTURE.md`, "Character actions".
@@ -79,6 +84,90 @@ Review of Phase 3; then Phase 4 or the map-level facade work. See "Recommended n
 - **Quality profiles (all builds):** high (60 FPS cap, occlusion, 200 m visibility range for trees/lamps/decor/facade detail) and low (occlusion, 400 m far plane + depth fog, 100 m ranges, 0.6 render scale, shadows off, LOD threshold 4, 30 FPS cap). Default: iOS → high, Android → low, desktop → none. `--quality=<name>` overrides; debug builds can cycle profiles with the Q button.
 - **Baked occluders** loaded from `maps/istanbul_halic/istanbul_halic_occluders.scn` when a profile enables occlusion; runtime building from collision remains as a fallback with a warning.
 - Debug builds only: performance experiment flags (`PerfConfig`) layered on top of the profile (experiment > profile > defaults), and an automatic benchmark (`PerfBenchmark`) driven by host scripts in `tools/perf/`. Off unless an experiment file or `--perf-config` is given.
+
+## Phase 4a — release baseline, CPU/physics, and frame pacing diagnosis (2026-10-26)
+
+Measurement only (D19): no default changed. Builds from `0e1a35a` ("* Release Perf*" presets); the 60 Hz iOS build was rebuilt once more after the `build_info` fix to prove its override (below). Three runs per device, experiment, and viewpoint (D17); medians with every run's value in `docs/perf/phase4a/results/`. Tablet without PSS sampling.
+
+### Release Perf builds
+
+- Android: release template, signed with the editor's debug keystore through `GODOT_ANDROID_KEYSTORE_RELEASE_*` (`tools/build_android_perf.sh`); `adb shell run-as` answers "package not debuggable"; experiment and results go through the app-specific external folder.
+- iOS: Xcode Release configuration, automatic signing without `-allowProvisioningUpdates` (`tools/build_ios_perf.sh`); the app links `libgodot.a` of 188,887,256 bytes, the size of the template's `libgodot.ios.release.xcframework`.
+- Every result file of both devices records `startup.debug_build: false` and `perf_feature: true`. No overlay or debug buttons (test-covered).
+- Jolt build: `startup.physics_3d = "Jolt Physics"` (class-based detection). 60 Hz build: `ios_allow_high_refresh_rate: false` after the logging fix (`get_setting_with_override`; the first logging used `get_setting()`, which ignores feature overrides and showed `true` although the frame times show the 60 Hz display link).
+
+### Debug vs release (profile_default, medians of three runs)
+
+Debug = Phase 3 (`docs/perf/phase3/results/`), release = this pass. Physics = one physics step in ms (p99 in brackets). Draw calls drop by 21 everywhere in release: the debug overlay and its buttons.
+
+| Device, view, mode | Avg FPS debug → release | 1 % low debug → release | Min FPS debug → release | Physics ms debug → release | Draw calls debug → release |
+|---|---|---|---|---|---|
+| Tab A7, Spawn, on foot | 30.00 → 29.99 | 25.28 → 25.39 | 22.58 → 20.85 | 4.90 (7.10) → 4.79 (9.84) | 101 → 80 |
+| Tab A7, Karaköy, on foot | 30.00 → 30.00 | 25.56 → 25.99 | 23.40 → 20.81 | 4.73 (7.48) → 4.69 (8.18) | 93 → 72 |
+| Tab A7, Galata, on foot | 30.00 → 29.99 | 24.88 → 24.89 | 20.71 → 21.75 | 5.56 (7.95) → 5.59 (9.99) | 56 → 35 |
+| Tab A7, Spawn, in vehicle | 30.00 → 30.00 | 25.85 → 26.41 | 24.42 → 17.74 | 4.45 (8.74) → 3.54 (8.81) | 122 → 101 |
+| Tab A7, Karaköy, in vehicle | 30.00 → 30.00 | 26.03 → 26.68 | 23.14 → 22.91 | 4.03 (8.41) → 3.57 (5.71) | 112 → 91 |
+| Tab A7, Galata, in vehicle | 30.00 → 30.00 | 25.64 → 25.90 | 23.23 → 23.71 | 4.84 (5.80) → 4.22 (8.13) | 78 → 57 |
+| iPhone, Spawn, on foot | 59.99 → 60.00 | 42.34 → 42.28 | 40.24 → 40.54 | 1.32 (1.91) → 1.31 (1.63) | 263 → 242 |
+| iPhone, Karaköy, on foot | 60.00 → 59.99 | 41.72 → 41.86 | 40.28 → 40.27 | 1.35 (1.64) → 1.34 (2.09) | 162 → 141 |
+| iPhone, Galata, on foot | 60.00 → 59.99 | 39.80 → 39.97 | 39.21 → 36.55 | 1.50 (2.28) → 1.39 (2.18) | 93 → 72 |
+| iPhone, Spawn, in vehicle | 60.00 → 60.00 | 42.40 → 42.25 | 41.00 → 40.78 | 1.06 (1.28) → 0.99 (1.25) | 232 → 211 |
+| iPhone, Karaköy, in vehicle | 60.00 → 60.00 | 42.04 → 42.18 | 40.70 → 40.78 | 1.08 (1.48) → 1.01 (1.51) | 196 → 175 |
+| iPhone, Galata, in vehicle | 60.00 → 60.00 | 40.51 → 40.49 | 40.02 → 40.00 | 1.01 (1.34) → 0.94 (1.34) | 118 → 97 |
+
+- Release changes little: the tablet's 1 % low moves by −0.1 to +0.7, its in-vehicle physics step drops 0.5–0.9 ms; the iPhone is within ±0.2 FPS and ±0.1 ms. Neither device is limited by debug-build overhead.
+- iPhone 10-minute session on foot (`session_profile_default`, release, three runs): 59.97–60.00 FPS per minute, 1 % low 41.9 (median of minutes), thermal Nominal at every probe, footprint 989–1,011 MiB. PASS (D11/D12).
+- `process_ms` (`Performance.TIME_PROCESS`) equals the frame interval (31–34 ms on the tablet, ~16–17 ms on the iPhone) whenever a frame limiter waits, so it is no CPU measure; it is recorded but not used.
+- Startup (release, median of launches): tablet map ready 6,235 ms (30 launches, 5,974–9,235), first frame 6,661 ms; iPhone 1,391 ms (9 launches, 1,366–1,438), first frame 1,458 ms. Debug (Phase 3): 8,071 / 8,552 ms and 1,540 / 1,610 ms.
+
+### Tablet physics: where the time goes (release, 20 s warm-up + 40 s per viewpoint, medians)
+
+One 60 Hz physics step in ms (p99); at the 30 FPS cap each frame contains two steps. 1 % low for reference.
+
+| Experiment | Physics step S / K / G | p99 S / K / G | 1 % low S / K / G |
+|---|---|---|---|
+| `c_baseline` (low profile, nothing changed) | 4.89 / 4.70 / 5.69 | 8.87 / 7.12 / 12.88 | 25.02 / 25.87 / 24.66 |
+| `c_player_physics_off` (no `move_and_slide`) | 3.74 / 3.85 / 4.72 | 6.87 / 7.12 / 7.34 | 26.29 / 26.36 / 25.36 |
+| `c_no_vehicles` (parked car out of the simulation) | 3.85 / 3.70 / 4.69 | 9.14 / 6.91 / 7.87 | 26.22 / 25.83 / 25.30 |
+| `c_colliders_100m` (7 / 11 / 12 of 827 map bodies on) | 4.39 / 4.48 / 5.01 | 9.97 / 8.53 / 7.88 | 25.93 / 25.82 / 25.17 |
+| `c_interpolation_off` | 4.60 / 4.66 / 5.52 | 9.09 / 9.36 / 10.50 | 26.20 / 26.26 / 24.87 |
+| `c_physics_30hz` (one step per frame) | 4.76 / 4.99 / 5.54 | 12.97 / 10.49 / 8.61 | 27.00 / 26.66 / 26.33 |
+| `c_physics_floor` (player, vehicle, all map colliders off) | 0.90 / 0.92 / 1.92 | 1.55 / 2.37 / 3.51 | 28.05 / 28.27 / 27.48 |
+
+- **Largest separable sources:** the player's physics tick (`move_and_slide` against the trimesh terrain) ≈ 0.85–1.15 ms per step, and the parked, unused car ≈ 1.0 ms per step (it stays awake and its wheels raycast every step). Map colliders beyond 100 m ≈ 0.2–0.7 ms; physics interpolation ≈ 0.0–0.3 ms. Switching everything off leaves 0.9–1.9 ms. The parts do not add up exactly (≈ 2.5 ms individually vs ≈ 3.9 ms together): the player and the car interact with the same nearby trimesh bodies, so a further ~1.3 ms is shared and was not separated further.
+- **Collider census** (`docs/perf/phase4a/headless/collider_census.txt`): all 827 map colliders are `ConcavePolygonShape3D` (trimesh), 438,012 triangles (buildings 371 bodies / 144,716 triangles, ground 272 / 172,802, tree trunks 184 / 120,494). Within 100 m of the viewpoints only 7–12 bodies (2,362–6,691 triangles); the bodies are large map chunks.
+- **30 Hz physics:** the step costs the same, but there is one step per frame instead of two, so the tablet saves one step (~4.8–5.5 ms) per frame; 1 % low +0.8 to +2.0. Gameplay differences (headless suite at 30 Hz, `docs/perf/phase4a/headless/suite_physics_30hz.txt`): 148 passed, 13 failed. Real differences: the car is unstable (flat floor: 58.7 m/s against a 22 m/s limit, rolled over; map: 126.5 m in 5 s instead of 43.8 m), and the punch lasts 0.5 s instead of 0.45 s (phases snap to 33 ms ticks). The other failures count 60 Hz ticks in the tests (punch/roll/cooldown tick counts, flip-reset timing, hitbox re-entry). Walking and running speeds, roll distance, and camera follow pass.
+- **Jolt Physics** (tablet, release, three full runs): physics step 6.69 / 6.78 / 6.88 ms on foot (GodotPhysics3D 4.79 / 4.69 / 5.59) and 6.14 / 6.18 / 6.36 ms in the vehicle (3.54 / 3.57 / 4.22); 1 % low 24.48 / 24.66 / 24.02 on foot (25.39 / 25.99 / 24.89); map ready 6,878 ms (6,235). Headless suite with Jolt (`suite_jolt.txt`): 160 passed, 1 failed, and that one is the test that pins GodotPhysics3D; the car's 5 s distance is the same 43.8 m. Jolt works with the current code but is ~2 ms per step slower on this device and scene.
+
+### Frame pacing
+
+**iPhone 13 Pro, 10 minutes at Karaköy on foot, three runs per method** (frames at refresh-interval multiples summed over all runs):
+
+| Method | Avg FPS | 1 % low (median of minutes) | Long frames (> 1.25 × median) | Frame times | Thermal |
+|---|---|---|---|---|---|
+| M1: 120 Hz display (default), `Engine.max_fps` 60 | 60.0 | 41.9 | ~17,800 of 36,000 per run (49.5 %) | 8.3 ms 49 %, 25.0 ms 49 %, 16.7 ms 1–3 % | Nominal |
+| M2: 60 Hz display (`allow_high_refresh_rate` off), `max_fps` 60 | 60.0 | 55.4–55.5 | 1 per run | 16.7 ms 100 % | Nominal (one probe without data) |
+| M3: 60 Hz display, `max_fps` 0 (V-Sync only) | 60.0 | 55.4–56.8 | 1–2 per run | 16.7 ms 100 % | Nominal |
+
+- With the default 120 Hz display link and a 60 FPS limiter, every second frame is one refresh late: frames alternate 8.3 / 25 ms. The ~41 FPS "1 % low" of every earlier iPhone run is exactly these 25 ms frames: a pacing artefact, not missing performance (open question 15).
+- At 60 Hz the frames are 16.7 ms; the remaining "1 % low" of ~55 is ±1 ms timing jitter around 16.7 ms (p99 ~18 ms), not missed refreshes.
+- The same 60 Hz pattern holds in the short release runs of the rebuilt 60 Hz app (p50 16.7 ms, no long frames).
+
+**Galaxy Tab A7, 30 FPS (low profile)** (20 s + 40 s runs, three runs):
+
+| Method | Avg FPS | 1 % low | Frame times | Long frames |
+|---|---|---|---|---|
+| `Engine.max_fps` 30 + Swappy (default) | 30.0 | 25.0 / 25.9 / 24.7 | runs 2–3: 98.8–99.8 % at 33.3 ms, 0.1–0.5 % at 50 ms; run 1: 86–92 % at 33.3 ms, 7–12 % at 50 ms | 1–6 per viewpoint in runs 2–3; 101–205 in run 1 |
+| `max_fps` 0, Swappy auto (`pacing_android_uncapped`) | 37.0 / 36.8 / 39.9 | 25.1 / 25.6 / 26.4 | alternating 16.7 / 33.3 ms (Galata 50 / 50 %) | 161–768 |
+| 30 Hz physics, `max_fps` 30 | 30.0 | 27.0 / 26.7 / 26.3 | 99.4–99.8 % at 33.3 ms | 1 |
+
+- The default 30 FPS cap is well paced in runs 2–3; its "1 % low" below 30 is CPU-side frame-interval jitter up to ~40 ms (p99 38–41 ms), mostly without a 50 ms frame. Run 1 (the first run after the batch restart) had 7–12 % frames of 50 ms; the cause was not identified. Without the cap, Swappy does not settle at 30 and the frames alternate between one and two refreshes: higher average, uneven motion. 30 Hz physics tightens the jitter (p99 ~37 ms).
+
+### Protocol deviations
+
+- Tablet cool-down: the batch started at 27.5 °C and the first run heated the (charging) battery to 31.5 °C; waiting for 28.0 °C before every one of 36 runs would have taken many hours. The wait was capped at 120 s (`COOL_TIMEOUT_S=120`); the experiments were interleaved in the same order in every run and battery temperatures are recorded per run (31–39 °C; thermal status 0 throughout). The partial first attempt is not used.
+- One tablet run (run 1 `profile_default`) lost its results when the adb server restarted mid-run (USB re-enumerated); `android_bench.sh` now waits out adb dropouts, and the run was repeated at the end (in `run1`). Run 1 of the C experiments shows more long frames than runs 2–3; medians are used.
+- iPhone: one Instruments probe without data in one 60 Hz session; thermal state Nominal at every other probe.
 
 ## Phase 3 — vehicle system (2026-10-25/26)
 
@@ -461,7 +550,8 @@ Thermal state: Nominal at all 13 probes (0–601 s). App footprint 1,022–1,044
 | Behavior | Evidence |
 |---|---|
 | Project imports cleanly. | `godot --headless --path . --import`: exit 0, no errors or warnings (after adding `build/.gdignore`). |
-| Automated tests pass. | `run_tests.gd` → `RESULT 151 passed, 0 failed, 0 skipped`, exit 0; unit only → 127 passed, exit 0; without the GLB → `RESULT 127 passed, 0 failed, 24 skipped`, exit 2 (2026-10-26, Phase 3; GLB SHA-256 re-verified afterwards). `tests/map/validate_scene.gd` → `VALIDATION PASS`. |
+| Automated tests pass. | `run_tests.gd` → `RESULT 161 passed, 0 failed, 0 skipped`, exit 0; unit only → 134 passed, exit 0; without the GLB → `RESULT 134 passed, 0 failed, 27 skipped`, exit 2 (2026-10-26, Phase 4a; GLB SHA-256 re-verified afterwards). With Jolt (temporary `override.cfg`): 160 passed, 1 failed (the GodotPhysics3D pin). At 30 Hz physics: 148 passed, 13 failed (see "Phase 4a"). `tests/map/validate_scene.gd` → `VALIDATION PASS`. |
+| Phase 4a gating and flags. | `test_build_features.gd` (feature logic, release HUD without debug controls, presets: `perf_bench` only in Release Perf presets, `perf_jolt` / `perf_60hz` only in their presets, keystore fields empty, no personal paths), `test_release_perf_build_runs_benchmarks_without_debug_ui`, `test_normal_release_ignores_experiments`, `test_runtime_experiment_keys_apply_on_the_map`, `test_runtime_keys_parse_and_reject_typos`, `test_frame_time_distribution`, `test_measurement_overrides_do_not_touch_defaults`. |
 | Phase 3 vehicle. | See "Phase 3 — vehicle system", including the mutation checks. |
 | Phase 2 actions. | See "Phase 2 — character actions", including the mutation checks. |
 | Quality profiles. | `test_render_settings.gd` (platform rule, `--quality`, profile values equal the measured packages, experiment > profile precedence, low profile applied, switching back restores every default, occluder fallback with warning, shared vertices keep triangles); integration: `test_profiles_switch_on_the_real_map`, `test_profile_uses_baked_occluders`, `test_baked_occluders_match_runtime_build` (643 occluders, 317,518 triangles, same extent). |
@@ -475,6 +565,13 @@ Thermal state: Nominal at all 13 probes (0–601 s). App footprint 1,022–1,044
 | Phase 1 behaviors (routing, speeds, camera collision on 192 street samples, respawn, safe-area math). | Unit and integration suites; see `docs/ARCHITECTURE.md`. |
 
 ## Unverified behaviors
+
+- Phase 4a: the tablet's "1 % low" is measured from the CPU frame loop; actual presentation times (Swappy) were not recorded, so how much of the 33–40 ms jitter is visible is unknown.
+- The ~1.3 ms of the tablet's physics step that the player and the parked car share with the nearby trimesh bodies was not separated further.
+- `process_ms` is recorded but is not a CPU measure while a frame limiter waits.
+- 30 Hz physics was measured for performance and in the headless suite, not played on a device.
+- Jolt was measured on the tablet only.
+- Why the first tablet run of the C batch had 7–12 % frames of 50 ms.
 
 - Phase 3 driving feel in the user's own words: the user chose a prepared answer on both devices.
 - The seated-tick fix (`9dd53df`) was found on the iPhone and is covered by a unit test, but no device build with it was checked.
@@ -527,7 +624,8 @@ Thermal state: Nominal at all 13 probes (0–601 s). App footprint 1,022–1,044
 ## Technical risks
 
 - **Performance:** the profiles meet the iPhone criterion and the tablet's average; the tablet's 1 % low is marginal and its visual quality is low. Facade detail (64 % of triangles) remains the main geometry cost; the map-level work in `PROJECT_CONTEXT.md` is not started.
-- **Physics cost on the tablet:** one 60 Hz physics step takes 4.0–5.6 ms (medians; two per frame at the 30 FPS cap, about a quarter to a third of the frame), and its p99 reaches 15.8 ms in single runs. Its make-up (827 trimesh static bodies, the player's `move_and_slide`, the vehicle) is not profiled yet.
+- **Physics cost on the tablet:** one 60 Hz physics step takes 4.7–5.7 ms (two per frame at the 30 FPS cap); ≈ 1 ms each is the player's `move_and_slide` and the parked car (Phase 4a); the rest is shared with the trimesh map colliders. Not changed yet.
+- **iPhone pacing:** the default 120 Hz display with a 60 FPS limiter alternates 8.3 / 25 ms frames (visible judder); the fix (60 Hz display) is measured but not applied.
 - Devices are assigned by platform only: a weak iPhone would get high, a strong Android phone low (open question 18 in `PROJECT_CONTEXT.md`).
 - **Memory:** iPhone footprint 1.02 GiB; Android uses swap on a tablet with limited RAM.
 - **Startup:** 10–15 s to map ready on the tablet, with variance between runs.
@@ -539,25 +637,27 @@ Thermal state: Nominal at all 13 probes (0–601 s). App footprint 1,022–1,044
 
 ## Required manual actions
 
-- **iPhone: set Auto-Lock back to its previous value** (set to "Never" again for the Phase 3 measurements).
-- Optionally describe the feel of driving (and of punch and roll) in your own words; answer open questions 2 (car model source), 8 (stay on GodotPhysics3D or try Jolt), 12 (barriers), and 27–29 (vehicle tuning, camera distance, steering modes).
-- Open questions 22–24 (damage, NPCs, roll immunity) remain.
-- Decide on the map-level facade work and on bringing the map generation scripts into the repository (open questions 20–21 in `PROJECT_CONTEXT.md`).
+- **iPhone: set Auto-Lock back to its previous value** (set to "Never" again for the Phase 4a measurements). The iPhone now has the "iOS Release Perf 60Hz" build installed and the tablet the "Android Release Perf" APK (no debug overlay); the next debug build replaces them.
+- Decide on the Phase 4 proposals in `PROJECT_CONTEXT.md` ("Phase 4 proposals", not applied).
+- Open questions 2 (car model source), 12 (barriers), 22–24 (damage, NPCs, roll immunity), 28–29 (camera distance, steering modes) remain.
+- Decide on the map-level facade work and on bringing the map generation scripts into the repository (open questions 20–21).
 - Later: create the new Apple Developer account, then update the team ID and bundle ID (decision D8).
 - Provide or choose character and car models; decide the app name and icon.
 
 ## Current priorities
 
-1. Review of Phase 3.
-2. Phase 4 (recommended first, see below) or the map-level facade work (user decision).
+1. Review of Phase 4a and a decision on its proposals.
+2. Phase 4b (apply the chosen proposals, then the remaining Phase 4 items) or the map-level facade work (user decision).
 
 ## Recommended next task
 
-**Phase 4 (mobile optimization and platform validation) before the facade work**, starting with a profiling pass on the tablet. Reasons from the measurements:
+**Phase 4b: apply the two cheap, measured proposals, then re-measure.**
 
-- **iPhone 13 Pro:** meets its target with margin in every condition measured (60.0 FPS, thermal Nominal through three 10-minute in-vehicle sessions, physics 1.0–1.5 ms per step). What remains is frame pacing: the 1 % low stays at ~40–42 FPS in every 60-capped run (open question 15), a Phase 4 item (display-synchronized pacing), not a geometry problem.
-- **Galaxy Tab A7:** holds 30.0 FPS on foot and in the vehicle; 1 % low medians 24.9–26.0. Its low profile already draws only 56–122 draw calls and 0.05–0.06 M primitives, so geometry is unlikely to be what limits the frame now (not proven by a profiler). The measured costs left are CPU-side: one physics step 3.9–6.0 ms in single runs (medians 4.0–5.6), two per frame (8–11 ms of 33 ms), with p99 medians of 5.8–8.7 ms and single runs up to 15.8 ms; and the 30 FPS cap on a 60 Hz display (open question 15's tablet counterpart). The facade work would not reduce either.
-- **What the facade work does fix** is the tablet's visual quality (blank nearby facades, fog, no shadows) and the geometry headroom to relax the low profile. It is blocked on the user's approval of map pipeline changes and on the generation scripts and data being brought into the repository (open questions 20–21).
-- **Unmeasured so far:** release builds, startup on more devices, memory pressure on the tablet (it swaps), devices beyond the two test devices.
+1. **iPhone: run the display at 60 Hz** (`display/window/ios/allow_high_refresh_rate = false`, keep `Engine.max_fps` 60 in the high profile). Measured: 1 % low 41.9 → 55.4–55.5, long frames 49.5 % → ~0, average 60.0 and thermal Nominal unchanged. No gameplay change; the only loss is a 120 Hz option the game does not use (high is capped at 60).
+2. **Tablet: stop simulating parked cars** (freeze or sleep a vehicle with no driver at rest, keep its interaction area). Measured upper bound: ≈ 1.0 ms per physics step, ≈ 2 ms per frame at 30 FPS. Needs care for getting in, resets, and the hill hold.
 
-Suggested Phase 4 start: profile the physics step on the tablet (static body count, the player's `move_and_slide`, the vehicle, physics interpolation; try 30 Hz physics or a coarser collision set for distant geometry, and Jolt as a measured option since open question 8 stays open); frame pacing on both devices; a release build on both devices with the same three-run protocol. Acceptance: physics step and its p99 reported per viewpoint on and off foot, tablet 1 % low median ≥ 24 at all viewpoints in three runs, release builds measured; no visible gameplay change.
+Acceptance: both devices with the same three-run protocol, release perf builds; iPhone long frames < 1 % and 10 minutes Nominal; tablet physics step down by ≥ 0.8 ms on foot with no change in Phase 1–3 tests; device check that getting in and driving off a frozen car works.
+
+Not recommended now (measured): 30 Hz physics (the car becomes unstable; would need substepping or retuning), Jolt (~2 ms per step slower here), disabling physics interpolation (≤ 0.3 ms, costs smoothness at 120 Hz), uncapped tablet frame rate (uneven 16.7 / 33.3 ms frames).
+
+The map-level facade work stays the way to improve the tablet's picture (blank nearby facades, fog, no shadows) and to relax the low profile. The measurements do not make it the next step for frame time: at the low profile the tablet draws only 35–101 draw calls and ~0.05 M primitives, and its frame-time variance comes from CPU work (physics) and pacing. It remains blocked on the user's approval of map pipeline changes and on the generation scripts (open questions 20–21).

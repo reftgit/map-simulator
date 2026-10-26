@@ -2,7 +2,7 @@
 
 Planning context and decision rationale. This file does not describe implemented functionality; see `PROJECT_STATE.md` for that.
 
-Last updated: 2026-10-25 (Phase 3 vehicle system, Claude Code)
+Last updated: 2026-10-26 (Phase 4a measurements, Claude Code)
 
 ## Product vision and goals
 
@@ -179,6 +179,15 @@ PlayerController, PlayerStateMachine, PlayerCombat, PlayerAnimation, ThirdPerson
 
 - **Decision:** From Phase 3 on, every device and viewpoint is measured in at least three runs and reported as the median (with all run values). Protocol: `docs/ARCHITECTURE.md`, "Measurement protocol and host scripts".
 - **Rationale:** Single runs of the same build differed by 2–3 FPS in the tablet's 1 % low (Phase 2 regression).
+
+### D18 — Phase 3 driving settings approved (2026-10-26, user decision)
+
+- **Decision:** The agent-chosen vehicle tuning (speeds, steering ramp, brake strength, hill hold; T24–T26) needs no change. Open question 27 is closed by this.
+
+### D19 — Release Perf measurement builds (2026-10-26, user decision)
+
+- **Decision:** Phase 4a measures release builds for local testing only. Android: the release-template APK is signed with the existing debug keystore. iOS: the Xcode Release configuration with the existing development signing (automatic, without `-allowProvisioningUpdates`). Nothing is uploaded anywhere; no release keystore is created. Jolt Physics may be tried for measurement only, in a separate build. Defaults (physics engine, tick rate, quality profiles, renderer, frame limiting) do not change in this task; findings go to the user as proposals.
+- **Implementation:** `perf_bench` custom feature only in the "* Release Perf*" presets (`docs/ARCHITECTURE.md`, "Build features").
 
 ## Application technical decisions
 
@@ -364,6 +373,23 @@ The tablet package (low) is a best-effort profile; the chunk-granular visibility
 
 Keep the **Mobile** renderer. On the tablet, Compatibility was ~20 % faster on the unchanged scene but used ~914 MiB peak PSS instead of ~510 MiB, has no occlusion culling (Mobile with occlusion alone beat it: 10.3 / 14.0 / 16.4 vs 8.0 / 7.0 / 9.2 FPS), and it does not start on the iPhone (framebuffer creation and GLES3 shader compilation fail on iOS 26.6.1). FSR is unavailable on Mobile in Godot 4.7.2; MetalFX spatial produced no thermal benefit.
 
+## Phase 4 proposals (measured 2026-10-26, not applied)
+
+Each proposal comes from the Phase 4a measurements (`PROJECT_STATE.md`, "Phase 4a"); none is applied until the user decides.
+
+| # | Proposal | Measured gain | Risk / behaviour change |
+|---|---|---|---|
+| P1 | iPhone: display at 60 Hz (`allow_high_refresh_rate = false`), keep `max_fps` 60 | 1 % low 41.9 → 55.4–55.5; long frames 49.5 % → ~0; average and thermal unchanged | None for gameplay; no 120 Hz option (high is capped at 60 anyway). Affects all ProMotion iPhones. |
+| P2 | Parked vehicles: freeze or let sleep when nobody drives and they are at rest | Upper bound ≈ 1.0 ms per physics step on the tablet (≈ 2 ms per frame at 30 FPS); not measured on the iPhone | Must wake for getting in, resets, and the hill hold; the interaction area must keep working. |
+| P3 | Player: skip `move_and_slide` while standing still on a floor | Upper bound ≈ 0.85–1.15 ms per step on the tablet (only while idle) | Floor snapping and respawn edge cases; little gain while moving. Low priority. |
+| P4 | Physics at 30 Hz on the tablet | One step per frame instead of two (≈ 5 ms per frame); 1 % low +0.8 to +2.0 | The car becomes unstable (58.7 m/s, rollover) and the punch lasts 0.5 s; would need vehicle substepping or retuning. Not recommended now. |
+| P5 | Jolt Physics | None: ~2 ms per step slower on the tablet | Not recommended (open question 8). |
+| P6 | Switch map colliders off far from the player (streaming) | ≈ 0.2–0.7 ms per step | Needs a runtime activation scheme; colliders are large chunks. Low priority. |
+| P7 | Physics interpolation off | ≤ 0.3 ms per step | Visible stutter at 120 Hz and with the camera; not recommended. |
+| P8 | Tablet frame cap: keep `Engine.max_fps` 30 with Swappy | — (uncapped averages 37–40 FPS but alternates 16.7 / 33.3 ms frames) | Keep as is. |
+
+Order suggested: P1, then P2, then re-measure; P3 and P6 only if the tablet still needs margin.
+
 ## Planned features
 
 Everything listed under "Requirements by phase" from Phase 2 onward, plus the remaining Phase 4 and 5 work.
@@ -393,15 +419,15 @@ See "Requirements by phase". `PROJECT_STATE.md` records which parts exist.
 5. App name and final icon; Android release keystore. (Identifiers and debug signing are decided: D8–D10.)
 6. In-game UI language.
 7. Audience and monetization: not specified.
-8. Physics engine for vehicles. **Finding (2026-10-25):** the project setting `physics/3d/physics_engine` is `"DEFAULT"`, and in Godot 4.7.2 that runs **GodotPhysics3D**, not Jolt. Evidence: the world's direct space state is a `GodotPhysicsDirectSpaceState3D` and body states are `GodotPhysicsDirectBodyState3D` (in throwaway projects outside the repository, `"Jolt Physics"` gives `JoltPhysicsDirectSpaceState3D` / `JoltPhysicsDirectBodyState3D`, while `"GodotPhysics3D"` and `"DEFAULT"` both give the Godot classes); a space created through `PhysicsServer3D` keeps space parameters that Jolt ignores and is reported at exit as a `GodotSpace3D` allocation; `ClassDB` lists `GodotPhysicsServer3D` and no Jolt server class. Debug builds log it in the `STARTUP` line (`physics_3d=GodotPhysics3D (setting DEFAULT)`), and `test_active_physics_engine_is_detected` fails if it changes. The setting was not changed (user decision); the vehicle uses `VehicleBody3D` on GodotPhysics3D, which showed no serious problem (findings in `PROJECT_STATE.md`, "Phase 3"). **Recommendation:** stay on GodotPhysics3D for now; try Jolt as a measured Phase 4 experiment, because one physics step costs 4.0–5.6 ms on the Galaxy Tab A7 (two per frame at its 30 FPS cap) against 1.0–1.5 ms on the iPhone. A switch needs the user's decision and a re-run of the Phase 1–3 tests and device checks (vehicle tuning in particular: +Z forward, steering sign, damping, and rollover were measured on GodotPhysics3D).
+8. Physics engine for vehicles. **Finding (2026-10-25):** the project setting `physics/3d/physics_engine` is `"DEFAULT"`, and in Godot 4.7.2 that runs **GodotPhysics3D**, not Jolt. Evidence: the world's direct space state is a `GodotPhysicsDirectSpaceState3D` and body states are `GodotPhysicsDirectBodyState3D` (in throwaway projects outside the repository, `"Jolt Physics"` gives `JoltPhysicsDirectSpaceState3D` / `JoltPhysicsDirectBodyState3D`, while `"GodotPhysics3D"` and `"DEFAULT"` both give the Godot classes); a space created through `PhysicsServer3D` keeps space parameters that Jolt ignores and is reported at exit as a `GodotSpace3D` allocation; `ClassDB` lists `GodotPhysicsServer3D` and no Jolt server class. Debug builds log it in the `STARTUP` line (`physics_3d=GodotPhysics3D (setting DEFAULT)`), and `test_active_physics_engine_is_detected` fails if it changes. The setting was not changed (user decision); the vehicle uses `VehicleBody3D` on GodotPhysics3D, which showed no serious problem (findings in `PROJECT_STATE.md`, "Phase 3"). **Recommendation:** stay on GodotPhysics3D for now; try Jolt as a measured Phase 4 experiment, because one physics step costs 4.0–5.6 ms on the Galaxy Tab A7 (two per frame at its 30 FPS cap) against 1.0–1.5 ms on the iPhone. A switch needs the user's decision and a re-run of the Phase 1–3 tests and device checks (vehicle tuning in particular: +Z forward, steering sign, damping, and rollover were measured on GodotPhysics3D). **Jolt measurement (2026-10-26, Phase 4a, tablet, release):** one physics step 6.69 / 6.78 / 6.88 ms on foot vs 4.79 / 4.69 / 5.59 ms with GodotPhysics3D (in the vehicle 6.14–6.36 vs 3.54–4.22 ms), 1 % low slightly lower (24.0–24.7 vs 24.9–26.0), map ready 6.9 vs 6.2 s; the headless suite passes with Jolt except the test that pins GodotPhysics3D. **Recommendation now:** keep GodotPhysics3D; Jolt brings no gain for this scene on this device.
 9. Whether the original explorer demo (`main.tscn`, `scripts/explorer.gd`, `scripts/main.gd`) should be kept long term.
 10. Branch strategy: work currently happens directly on `main`. Decide whether feature branches or pull requests are wanted.
 11. Whether `.vscode/` should be committed, ignored, or left untracked. It is currently left untracked.
 12. Railings, lamps, and other decor have no collision, so the player can walk off bridge decks and quays into the water (then respawns). Should invisible barriers be added along bridges and quays? **Vehicle observations (2026-10-25):** a car driven across the Galata Bridge deck toward the railing passes through it, falls into the water, and resets to its Karaköy spawn with the driver (reached y −5.1, kill height −5.0); pavements and kerbs have no collision of their own, so cars drive onto pavements freely; lamp posts do not stop a car either. With vehicles, barriers along bridge decks and quays (and possibly kerbs) matter more than on foot; not added (out of scope).
 13. Run control style: is the toggle with reset on stick release (T7) what the user wants, or a hold button, or auto-run at full stick tilt?
 14. HUD art: the controls are drawn with plain shapes. Is final art or an icon set planned?
-15. iPhone frame pacing: the 1 % low stays around 41 FPS in every 60-capped run (now also with the high profile, see `PROJECT_STATE.md`). Investigate a display-synchronized 60 Hz instead of `Engine.max_fps`? Not part of the acceptance criterion (average FPS).
-16. Startup target: the tablet needs ~9–15 s to the map. What is acceptable?
+15. iPhone frame pacing. **Finding (2026-10-26, Phase 4a):** with the default 120 Hz display (`display/window/ios/allow_high_refresh_rate = true`) and `Engine.max_fps` 60, frames alternate 8.3 / 25 ms (49.5 % of frames one refresh late); the ~41 FPS "1 % low" is these 25 ms frames. With the display at 60 Hz (the same setting off; measured in the "iOS Release Perf 60Hz" build) the frames are an even 16.7 ms: 1 % low 55.4–55.5 (the rest is ±1 ms timing jitter), long frames ~0, average 60.0 and thermal Nominal over 3 × 10 minutes, the same with `max_fps` 0 (V-Sync only). Sources: Godot ProjectSettings reference ("If true, iOS devices that support high refresh rate/"ProMotion" will be allowed to render at up to 120 frames per second"); Godot 4.7.2 source `drivers/apple_embedded/godot_view_apple_embedded.mm` (`CADisplayLink.preferredFramesPerSecond` from the view's preferred rate) and `platform/ios/display_server_ios.mm` (`screen_get_refresh_rate` from `UIScreen.maximumFramesPerSecond`); the export template's Info.plist always sets `CADisableMinimumFrameDurationOnPhone`. Proposal P1 below; not applied.
+16. Startup target: debug builds needed ~8–15 s to the map on the tablet. **Release (2026-10-26, Phase 4a):** map ready 6.2 s (median of 30 launches, 6.0–9.2 s), first frame 6.7 s on the Galaxy Tab A7; 1.39 s / 1.46 s on the iPhone 13 Pro (debug 8.1 / 8.6 s and 1.54 / 1.61 s). What is acceptable is still open.
 17. Is a visible loss of distant facade detail (beyond ~200 m) acceptable on the iPhone long term?
 18. Automatic GPU/device detection for choosing a profile (instead of the per-platform rule), e.g. for strong Android phones or older iPhones?
 19. A user-facing graphics settings menu to pick the profile?
@@ -412,7 +438,7 @@ See "Requirements by phase". `PROJECT_STATE.md` records which parts exist.
 24. Roll damage immunity (invulnerability frames): none for now (D14). Revisit once damage exists.
 25. *(Closed 2026-10-25 by D15: punch timings and stop-while-punching approved.)*
 26. *(Closed 2026-10-25 by D15: the startup stays uncancellable.)*
-27. Vehicle feel: speeds, steering ramp, brake strength, and the hill hold were tuned by the agent; the user's device feedback decides further tuning.
+27. *(Closed 2026-10-26 by D18: no change needed.)*
 28. Speed-dependent camera distance while driving (optional in the task, not implemented).
 29. Should steering also offer a drag or tilt mode (T25)?
 
@@ -422,4 +448,4 @@ See "Requirements by phase". `PROJECT_STATE.md` records which parts exist.
 - The map original in the source package must not be modified or deleted.
 - Physical device results are reported as NOT RUN until actually performed.
 - No store, TestFlight, or Play Console uploads; no release signing without explicit approval.
-- Current priority: review of Phase 3 (vehicle with a placeholder); then Phase 4 or the map-level facade work (user decision; see `PROJECT_STATE.md`, "Recommended next task").
+- Current priority: review of Phase 4a and a decision on the Phase 4 proposals (P1 and P2 suggested first); the map-level facade work after that or in parallel (user decision; see `PROJECT_STATE.md`, "Recommended next task").
