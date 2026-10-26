@@ -1,0 +1,1 @@
+{"experiment": "c_interpolation_off", "profile": "low", "runtime": {"physics_interpolation": false}, "bench": {"warmup_s": 20, "measure_s": 40}}

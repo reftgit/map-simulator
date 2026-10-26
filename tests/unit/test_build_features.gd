@@ -52,3 +52,15 @@ func test_perf_bench_only_in_release_perf_presets() -> void:
 	for name in NORMAL_PRESETS:
 		check(name in names, "normal preset %s still present" % name)
 	check("Android Release Perf" in names and "iOS Release Perf" in names, "release perf presets present")
+
+
+func test_measurement_tags_only_in_their_presets() -> void:
+	var presets := ConfigFile.new()
+	presets.load("res://export_presets.cfg")
+	for section in presets.get_sections():
+		if section.ends_with(".options") or not presets.has_section_key(section, "name"):
+			continue
+		var name: String = presets.get_value(section, "name")
+		var features := str(presets.get_value(section, "custom_features", "")).split(",", false)
+		check(("perf_jolt" in features) == (name == "Android Release Perf Jolt"), "%s: perf_jolt only in the Jolt measurement preset" % name)
+		check(("perf_60hz" in features) == (name == "iOS Release Perf 60Hz"), "%s: perf_60hz only in the 60 Hz measurement preset" % name)

@@ -80,3 +80,13 @@ func test_active_physics_engine_is_detected() -> void:
 	check(ProjectSettings.get_setting("physics/3d/physics_engine") == "DEFAULT", "engine setting left at DEFAULT")
 	check(space_state.get_class() == "GodotPhysicsDirectSpaceState3D", "direct space state class (%s)" % space_state.get_class())
 	check(game_script.physics_engine_name(space_state) == "GodotPhysics3D", "active engine is GodotPhysics3D (%s)" % game_script.physics_engine_name(space_state))
+
+
+func test_measurement_overrides_do_not_touch_defaults() -> void:
+	# Feature-tagged overrides apply only in the perf presets that carry the tag.
+	check(not OS.has_feature("perf_jolt") and not OS.has_feature("perf_60hz"), "no measurement feature tag in normal runs")
+	check(ProjectSettings.get_setting("display/window/ios/allow_high_refresh_rate") == true, "high refresh rate allowed by default")
+	check(ProjectSettings.get_setting("physics/common/physics_ticks_per_second") == 60, "60 Hz physics")
+	var text := FileAccess.get_file_as_string("res://project.godot")
+	check(text.contains('3d/physics_engine.perf_jolt="Jolt Physics"'), "Jolt only behind the perf_jolt tag")
+	check(text.contains("window/ios/allow_high_refresh_rate.perf_60hz=false"), "60 Hz only behind the perf_60hz tag")

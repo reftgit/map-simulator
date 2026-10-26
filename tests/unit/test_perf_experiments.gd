@@ -36,7 +36,11 @@ func test_experiment_files_parse() -> void:
 			var config := PerfConfig.from_dict(parsed) if parsed is Dictionary else null
 			check(config != null and config.bench, "%s parses and has a bench section (%s)" % [file, PerfConfig.last_error])
 			check(config == null or config.experiment == file.get_basename(), "%s: experiment name matches the file" % file)
-			if config and not file.begins_with("profile_default") and not file.begins_with("session_profile"):
+			var platform_default := file.begins_with("profile_default") or file.begins_with("session_profile")
+			var device_specific := file.begins_with("c_") or file.begins_with("pacing_") or file.begins_with("jolt_") or file.begins_with("session_pacing_")
+			if config and device_specific:
+				check(config.profile in ["low", "high"], "%s: Phase 4 experiments name the device profile they were measured with" % file)
+			elif config and not platform_default:
 				check(config.profile == "none", "%s: measured before profiles existed, so it pins profile none" % file)
 
 
@@ -71,3 +75,32 @@ func test_in_vehicle_bench_key() -> void:
 	var config := PerfConfig.from_dict({"experiment": "x", "bench": {"in_vehicle": true}})
 	check(config != null and config.in_vehicle, "in_vehicle parsed")
 	check(not PerfConfig.from_dict({"experiment": "x", "bench": {}}).in_vehicle, "off by default")
+
+
+func test_runtime_keys_parse_and_reject_typos() -> void:
+	var config := PerfConfig.from_dict({"experiment": "x", "runtime": {"physics_ticks": 30, "physics_interpolation": false, "player_physics": false, "vehicles": false, "collider_radius": 100, "vsync_mode": "mailbox"}})
+	check(config != null, "all runtime keys accepted (%s)" % PerfConfig.last_error)
+	if config:
+		check(config.runtime.physics_ticks == 30 and config.runtime.physics_interpolation == false and is_equal_approx(config.runtime.collider_radius, 100.0), "values typed (%s)" % [config.runtime])
+		check(config.to_dict().runtime == config.runtime, "runtime keys recorded in results")
+	check(PerfConfig.from_dict({"experiment": "x", "runtime": {"physics_tick": 30}}) == null and PerfConfig.last_error.contains("physics_tick"), "unknown runtime key rejected")
+	check(PerfConfig.from_dict({"experiment": "x", "runtime": {"vsync_mode": "sometimes"}}) == null, "bad vsync mode rejected")
+	check(PerfConfig.from_dict({"experiment": "x", "runtime": {"physics_ticks": 0}}) == null, "zero tick rate rejected")
+	check(PerfConfig.from_dict({"experiment": "x"}).runtime.is_empty(), "no runtime keys by default")
+
+
+func test_frame_time_distribution() -> void:
+	# 98 frames of 16.7 ms and two of 25 ms (a 60 FPS cap on a 120 Hz display).
+	var frames := PackedInt64Array()
+	for i in 98:
+		frames.append(16700)
+	frames.append(25000)
+	frames.append(25000)
+	var stats := PerfBenchmark.frame_stats(frames, 1.687)
+	check_near(stats.frame_p50_ms, 16.7, 0.001, "median frame")
+	check_near(stats.frame_p99_ms, 25.0, 0.001, "99th percentile frame")
+	check(stats.long_frames == 2, "frames one refresh late counted as long (%d)" % stats.long_frames)
+	check(stats.frame_hist_ms.size() == PerfBenchmark.HISTOGRAM_MS + 1 and stats.frame_hist_ms[16] == 98 and stats.frame_hist_ms[25] == 2, "1 ms histogram")
+	var timing := PerfBenchmark.timing_stats("process", PackedInt64Array([2000, 4000]))
+	check_near(timing.process_ms, 3.0, 0.0001, "process mean")
+	check_near(timing.process_p99_ms, 4.0, 0.0001, "process p99")

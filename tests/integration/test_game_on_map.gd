@@ -570,3 +570,25 @@ func test_normal_release_ignores_experiments() -> void:
 	check(not game.hud.get_node("SafeArea/DebugLabel").visible, "no debug overlay")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(PerfConfig.USER_PATH))
 	BuildFeatures.reset_overrides()
+
+
+func test_runtime_experiment_keys_apply_on_the_map() -> void:
+	await _setup()
+	var bodies: Array[Node] = game.world.map_root.find_children("*", "StaticBody3D", true, false)
+	var config := PerfConfig.from_dict({"experiment": "runtime_keys", "profile": "none",
+			"runtime": {"physics_ticks": 30, "physics_interpolation": false, "player_physics": false, "vehicles": false, "collider_radius": 100},
+			"bench": {"warmup_s": 0.2, "measure_s": 0.4, "screenshots": false, "quit_when_done": false, "views": ["Spawn"]}})
+	var bench: PerfBenchmark = game.apply_perf_experiment(config)
+	var results: Array = await bench.finished
+	check(Engine.physics_ticks_per_second == 30, "30 Hz physics applied")
+	check(not tree.physics_interpolation, "interpolation off")
+	check(not player.is_physics_processing(), "player physics paused")
+	check(game.world.vehicles.all(func(v: VehicleController) -> bool: return v.process_mode == Node.PROCESS_MODE_DISABLED), "parked vehicles out of the simulation")
+	var active: int = bodies.filter(func(b: Node) -> bool: return b.process_mode != Node.PROCESS_MODE_DISABLED).size()
+	check(active > 0 and active < bodies.size(), "only colliders within 100 m stay on (%d of %d)" % [active, bodies.size()])
+	var result: Dictionary = results[0]
+	for key in ["process_ms", "process_p99_ms", "frame_p50_ms", "frame_p99_ms", "frame_hist_ms", "long_frames"]:
+		check(result.has(key), "result has %s" % key)
+	Engine.physics_ticks_per_second = 60
+	tree.physics_interpolation = true
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(PerfBenchmark.RESULTS_PATH))

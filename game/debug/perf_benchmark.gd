@@ -15,6 +15,9 @@ signal finished(results: Array)
 const RESULTS_PATH := "user://bench_results.json"
 const SCREENSHOT_DIR := "user://bench"
 const SCREENSHOT_WIDTH := 640
+## Frame-time histogram: 1 ms bins from 0 to HISTOGRAM_MS - 1, last bin for
+## longer frames.
+const HISTOGRAM_MS := 100
 
 var config: PerfConfig
 var game: Node
@@ -55,6 +58,9 @@ func _go_to(view: String) -> void:
 	if config.in_vehicle and not game.vehicle_interaction.is_driving():
 		game.vehicle_interaction.enter(game.world.vehicles[0])
 	game.show_debug_view(index)
+	var active: int = game.update_far_colliders(game.player.global_position)
+	if active >= 0:
+		print("COLLIDERS view=\"%s\" active=%d" % [view, active])
 	game.hud.view_name = "%s  [BENCH %s]" % [view, config.experiment]
 
 
@@ -85,6 +91,7 @@ func _sample(seconds: float) -> Dictionary:
 	var counters := {"draw_calls": 0.0, "primitives": 0.0, "objects": 0.0}
 	var counter_samples := 0
 	var physics_us: PackedInt64Array = []
+	var process_us: PackedInt64Array = []
 	var video_mem_max := 0
 	var start := Time.get_ticks_usec()
 	var last := start
@@ -95,6 +102,7 @@ func _sample(seconds: float) -> Dictionary:
 		frame_us.append(now - last)
 		last = now
 		physics_us.append(roundi(Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1e6))
+		process_us.append(roundi(Performance.get_monitor(Performance.TIME_PROCESS) * 1e6))
 		if now >= next_counter:
 			next_counter = now + 1000000
 			counters.draw_calls += RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME)
@@ -107,6 +115,7 @@ func _sample(seconds: float) -> Dictionary:
 	for key in counters:
 		stats[key] = roundi(counters[key] / maxi(counter_samples, 1))
 	stats.merge(physics_stats(physics_us))
+	stats.merge(timing_stats("process", process_us))
 	stats["video_mem_mb"] = roundi(video_mem_max / 1048576.0)
 	stats["static_mem_mb"] = roundi(OS.get_static_memory_usage() / 1048576.0)
 	stats["static_peak_mb"] = roundi(OS.get_static_memory_peak_usage() / 1048576.0)
@@ -114,18 +123,56 @@ func _sample(seconds: float) -> Dictionary:
 
 
 ## Average FPS over the window, "1% low" (FPS at the 99th-percentile frame
-## time), and minimum FPS (longest frame).
+## time), minimum FPS (longest frame), frame-time percentiles in ms, a 1 ms
+## histogram (frame_hist_ms[i] counts frames of i..i+1 ms; the last bin
+## everything longer), and long frames (more than 1.25 times the median, so a
+## frame one display refresh late counts: 25 vs 16.7 ms, 50 vs 33.3 ms).
 static func frame_stats(frame_us: PackedInt64Array, elapsed_s: float) -> Dictionary:
 	if frame_us.is_empty() or elapsed_s <= 0.0:
 		return {"frames": 0, "avg_fps": 0.0, "low1_fps": 0.0, "min_fps": 0.0}
 	var sorted := frame_us.duplicate()
 	sorted.sort()
-	var p99: int = sorted[clampi(ceili(sorted.size() * 0.99) - 1, 0, sorted.size() - 1)]
+	var p50 := _percentile(sorted, 0.5)
+	var p99 := _percentile(sorted, 0.99)
+	var histogram: Array[int] = []
+	histogram.resize(HISTOGRAM_MS + 1)
+	histogram.fill(0)
+	var long_frames := 0
+	for us in frame_us:
+		histogram[mini(us / 1000, HISTOGRAM_MS)] += 1
+		if us > p50 * 1.25:
+			long_frames += 1
 	return {
 		"frames": frame_us.size(),
 		"avg_fps": snappedf(frame_us.size() / elapsed_s, 0.01),
 		"low1_fps": snappedf(1e6 / maxf(p99, 1.0), 0.01),
 		"min_fps": snappedf(1e6 / maxf(sorted[-1], 1.0), 0.01),
+		"frame_p50_ms": snappedf(p50 / 1000.0, 0.01),
+		"frame_p90_ms": snappedf(_percentile(sorted, 0.9) / 1000.0, 0.01),
+		"frame_p99_ms": snappedf(p99 / 1000.0, 0.01),
+		"long_frames": long_frames,
+		"frame_hist_ms": histogram,
+	}
+
+
+## Value at fraction `q` of an ascending array (nearest rank).
+static func _percentile(sorted: PackedInt64Array, q: float) -> int:
+	return sorted[clampi(ceili(sorted.size() * q) - 1, 0, sorted.size() - 1)]
+
+
+## Mean and 99th percentile in ms of per-frame engine timings (µs samples),
+## as "<name>_ms" and "<name>_p99_ms".
+static func timing_stats(name: String, samples_us: PackedInt64Array) -> Dictionary:
+	if samples_us.is_empty():
+		return {name + "_ms": 0.0, name + "_p99_ms": 0.0}
+	var sorted := samples_us.duplicate()
+	sorted.sort()
+	var total := 0
+	for value in sorted:
+		total += value
+	return {
+		name + "_ms": snappedf(total / 1000.0 / sorted.size(), 0.001),
+		name + "_p99_ms": snappedf(_percentile(sorted, 0.99) / 1000.0, 0.001),
 	}
 
 
@@ -135,17 +182,7 @@ static func frame_stats(frame_us: PackedInt64Array, elapsed_s: float) -> Diction
 ## of a frame's steps (measured: a 3 ms step reads ~3 ms at both 1 and 2 steps
 ## per frame), so a 30 FPS cap with 60 Hz physics costs about twice this per frame.
 static func physics_stats(physics_us: PackedInt64Array) -> Dictionary:
-	if physics_us.is_empty():
-		return {"physics_ms": 0.0, "physics_p99_ms": 0.0}
-	var sorted := physics_us.duplicate()
-	sorted.sort()
-	var total := 0
-	for value in sorted:
-		total += value
-	return {
-		"physics_ms": snappedf(total / 1000.0 / sorted.size(), 0.001),
-		"physics_p99_ms": snappedf(sorted[clampi(ceili(sorted.size() * 0.99) - 1, 0, sorted.size() - 1)] / 1000.0, 0.001),
-	}
+	return timing_stats("physics", physics_us)
 
 
 func _record(result: Dictionary) -> void:

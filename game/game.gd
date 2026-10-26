@@ -23,6 +23,10 @@ var training_dummy: TrainingDummy
 
 var _view_index := 0
 var _experiment: PerfConfig
+## Experiments: map colliders farther than this from the player are off
+## (negative: the feature is not in use).
+var _collider_radius := -1.0
+var _static_bodies := []  # [StaticBody3D, AABB] pairs, built on first use
 
 @onready var world: WorldManager = $WorldManager
 @onready var player: PlayerController = $Player
@@ -57,6 +61,8 @@ func _ready() -> void:
 	render_settings = RenderSettings.new(world.map_root, camera_rig.camera, get_viewport(), map_definition.occluders_path)
 	if BuildFeatures.perf_enabled():
 		_experiment = _load_perf_experiment()
+		if _experiment:
+			apply_runtime_settings(_experiment.runtime)
 	set_quality_profile(_initial_profile())
 
 	if BuildFeatures.is_debug():
@@ -159,8 +165,61 @@ func show_debug_view(index: int) -> void:
 ## benchmark if it has one.
 func apply_perf_experiment(config: PerfConfig) -> PerfBenchmark:
 	_experiment = config
+	apply_runtime_settings(config.runtime)
 	set_quality_profile(config.profile if not config.profile.is_empty() else quality_profile)
 	return _start_benchmark(config) if config.bench else null
+
+
+## Applies an experiment's runtime keys (PerfConfig.RUNTIME_KEYS). Keys it
+## leaves out keep their values. Measurement only: none of these is a game
+## setting.
+func apply_runtime_settings(runtime: Dictionary) -> void:
+	if runtime.has("physics_ticks"):
+		Engine.physics_ticks_per_second = runtime.physics_ticks
+	if runtime.has("physics_interpolation"):
+		get_tree().physics_interpolation = runtime.physics_interpolation
+	if runtime.has("player_physics"):
+		player.set_physics_process(runtime.player_physics)
+	if runtime.has("vehicles"):
+		for vehicle in world.vehicles:
+			vehicle.process_mode = PROCESS_MODE_INHERIT if runtime.vehicles else PROCESS_MODE_DISABLED
+	if runtime.has("vsync_mode"):
+		DisplayServer.window_set_vsync_mode(PerfConfig.VSYNC_MODES[runtime.vsync_mode])
+	_collider_radius = runtime.get("collider_radius", -1.0)
+	update_far_colliders(player.global_position)
+	if not runtime.is_empty():
+		print("RUNTIME ", JSON.stringify(runtime))
+
+
+## With a collider_radius experiment: switches the map's static bodies off
+## (removed from the physics space) beyond the radius from `center`, measured
+## on the ground plane to each body's bounds, and back on within it.
+## Returns how many bodies are on.
+func update_far_colliders(center: Vector3) -> int:
+	if _collider_radius < 0.0:
+		return -1
+	if _static_bodies.is_empty():
+		for body: StaticBody3D in world.map_root.find_children("*", "StaticBody3D", true, false):
+			_static_bodies.append([body, _body_bounds(body)])
+	var active := 0
+	for entry in _static_bodies:
+		var bounds: AABB = entry[1]
+		var nearest := Vector2(clampf(center.x, bounds.position.x, bounds.end.x), clampf(center.z, bounds.position.z, bounds.end.z))
+		var on := nearest.distance_to(Vector2(center.x, center.z)) <= _collider_radius
+		(entry[0] as StaticBody3D).process_mode = PROCESS_MODE_INHERIT if on else PROCESS_MODE_DISABLED
+		active += int(on)
+	return active
+
+
+static func _body_bounds(body: StaticBody3D) -> AABB:
+	var bounds := AABB()
+	var first := true
+	for shape: CollisionShape3D in body.find_children("*", "CollisionShape3D", false, false):
+		var local := shape.shape.get_debug_mesh().get_aabb()
+		var world_box: AABB = shape.global_transform * local
+		bounds = world_box if first else bounds.merge(world_box)
+		first = false
+	return bounds
 
 
 func _start_benchmark(config: PerfConfig) -> PerfBenchmark:

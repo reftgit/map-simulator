@@ -1,19 +1,38 @@
 class_name PerfConfig
 extends RefCounted
 ## One performance experiment: render settings layered on top of a quality
-## profile, plus optional benchmark parameters. Debug builds only. Loaded
-## from JSON (see docs/ARCHITECTURE.md, "Performance experiments"); unknown
-## keys and values are rejected so typos do not silently measure something else.
+## profile, runtime (physics and frame) settings, plus optional benchmark
+## parameters. Debug builds and perf_bench release builds only
+## (BuildFeatures). Loaded from JSON (see docs/ARCHITECTURE.md, "Performance
+## experiments"); unknown keys and values are rejected so typos do not
+## silently measure something else.
 ##
 ## `settings` holds only the RenderSettings keys the experiment sets; they
 ## override the profile (experiment > profile > defaults). `profile` picks the
 ## base profile ("none", "high", "low"); empty means the platform default.
+## `runtime` holds only the RUNTIME_KEYS the experiment sets (applied by
+## Main.apply_runtime_settings()); every other runtime value stays default.
 
 const USER_PATH := "user://perf_bench.json"
+## Runtime experiment keys and their types: physics tick rate, physics
+## interpolation, the player's physics processing, the parked vehicles,
+## the radius (m) around the player beyond which map colliders are switched
+## off (0 = all), and the V-Sync mode.
+const RUNTIME_KEYS := {
+	"physics_ticks": TYPE_INT,
+	"physics_interpolation": TYPE_BOOL,
+	"player_physics": TYPE_BOOL,
+	"vehicles": TYPE_BOOL,
+	"collider_radius": TYPE_FLOAT,
+	"vsync_mode": TYPE_STRING,
+}
+const VSYNC_MODES := {"disabled": DisplayServer.VSYNC_DISABLED, "enabled": DisplayServer.VSYNC_ENABLED,
+		"adaptive": DisplayServer.VSYNC_ADAPTIVE, "mailbox": DisplayServer.VSYNC_MAILBOX}
 
 var experiment := "baseline"
 var profile := ""
 var settings := {}
+var runtime := {}
 
 var bench := false
 var warmup_s := 30.0
@@ -42,7 +61,7 @@ static func from_dict(data: Dictionary) -> PerfConfig:
 	last_error = ""
 	var config := PerfConfig.new()
 	for key in data:
-		if key not in RenderSettings.KEYS and key not in ["experiment", "profile", "bench"]:
+		if key not in RenderSettings.KEYS and key not in ["experiment", "profile", "bench", "runtime"]:
 			last_error = "unknown key '%s'" % key
 			return null
 	config.experiment = str(data.get("experiment", config.experiment))
@@ -51,6 +70,8 @@ static func from_dict(data: Dictionary) -> PerfConfig:
 		last_error = "unknown profile '%s'" % config.profile
 		return null
 	var error := _parse_settings(data, config.settings)
+	if error.is_empty():
+		error = _parse_runtime(data.get("runtime", {}), config.runtime)
 	if not error.is_empty():
 		last_error = error
 		return null
@@ -116,6 +137,29 @@ static func external_dir() -> String:
 	return OS.get_system_dir(OS.SYSTEM_DIR_DOCUMENTS, false)
 
 
+## Copies and type-checks runtime keys; returns an error message or "".
+static func _parse_runtime(data: Variant, out: Dictionary) -> String:
+	if not data is Dictionary:
+		return "runtime must be an object"
+	for key in data:
+		if key not in RUNTIME_KEYS:
+			return "unknown runtime key '%s'" % key
+		match RUNTIME_KEYS[key]:
+			TYPE_INT:
+				out[key] = int(data[key])
+			TYPE_BOOL:
+				out[key] = bool(data[key])
+			TYPE_FLOAT:
+				out[key] = float(data[key])
+			TYPE_STRING:
+				out[key] = str(data[key])
+	if out.has("vsync_mode") and out.vsync_mode not in VSYNC_MODES:
+		return "bad vsync_mode '%s'" % out.vsync_mode
+	if out.has("physics_ticks") and out.physics_ticks < 1:
+		return "bad physics_ticks %d" % out.physics_ticks
+	return ""
+
+
 ## Reads a config file. With `consume`, the file is deleted after reading so
 ## the next normal launch runs without the experiment.
 static func load_file(path: String, consume := false) -> PerfConfig:
@@ -134,4 +178,4 @@ static func load_file(path: String, consume := false) -> PerfConfig:
 
 
 func to_dict() -> Dictionary:
-	return {"experiment": experiment, "profile": profile, "settings": settings}
+	return {"experiment": experiment, "profile": profile, "settings": settings, "runtime": runtime}

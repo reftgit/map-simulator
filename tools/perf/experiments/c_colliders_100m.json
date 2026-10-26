@@ -1,0 +1,1 @@
+{"experiment": "c_colliders_100m", "profile": "low", "runtime": {"collider_radius": 100.0}, "bench": {"warmup_s": 20, "measure_s": 40}}

@@ -1,0 +1,1 @@
+{"experiment": "c_player_physics_off", "profile": "low", "runtime": {"player_physics": false}, "bench": {"warmup_s": 20, "measure_s": 40}}

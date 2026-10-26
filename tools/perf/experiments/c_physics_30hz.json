@@ -1,0 +1,1 @@
+{"experiment": "c_physics_30hz", "profile": "low", "runtime": {"physics_ticks": 30}, "bench": {"warmup_s": 20, "measure_s": 40}}
