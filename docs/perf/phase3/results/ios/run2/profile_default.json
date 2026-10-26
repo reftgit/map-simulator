@@ -1,0 +1,81 @@
+{
+  "config": {
+    "experiment": "profile_default",
+    "profile": "",
+    "settings": {}
+  },
+  "occluders": {
+    "ms": 19,
+    "occluders": 643,
+    "source": "baked",
+    "triangles": 317518
+  },
+  "profile": "high",
+  "results": [
+    {
+      "avg_fps": 59.99,
+      "draw_calls": 263,
+      "experiment": "profile_default",
+      "frames": 3600,
+      "in_vehicle": false,
+      "low1_fps": 42.43,
+      "min_fps": 40.91,
+      "objects": 496,
+      "physics_ms": 1.281,
+      "physics_p99_ms": 1.601,
+      "primitives": 207011,
+      "profile": "high",
+      "renderer": "mobile",
+      "static_mem_mb": 188,
+      "static_peak_mb": 188,
+      "video_mem_mb": 674,
+      "view": "Spawn",
+      "window": "(2532, 1170)"
+    },
+    {
+      "avg_fps": 60.0,
+      "draw_calls": 162,
+      "experiment": "profile_default",
+      "frames": 3601,
+      "in_vehicle": false,
+      "low1_fps": 41.8,
+      "min_fps": 40.12,
+      "objects": 435,
+      "physics_ms": 1.325,
+      "physics_p99_ms": 1.651,
+      "primitives": 263696,
+      "profile": "high",
+      "renderer": "mobile",
+      "static_mem_mb": 188,
+      "static_peak_mb": 208,
+      "video_mem_mb": 674,
+      "view": "Karaköy street, facing north",
+      "window": "(2532, 1170)"
+    },
+    {
+      "avg_fps": 60.0,
+      "draw_calls": 93,
+      "experiment": "profile_default",
+      "frames": 3600,
+      "in_vehicle": false,
+      "low1_fps": 39.87,
+      "min_fps": 39.42,
+      "objects": 362,
+      "physics_ms": 1.477,
+      "physics_p99_ms": 2.371,
+      "primitives": 324248,
+      "profile": "high",
+      "renderer": "mobile",
+      "static_mem_mb": 189,
+      "static_peak_mb": 208,
+      "video_mem_mb": 674,
+      "view": "Galata street, facing south",
+      "window": "(2532, 1170)"
+    }
+  ],
+  "startup": {
+    "first_frame_ms": 1605,
+    "map_ready_ms": 1536,
+    "physics_3d": "GodotPhysics3D"
+  }
+}

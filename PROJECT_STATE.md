@@ -2,15 +2,15 @@
 
 What actually exists in the repository and how it was verified. Plans and decisions belong in `PROJECT_CONTEXT.md`; code structure, build, and test commands are in `docs/ARCHITECTURE.md`.
 
-Last updated: 2026-10-25 (Phase 2 character actions, Claude Code)
+Last updated: 2026-10-26 (Phase 3 vehicle system, Claude Code)
 
 ## Current phase
 
-**Phase 2 (punch and roll) implemented and checked on both devices, with the placeholder capsule.** Punch and roll are new states with an input buffer, a cooldown, the interplay rules of the task, a hitbox that is open only in the punch's active phase, and a `CharacterVisual` interface for a future animated model. Automated: 110 tests pass (92 unit, 18 on the real map). Devices: every checklist item PASS by the user on the iPhone 13 Pro and the Galaxy Tab A7 (feel: prepared answer "İyi, değişiklik gerekmez"). Performance regression: iPhone high 10 min Nominal, 60.0 FPS (PASS); Tab A7 low 30.0 FPS average at all three viewpoints (PASS); 1 % low within run-to-run spread; +15 draw calls from the new HUD buttons. Quality profiles (D12) and Phase 1 results below are unchanged.
+**Phase 3 (vehicle) implemented and checked on both devices, with a placeholder car.** The project runs **GodotPhysics3D** (the "DEFAULT" setting; logged at startup); the car is a `VehicleBody3D` with an intent-based controller, a `VehicleDefinition`, a `VehicleVisual` interface, getting in and out with separate HUD control groups, a vehicle camera with follow mode, a spawn on a Karaköy street, and resets after falling or flipping. Automated: 151 tests pass (127 unit, 24 on the real map), including a second vehicle type and mutation checks. Devices: every checklist item PASS by the user on the iPhone 13 Pro and the Galaxy Tab A7 (driving feel: prepared answer "İyi, değişiklik gerekmez", no own sentence). Performance (three runs, medians): iPhone high 60.0 FPS and Nominal through three 10-minute in-vehicle sessions (PASS); Tab A7 low 30.0 FPS at all viewpoints on foot and in the vehicle (PASS). Phases 1–2 and the quality profiles are unchanged.
 
 ## Current objective
 
-Review of Phase 2; next, the prerequisites of Phase 3 (vehicle). See "Recommended next task".
+Review of Phase 3; then Phase 4 or the map-level facade work. See "Recommended next task".
 
 ## Git
 
@@ -32,18 +32,26 @@ Review of Phase 2; next, the prerequisites of Phase 3 (vehicle). See "Recommende
 - `2f84908`: punch and roll presses on the intent, HUD buttons, J/Space keys.
 - `35f0209`: Punch and Roll states, action buffer, Hitbox/Hurtbox, CharacterVisual, tests.
 - `bd8294d`: debug training dummy (DUMMY overlay button).
-- Phase 2 device results, performance regression, and documentation: the commit after `bd8294d` (`git log`).
+- `bcf9951`: Phase 2 device results, performance regression, and documentation.
+- `80a4fa9`: active physics engine detected and logged (GodotPhysics3D).
+- `bed52ca`: vehicle controller, definition, placeholder car, second test vehicle type.
+- `a91747e`: getting in and out, HUD control groups, vehicle camera follow mode.
+- `bd26331`: vehicle spawn on a Karaköy street, resets, hill hold.
+- `2e68916`: physics step timing and in-vehicle benchmarks, `tools/perf/median.py`.
+- `59aa62b`: debug CAR button (walk up to the vehicle).
+- `9dd53df`: fix: the player's tick stops once it gets into a vehicle.
+- Phase 3 device results and documentation: the commit after `9dd53df` (`git log`).
 
 ## Repository contents
 
 | Path | Notes |
 |---|---|
-| `game/` | Game code: composition root, world, player (with Punch/Roll states and `CharacterVisual`), combat areas, camera, input, HUD with debug overlay. See `docs/ARCHITECTURE.md`. |
+| `game/` | Game code: composition root, world, player (with Punch/Roll states and `CharacterVisual`), combat areas, vehicle (controller, definition, interaction, visual), camera, input, HUD with on-foot and vehicle control groups and a debug overlay. See `docs/ARCHITECTURE.md`. |
 | `maps/istanbul_halic/` | Game map scene (GLB + sky/ambient + sun + water shader + vertex-color fix) and its `MapDefinition` (with two debug viewpoints). |
 | `project.godot` | Main scene `res://game/main.tscn`; Mobile renderer; sensor landscape; `expand` aspect; physics interpolation; input actions; mouse emulates touch; ETC2/ASTC import (required for Android export); placeholder icon. |
 | `export_presets.cfg` | "Android Debug" (arm64 APK, `com.mirongi.mapsimulator`), "Android Debug Compatibility" (same, with `--rendering-method gl_compatibility`), and "iOS Debug" (`com.mirongi.mapsimulator.dev`, team `8N7RYA42S6`, project-only export). No passwords or keystore paths. |
 | `icon.svg` | Placeholder app icon (capsule character over water). |
-| `tests/` | Headless runner, 92 unit tests, 18 integration tests, flat-map fixture, original map validation. |
+| `tests/` | Headless runner, 127 unit tests, 24 integration tests, fixtures (flat map, second vehicle type `test_van`), original map validation. |
 | `tools/capture_screenshot.gd` | Windowed render to PNG with render stats. |
 | `tools/build_ios_debug.sh` | iOS debug build without contacting the Apple Developer portal; optional `devicectl` install. |
 | `game/quality/` | `RenderSettings` (applies render settings; shared by profiles and experiments), `QualityProfile`, `QualityProfiles` (selection rule), `profiles/high.tres`, `profiles/low.tres`. |
@@ -51,7 +59,7 @@ Review of Phase 2; next, the prerequisites of Phase 3 (vehicle). See "Recommende
 | `maps/istanbul_halic/istanbul_halic_occluders.scn` | Baked occluders, 2,300,873 bytes (643 occluders, 317,518 triangles), referenced by the `MapDefinition`. |
 | `tools/bake_occluders.gd` | Headless occluder bake. |
 | `tools/perf/` | Experiment definitions (`experiments/*.json`), device orchestration (`android_bench.sh`, `ios_bench.sh`, `run_batch.sh`), `parse_xctrace.py`, `summarize.py`. |
-| `docs/perf/` | Diagnosis pass: raw results and conditions (`results/`), 480 px screenshots (`android/`, `ios/`). Profile validation: `profiles/`. Phase 2 regression and HUD screenshots: `phase2/`. 2.6 MB in total. |
+| `docs/perf/` | Diagnosis pass: raw results and conditions (`results/`), 480 px screenshots (`android/`, `ios/`). Profile validation: `profiles/`. Phase 2 regression and HUD screenshots: `phase2/`. Phase 3 three-run results and screenshots: `phase3/`. 2.8 MB in total. |
 | `build/.gdignore` | Keeps Godot from scanning or packing build output. Everything else in `build/` is ignored by Git. |
 | `main.tscn`, `scripts/` | Original explorer demo, unchanged. Desktop only. |
 | `assets/istanbul_halic.glb` | 502 MB, **not tracked**. Restore: `docs/maps/istanbul_halic/README.md`. |
@@ -59,6 +67,8 @@ Review of Phase 2; next, the prerequisites of Phase 3 (vehicle). See "Recommende
 
 ## Implemented features
 
+- **Phase 3 vehicle (all builds):** placeholder car (box body, cylinder wheels, brake and reverse lights) parked on a Karaköy street; interact button (car icon, E) while in reach and standing; vehicle controls ◀ ▶ (left), throttle, brake/reverse, handbrake "P" (bottom right), exit (top right); exit only at ≤ 1.5 m/s and beside the car (driver's side, else passenger side, else refused; the exit button fades while too fast); focus loss or pause releases the controls and holds the handbrake; hill hold when no pedal is pressed; reset to the spawn after falling below the kill height or 2 s flipped, with the driver; vehicle camera 7.5 m behind with follow mode. Details: `docs/ARCHITECTURE.md`, "Vehicles (Phase 3)".
+- Debug builds: `STARTUP` reports the physics engine; CAR overlay button puts the player beside the vehicle; VIEW moves the vehicle while driving; benchmarks can run from the driver's seat and record physics step time.
 - **Phase 2 character actions (all builds):** punch button (starburst icon) and roll button (circular arrow) bottom-right, one-shot on touch-down, J / Space on desktop; 0.18 s input buffer; `PunchState` (0.10 s startup, 0.10 s active with the hitbox open, 0.25 s recovery; the body stops and keeps its facing); `RollState` (6 m in 0.6 s at constant speed toward the camera-relative stick or the facing; gravity and collisions stay on; 0.8 s cooldown; the roll button fades during it); a roll cancels only the punch recovery; a punch pressed late in a roll runs after it; nothing starts in the air; focus loss or pause ends an action and returns to Idle. Visual feedback through `CharacterVisual` (placeholder: fist thrust, tuck-and-turn, lean with speed). `Hitbox` / `Hurtbox` (layer 3) report at most one hit per punch per target; no damage. Details: `docs/ARCHITECTURE.md`, "Character actions".
 - Debug builds only: DUMMY overlay button toggles a training dummy next to the spawn that counts hits (`HITS n`, `DUMMY hits=n` log line).
 - Phase 1 controls: native `VirtualJoystick` (left 42 %), camera drag area (right 58 %), run toggle, camera-relative movement, Idle/Walk/Run states, spring-arm third-person camera, safe-area HUD, map loading with spawn, respawn, and bounds. Details in `docs/ARCHITECTURE.md`.
@@ -69,6 +79,67 @@ Review of Phase 2; next, the prerequisites of Phase 3 (vehicle). See "Recommende
 - **Quality profiles (all builds):** high (60 FPS cap, occlusion, 200 m visibility range for trees/lamps/decor/facade detail) and low (occlusion, 400 m far plane + depth fog, 100 m ranges, 0.6 render scale, shadows off, LOD threshold 4, 30 FPS cap). Default: iOS → high, Android → low, desktop → none. `--quality=<name>` overrides; debug builds can cycle profiles with the Q button.
 - **Baked occluders** loaded from `maps/istanbul_halic/istanbul_halic_occluders.scn` when a profile enables occlusion; runtime building from collision remains as a fallback with a warning.
 - Debug builds only: performance experiment flags (`PerfConfig`) layered on top of the profile (experiment > profile > defaults), and an automatic benchmark (`PerfBenchmark`) driven by host scripts in `tools/perf/`. Off unless an experiment file or `--perf-config` is given.
+
+## Phase 3 — vehicle system (2026-10-25/26)
+
+### Physics engine
+
+- `physics/3d/physics_engine` is `"DEFAULT"`; in Godot 4.7.2 that runs **GodotPhysics3D**. Evidence: the world's direct space state is `GodotPhysicsDirectSpaceState3D` and body states `GodotPhysicsDirectBodyState3D`; throwaway projects outside the repository report `JoltPhysicsDirectSpaceState3D` with `"Jolt Physics"` and the Godot classes with `"GodotPhysics3D"` and `"DEFAULT"`; a space created through `PhysicsServer3D` kept a parameter Jolt ignores and was reported at exit as a `GodotSpace3D` allocation. On the devices: the tablet's logcat shows `STARTUP … physics_3d=GodotPhysics3D (setting DEFAULT)`, and every benchmark result file from both devices records `"physics_3d": "GodotPhysics3D"`. `test_active_physics_engine_is_detected` pins it. The setting was not changed.
+- `VehicleBody3D` on GodotPhysics3D showed no serious problem. Findings that shaped the code: it drives along +Z; positive steering turns left (front-wheel steering); the project's default linear damping (0.1) capped the car near 15 m/s; 8° of steering at 21 m/s rolled the car over (5° at top speed, 0.12 rad at 13 m/s, and full steering from 6–18 m/s stayed upright, slaloms and handbrake turns included); on a steep Karaköy street the car rolled back without a pedal (hence the hill hold). No jitter was seen: vertical speed stayed below 0.25 m/s at 21 m/s on a flat floor.
+
+### Builds and devices
+
+Debug builds from `2e68916` for the measurements (Android APK 226.1 MB; iOS `com.mirongi.mapsimulator.dev`, team `8N7RYA42S6`, automatic signing **without** `-allowProvisioningUpdates`), and from `59aa62b` (adds the debug CAR button) for the checklist. Same devices as before.
+
+### Acceptance criteria (automated)
+
+| Criterion | Result | Evidence |
+|---|---|---|
+| Interact button only in reach and on the floor | PASS | `test_interact_button_only_in_reach_and_on_floor` (hidden far away, shown in reach, hidden in the air, shown after landing) |
+| Get in: on-foot HUD hidden, vehicle HUD shown, camera target and profile the vehicle's; get out: the reverse | PASS | `test_enter_and_exit_switch_hud_camera_and_player`, `test_vehicle_controls_layout_and_group_switch` |
+| Exit refused while too fast, accepted when slow; blocked driver's side → other side; both blocked → refused | PASS | `test_exit_refused_while_too_fast`, `test_exit_tries_the_other_side_then_refuses`, `test_exit_point_prefers_driver_side_and_avoids_obstacles`, `test_exit_needs_a_floor` |
+| Throttle accelerates forward; brake slows; brake at standstill reverses; steering direction correct; handbrake stops | PASS | `test_drive_command_rules`, `test_throttle_accelerates_forward_up_to_max_speed`, `test_brake_slows_then_reverses`, `test_positive_steer_turns_right`, `test_handbrake_stops_the_vehicle`, `test_drive_with_touch_buttons`, `test_keyboard_enters_drives_and_exits` |
+| Focus loss in the vehicle: throttle released, handbrake held, no button stuck | PASS | `test_focus_out_drops_throttle_and_holds_handbrake`, `test_focus_out_while_driving_releases_controls` |
+| Reset after flipping and after falling | PASS | `test_flipped_vehicle_resets_to_spawn`, `test_falling_below_kill_height_resets`, `test_vehicle_reset_takes_the_driver_along` (driver goes along; the world does not respawn the hidden player) |
+| Punch/roll presses inert in the vehicle; Phase 2 tests still pass after getting out | PASS | `test_on_foot_actions_are_inert_while_driving`, `test_vehicle_keys_and_steer_buttons`; all Phase 2 tests pass |
+| Real map: the car rests on flat ground at its spawn; 5 s of throttle cover at least X m without sticking | PASS | `test_vehicle_parked_on_a_flat_karakoy_street` (four wheels in contact, upright, on `Ground_`); `test_vehicle_drives_five_seconds_along_the_street`: **43.8 m** in 5 s, 14.9 m/s at the end, upright (lowest up 0.994), straight; threshold X = 35 m |
+| Mutation checks (exit speed rule, HUD group switch) | PASS | exit speed always allowed → 2 tests fail; interaction skipping the speed check → 2 fail; no group switch → 9 fail; on-foot presses accepted while driving → 2 fail; no hill hold → 2 fail; 8° steering at top speed → the rollover check fails; the seated-tick fix removed → 1 fails |
+| Extensibility: a second type from a definition plus a scene | PASS | `test_second_vehicle_type_from_definition_and_scene` (test van: 2200 kg, 14 m/s), `test_second_vehicle_type_enter_and_exit` |
+
+Other checks: hill hold (`test_driven_vehicle_holds_on_a_slope_without_pedals`), vehicle spawn from `MapDefinition` (`test_spawns_vehicles_from_the_definition`), VIEW moves the vehicle (`test_view_cycle_moves_the_vehicle_while_driving`), camera follow mode (`test_follow_mode_swings_back_after_look_input_pauses`, `test_snap_uses_the_targets_follow_yaw`, `test_on_foot_profile_keeps_the_yaw`), in-vehicle benchmark (`test_short_benchmark_in_the_vehicle`), CAR button (`test_debug_car_button_walks_up_to_the_vehicle`), getting in while walking (`test_entering_while_walking_leaves_the_player_idle`).
+
+### On-device checklist (user, 2026-10-25/26)
+
+| Item | iPhone 13 Pro | Galaxy Tab A7 |
+|---|---|---|
+| Button reach and safe area (interact, vehicle controls) | PASS (user: "Rahat; binme/inme doğru"); screenshot `docs/perf/phase3/iphone_vehicle_hud.jpg`: vehicle controls inside the notch-side inset and above the home indicator, exit inside the top-right corner inset | PASS (user); `docs/perf/phase3/tablet_vehicle_hud.jpg` |
+| Getting in and out | PASS (user) | PASS (user); logcat `CAR walk-up` |
+| Exit blocked while fast; camera behind the car and swinging back after a look drag | PASS (user: "İkisi de doğru") | PASS (user) |
+| Focus loss while holding the throttle: car stops (handbrake), no stuck button, throttle works again | PASS (user: "Doğru") | PASS (user) |
+| Driving feel (steering, throttle, brake, reverse, handbrake) in the user's words | prepared answer "İyi, değişiklik gerekmez"; the user gave no own sentence | same |
+
+The screenshots show the user driving on Karaköy streets on both devices. Getting in and out, the exit block, and focus loss leave no log line, so those items rest on the user's answers and the automated tests. The iPhone screenshot showed the overlay state "Walk 0.0 m/s" while driving; fixed in `9dd53df` (unit test only; not rechecked on a device).
+
+### Performance regression (medians of three runs, cold start)
+
+`profile_default` (on foot) and `profile_default_vehicle` (driver's seat, car moved to the viewpoint, no pedal). Tablet without PSS sampling. Values: median [run 1 / run 2 / run 3]. Before = Phase 2 build (tablet two runs, iPhone one run).
+
+| Device, view | Avg FPS on foot | 1 % low on foot (before) | 1 % low in vehicle | Draw calls on foot / in vehicle (before) | Physics step ms on foot / in vehicle (p99) |
+|---|---|---|---|---|---|
+| Tab A7 low, Spawn | 30.00 | 25.28 [25.18 / 25.28 / 25.98] (23.96, 26.10) | 25.85 [23.69 / 25.87 / 25.85] | 101 / 122 (101) | 4.90 (7.10) / 4.45 (8.74) |
+| Tab A7 low, Karaköy | 30.00 | 25.56 [25.56 / 25.21 / 25.97] (23.86, 26.58) | 26.03 [23.78 / 26.03 / 26.25] | 93 / 112 (93) | 4.73 (7.48) / 4.03 (8.41) |
+| Tab A7 low, Galata | 30.00 | 24.88 [24.97 / 22.22 / 24.88] (23.12, 25.60) | 25.64 [23.19 / 25.65 / 25.64] | 56 / 78 (56) | 5.56 (7.95) / 4.84 (5.80) |
+| iPhone high, Spawn | 59.99 | 42.34 [42.34 / 42.43 / 42.17] (42.42) | 42.40 [42.25 / 42.70 / 42.40] | 263 / 232 (263) | 1.32 (1.91) / 1.06 (1.28) |
+| iPhone high, Karaköy | 60.00 | 41.72 [41.72 / 41.80 / 41.66] (41.73) | 42.04 [41.73 / 42.04 / 42.33] | 162 / 196 (162) | 1.35 (1.64) / 1.08 (1.48) |
+| iPhone high, Galata | 60.00 | 39.80 [39.71 / 39.87 / 39.80] (40.42) | 40.51 [40.57 / 40.51 / 40.39] | 93 / 118 (93) | 1.50 (2.28) / 1.01 (1.34) |
+
+- Average FPS in the vehicle: 30.00 (tablet) and 60.00 (iPhone) at every viewpoint, medians and all runs (29.99–30.00, 59.99–60.00).
+- **iPhone 10-minute sessions in the vehicle** (`session_profile_vehicle`, Karaköy, parked: the driver presses nothing, the hill hold keeps the car still; three runs): per-minute median 59.97–60.00 FPS, 1 % low 41.78–42.01, physics step 1.05–1.16 ms; thermal state **Nominal** at every valid probe (14 probes per run; one probe each in runs 2 and 3 returned no data); footprint 1,021–1,044 MiB. **PASS** (≤ Fair, ≥ 55 FPS).
+- **Tab A7 low, median average ≥ 30 at all three viewpoints: PASS** (on foot and in the vehicle). 1 % low medians on foot (24.88–25.56) lie within the range of the Phase 2 runs (23.12–26.58) and above its lower runs; all three medians are above 24, Galata included; thermal status 0 in all runs; battery 33.0–35.5 °C at the starts (warmer than earlier batches: 23.5–31.0 °C).
+- **Draw calls:** on foot unchanged (the parked car is not in view at the viewpoints, the interact button is hidden). In the vehicle the camera is farther and higher and the car is in view: tablet +19 to +22, iPhone −31 to +34 depending on the view. HUD cost on the Mac: on-foot HUD 38 draw calls, interact button +5, vehicle HUD 51.
+- **Physics step** (`Performance.TIME_PHYSICS_PROCESS`, one 60 Hz step): the tablet spends 4.0–5.6 ms per step, and with the 30 FPS cap each frame contains two steps, about 8–11 ms of the 33 ms frame. The iPhone spends 1.0–1.5 ms. In the vehicle the step is 0.3–0.7 ms cheaper than on foot (the player's `move_and_slide` stops while seated; the vehicle adds its wheel raycasts). Not measured before this task, so there is no earlier baseline.
+- **Startup** (median of six launches per device): iPhone map ready 1,540 ms, first frame 1,610 ms (Phase 2: 1,660 ms, one launch); tablet 8,071 / 8,552 ms (Phase 2: 9,431 and 8,123 ms).
+- **Protocol incidents:** the first iPhone batch (overnight) produced nothing: the phone was locked, every Instruments probe answered "Waiting for device to boot", and each run waited out the 40-minute cool-down timeout. `tools/perf/ios_bench.sh` now queries the device first (which brought the connection back) and stops after three unknown probes. During run 2 one probe returned nothing; the probe and the process query now tolerate a single dropout.
 
 ## Phase 2 — character actions (2026-10-25)
 
@@ -390,7 +461,8 @@ Thermal state: Nominal at all 13 probes (0–601 s). App footprint 1,022–1,044
 | Behavior | Evidence |
 |---|---|
 | Project imports cleanly. | `godot --headless --path . --import`: exit 0, no errors or warnings (after adding `build/.gdignore`). |
-| Automated tests pass. | `run_tests.gd` → `RESULT 110 passed, 0 failed, 0 skipped`, exit 0; unit only → `RESULT 92 passed, 0 failed, 0 skipped`, exit 0; without the GLB → `RESULT 92 passed, 0 failed, 18 skipped`, exit 2 (2026-10-25, Phase 2; GLB SHA-256 re-verified afterwards). |
+| Automated tests pass. | `run_tests.gd` → `RESULT 151 passed, 0 failed, 0 skipped`, exit 0; unit only → 127 passed, exit 0; without the GLB → `RESULT 127 passed, 0 failed, 24 skipped`, exit 2 (2026-10-26, Phase 3; GLB SHA-256 re-verified afterwards). `tests/map/validate_scene.gd` → `VALIDATION PASS`. |
+| Phase 3 vehicle. | See "Phase 3 — vehicle system", including the mutation checks. |
 | Phase 2 actions. | See "Phase 2 — character actions", including the mutation checks. |
 | Quality profiles. | `test_render_settings.gd` (platform rule, `--quality`, profile values equal the measured packages, experiment > profile precedence, low profile applied, switching back restores every default, occluder fallback with warning, shared vertices keep triangles); integration: `test_profiles_switch_on_the_real_map`, `test_profile_uses_baked_occluders`, `test_baked_occluders_match_runtime_build` (643 occluders, 317,518 triangles, same extent). |
 | Performance flags still work and do nothing by default. | `test_perf_experiments.gd` (parsing, only given keys become settings, typo and unknown-profile rejection, every experiment file parses and older ones pin profile none, frame statistics, slugs); integration: `test_perf_categories_cover_every_map_mesh`, `test_no_perf_experiment_by_default`, `test_short_benchmark_on_map`. |
@@ -403,6 +475,11 @@ Thermal state: Nominal at all 13 probes (0–601 s). App footprint 1,022–1,044
 | Phase 1 behaviors (routing, speeds, camera collision on 192 street samples, respawn, safe-area math). | Unit and integration suites; see `docs/ARCHITECTURE.md`. |
 
 ## Unverified behaviors
+
+- Phase 3 driving feel in the user's own words: the user chose a prepared answer on both devices.
+- The seated-tick fix (`9dd53df`) was found on the iPhone and is covered by a unit test, but no device build with it was checked.
+- `tools/perf/ios_bench.sh`'s stop after three unknown probes was not exercised (the phone stayed unlocked in the repeated batch); its device query and single-dropout tolerance were.
+- Vehicle behaviour on Jolt Physics: not tried (setting unchanged by decision).
 
 - Phase 2 feel in the user's own words: the user chose a prepared answer on both devices.
 - Roll on the bridge on devices: no log evidence (user answer only); covered by integration tests on the same map.
@@ -425,6 +502,11 @@ Thermal state: Nominal at all 13 probes (0–601 s). App footprint 1,022–1,044
 
 ## Known bugs and limitations
 
+- Placeholder car (boxes and cylinders); no engine sound, damage, or traffic. Brake lights also light while parked (handbrake held).
+- Cars drive through railings, lamp posts, and kerbs (no collision) and can leave bridge decks and quays into the water; they reset to the spawn below the kill height (open question 12).
+- Exit markers are fixed points beside the doors; on a narrow street with both sides blocked the player cannot get out until the car is moved.
+- The debug overlay shows the player's state and speed while driving, not the vehicle's.
+
 - Placeholder character: punch and roll are shown with capsule tweens; no model or animations (`CharacterVisual` is ready for them).
 - The debug "DUMMY" label is wider than its 96-unit button on both devices (cosmetic, debug builds only).
 - Punches only signal hits; no damage, reactions, or NPCs (open questions 22–23 in `PROJECT_CONTEXT.md`).
@@ -444,7 +526,8 @@ Thermal state: Nominal at all 13 probes (0–601 s). App footprint 1,022–1,044
 
 ## Technical risks
 
-- **Performance:** the profiles meet the iPhone criterion and the tablet's average; the tablet's 1 % low is marginal and its visual quality is low. Facade detail (64 % of triangles) remains the main cost; the map-level work in `PROJECT_CONTEXT.md` is not started.
+- **Performance:** the profiles meet the iPhone criterion and the tablet's average; the tablet's 1 % low is marginal and its visual quality is low. Facade detail (64 % of triangles) remains the main geometry cost; the map-level work in `PROJECT_CONTEXT.md` is not started.
+- **Physics cost on the tablet:** one 60 Hz physics step takes 4.0–5.6 ms (medians; two per frame at the 30 FPS cap, about a quarter to a third of the frame), and its p99 reaches 15.8 ms in single runs. Its make-up (827 trimesh static bodies, the player's `move_and_slide`, the vehicle) is not profiled yet.
 - Devices are assigned by platform only: a weak iPhone would get high, a strong Android phone low (open question 18 in `PROJECT_CONTEXT.md`).
 - **Memory:** iPhone footprint 1.02 GiB; Android uses swap on a tablet with limited RAM.
 - **Startup:** 10–15 s to map ready on the tablet, with variance between runs.
@@ -456,29 +539,25 @@ Thermal state: Nominal at all 13 probes (0–601 s). App footprint 1,022–1,044
 
 ## Required manual actions
 
-- **iPhone: set Auto-Lock back to its previous value** (set to "Never" again for the Phase 2 measurements).
-- Phase 3 prerequisites: a car model (source and license) and the vehicle physics decision (open questions 2 and 8 in `PROJECT_CONTEXT.md`).
-- Optionally describe the feel of punch and roll in your own words, and answer open questions 22–26 (damage, NPCs, roll immunity, punch tuning, startup cancel).
+- **iPhone: set Auto-Lock back to its previous value** (set to "Never" again for the Phase 3 measurements).
+- Optionally describe the feel of driving (and of punch and roll) in your own words; answer open questions 2 (car model source), 8 (stay on GodotPhysics3D or try Jolt), 12 (barriers), and 27–29 (vehicle tuning, camera distance, steering modes).
+- Open questions 22–24 (damage, NPCs, roll immunity) remain.
 - Decide on the map-level facade work and on bringing the map generation scripts into the repository (open questions 20–21 in `PROJECT_CONTEXT.md`).
 - Later: create the new Apple Developer account, then update the team ID and bundle ID (decision D8).
 - Provide or choose character and car models; decide the app name and icon.
 
 ## Current priorities
 
-1. Review of Phase 2.
-2. Phase 3 prerequisites (car model, physics engine), or the facade work first (user decision).
+1. Review of Phase 3.
+2. Phase 4 (recommended first, see below) or the map-level facade work (user decision).
 
 ## Recommended next task
 
-**Phase 3 (vehicle), after two user decisions.** Phase 2 meets its acceptance criteria on both devices, and the performance profiles still hold with it, so the next mechanic can be judged on both devices.
+**Phase 4 (mobile optimization and platform validation) before the facade work**, starting with a profiling pass on the tablet. Reasons from the measurements:
 
-Prerequisites:
+- **iPhone 13 Pro:** meets its target with margin in every condition measured (60.0 FPS, thermal Nominal through three 10-minute in-vehicle sessions, physics 1.0–1.5 ms per step). What remains is frame pacing: the 1 % low stays at ~40–42 FPS in every 60-capped run (open question 15), a Phase 4 item (display-synchronized pacing), not a geometry problem.
+- **Galaxy Tab A7:** holds 30.0 FPS on foot and in the vehicle; 1 % low medians 24.9–26.0. Its low profile already draws only 56–122 draw calls and 0.05–0.06 M primitives, so geometry is unlikely to be what limits the frame now (not proven by a profiler). The measured costs left are CPU-side: one physics step 3.9–6.0 ms in single runs (medians 4.0–5.6), two per frame (8–11 ms of 33 ms), with p99 medians of 5.8–8.7 ms and single runs up to 15.8 ms; and the 30 FPS cap on a 60 Hz display (open question 15's tablet counterpart). The facade work would not reduce either.
+- **What the facade work does fix** is the tablet's visual quality (blank nearby facades, fog, no shadows) and the geometry headroom to relax the low profile. It is blocked on the user's approval of map pipeline changes and on the generation scripts and data being brought into the repository (open questions 20–21).
+- **Unmeasured so far:** release builds, startup on more devices, memory pressure on the tablet (it swaps), devices beyond the two test devices.
 
-- **Car model (open question 2):** the map has no vehicles. Either the user supplies a model, or a CC0 low-poly car is chosen with its license recorded in `PROJECT_CONTEXT.md`, or Phase 3 starts with a placeholder box car (the specification allows placeholders) and the model is swapped in later. A placeholder lets the controls, camera, and enter/exit logic be built and tested without waiting.
-- **Vehicle physics (open question 8):** the project uses the "DEFAULT" 3D physics engine setting; Godot 4.7.2 also offers the built-in Jolt Physics. Which engine "DEFAULT" maps to in 4.7.2 was not determined in this task. Decide between `VehicleBody3D` (wheel raycasts, engine-independent scene code) and a custom raycast car on a `RigidBody3D`, and whether to switch to Jolt, before writing the controller; a switch would need the Phase 1–2 test suite and a device run repeated.
-- **Collision gaps:** roads and pavements have no collision of their own (the walkable surface is the `Ground_*` terrain) and railings have none (open question 12). A car will drive on the terrain and can leave bridge decks.
-- **Performance budget:** the tablet holds 30 FPS with little 1 % low margin; a car body, wheels, and vehicle physics add CPU work. Re-run `profile_default` afterwards, as in this task.
-
-Suggested acceptance (from the specification): an interaction button appears near the car; entering hides the on-foot controls and shows steering, throttle, brake/reverse, handbrake, and exit; the camera switches to a vehicle `CameraProfile` through `set_target()`; exiting at unsafe speed is blocked and restores the on-foot controls; the vehicle code is structured for other vehicle types; tests for enter/exit, control routing, and the exit-speed rule; device checklist and the same performance regression on both devices.
-
-The map-level facade work remains the lasting fix for the tablet's quality and frame-time margin (prerequisites unchanged: user approval of map pipeline changes; the generation scripts and data from `<SOURCE_PACKAGE>/Istanbul_Halic/source/` brought into the repository; a facade approach; re-baking occluders and re-running the benchmarks).
+Suggested Phase 4 start: profile the physics step on the tablet (static body count, the player's `move_and_slide`, the vehicle, physics interpolation; try 30 Hz physics or a coarser collision set for distant geometry, and Jolt as a measured option since open question 8 stays open); frame pacing on both devices; a release build on both devices with the same three-run protocol. Acceptance: physics step and its p99 reported per viewpoint on and off foot, tablet 1 % low median ≥ 24 at all viewpoints in three runs, release builds measured; no visible gameplay change.

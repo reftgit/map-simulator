@@ -2,7 +2,7 @@
 
 Planning context and decision rationale. This file does not describe implemented functionality; see `PROJECT_STATE.md` for that.
 
-Last updated: 2026-10-25 (Phase 2 character actions, Claude Code)
+Last updated: 2026-10-25 (Phase 3 vehicle system, Claude Code)
 
 ## Product vision and goals
 
@@ -65,6 +65,8 @@ Detailed task of 2026-10-25 (user): one-shot punch/roll fields on the intent; tw
 - Vehicle controls: touch steering, throttle, brake/reverse, handbrake, exit.
 - Exiting while the car is moving unsafely is blocked. Exiting restores the character controls.
 - The system must support other vehicle types later.
+
+Detailed task of 2026-10-25 (user): first identify and log the active 3D physics engine without changing it; vehicle with `VehicleBody3D` on that engine (stop and report if it misbehaves seriously); intent pattern (`VehicleIntent`, `VehicleInputSource`), tunables in a `VehicleDefinition`, a `VehicleVisual` interface with a placeholder (box body, four cylinder wheels); brake reverses at (near) standstill; interaction area and button (E); exit only at a safe speed beside the left door, else the other side, else refused; separate on-foot and vehicle HUD groups; vehicle camera profile; a spawn in `MapDefinition` on a flat, wide Karaköy street away from the bridge (map scene, GLB, import unchanged); reset after falling or flipping, with the driver; a second test vehicle type to show extensibility; no real model, sound, damage, traffic, or barriers. Implementation and verification: `PROJECT_STATE.md`.
 
 ### Phase 4 — Mobile optimization and platform validation
 
@@ -164,6 +166,19 @@ PlayerController, PlayerStateMachine, PlayerCombat, PlayerAnimation, ThirdPerson
 
 - **Decision:** Phase 2 continues with the placeholder capsule (no character model or animation pack is added or researched in this task). Roll defaults: about 0.6 s, about 6 m, 0.8 s cooldown, no damage immunity; all exported and tunable. Punch and roll rules from the task: a punch pressed during a roll is buffered and runs after it; a roll can cancel the punch recovery but not its active phase; neither starts in the air; roll presses during the cooldown are ignored; focus loss or pause ends an action safely and returns to Idle.
 - **Note:** the task prompt also offered, as an alternative, researching a CC0 animated character pack; that option was left as unfilled template text, so the primary choice (placeholder) was applied.
+
+### D15 — Phase 2 rules approved (2026-10-25, user decision)
+
+- **Decision:** The agent-chosen Phase 2 rules (T18) are approved as they are: the punch startup cannot be cancelled, rolls do not chain, a pending roll wins over a pending punch, punch timings 0.10 / 0.10 / 0.25 s, the body stops while punching. Open questions 25 and 26 are closed by this.
+
+### D16 — Phase 3 scope (2026-10-25, user decision)
+
+- **Decision:** Placeholder vehicle (box body, four cylinder wheels) behind a separate visual interface so a model can be swapped in later. The physics engine setting is not changed in this task; the active engine is identified first and the vehicle uses `VehicleBody3D` on it. A switch of engine is the user's decision.
+
+### D17 — Measurement repeats (2026-10-25, user decision)
+
+- **Decision:** From Phase 3 on, every device and viewpoint is measured in at least three runs and reported as the median (with all run values). Protocol: `docs/ARCHITECTURE.md`, "Measurement protocol and host scripts".
+- **Rationale:** Single runs of the same build differed by 2–3 FPS in the tablet's 1 % low (Phase 2 regression).
 
 ## Application technical decisions
 
@@ -285,6 +300,29 @@ Decisions made by the implementing agent (Claude Code, 2026-10-24). None was spe
 - **Decision:** A static dummy with a `Hurtbox`, toggled by a DUMMY overlay button in debug builds, placed 1.3 m in front of and 0.35 m right of the spawn (in punch reach from the spawn and visible past the capsule). Off by default.
 - **Rationale:** The task asks for a hit-signalling dummy near the spawn that can be switched from the overlay. Off by default keeps benchmarks and tests comparable with earlier runs.
 
+### T24 — Vehicle architecture
+
+- **Decision:** `VehicleController` (on `VehicleBody3D`) reads a `VehicleIntent` from a `VehicleInputSource` each tick; static, testable functions turn it into engine force, per-wheel brakes, and steering (`drive_command`, `steer_angle`, `approach_steer`); all tunables are in a `VehicleDefinition`; `VehicleVisual` gets speed, steering, light state, and wheel poses. A new vehicle type is a scene plus a definition (demonstrated by `tests/fixtures/test_van.tscn`). New physics layer 4 "vehicle".
+- **Engine facts the code depends on (GodotPhysics3D, measured):** the body drives along +Z (vehicles face +Z, `get_follow_yaw()` gives cameras the yaw behind them, `place_at()` converts the −Z convention of map transforms); positive steering turns left (negated); default linear damping 0.1 capped speed near 15 m/s (replaced by `linear_damp` 0); 8° steering at 21 m/s rolled the car (5° at top speed does not).
+- **Rationale:** Same pattern as the player (T3), so AI drivers and other vehicles need no controller changes.
+
+### T25 — Vehicle controls layout
+
+- **Decision:** Steering with two hold buttons on the left (◀ ▶), smoothed into an analog value by `steer_rate` / `steer_return_rate`; throttle (160), brake/reverse (140), and handbrake "P" (116) as hold buttons bottom right; exit (116) top right, away from the pedals. Keyboard W/S/A/D, Space handbrake, E get in / out. On-foot and vehicle controls are separate groups; `set_vehicle_mode()` shows one and releases every finger and pending press; punch and roll presses are ignored while driving.
+- **Why buttons rather than a horizontal drag:** buttons work without looking and without a drag origin that drifts under the thumb, keep the existing button routing and finger ownership (T2) unchanged, behave like the keyboard (same intent values), and are easy to test. Analog feel comes from the steering ramp; the drawback is no fine partial steering by thumb position. A drag or tilt option can be added as another `VehicleInputSource` later.
+
+### T26 — Getting in and out
+
+- **Decision:** `VehicleInteraction` owns the handover: interact button only with a vehicle in reach and the player on a floor; entering seats the player (`set_seated`: hidden, collision off, physics off, actions and presses dropped), swaps HUD group, input source, and camera profile; the world stops tracking the hidden player. Exiting: speed ≤ `safe_exit_speed` (1.5 m/s), then the exit markers in order (driver's side, then passenger side) with a floor ray and a capsule overlap query; otherwise refused and the press dropped; the exit button fades while too fast. Focus loss or pause: buttons and actions released, throttle dropped, handbrake held until a pedal is pressed. With no pedal below `hold_speed` (0.5 m/s) the brakes hold the car on slopes (added after it rolled back on a steep Karaköy street).
+
+### T27 — Vehicle placement and reset
+
+- **Decision:** `MapDefinition.vehicle_spawns` (transforms facing −Z, like the player spawn); İstanbul • Haliç: (−88.96, 14.7, 36.14) facing 75°, a Karaköy street found by collider queries (70 m × 6 m free corridor on `Ground_*`, ≤ 1.1 % grade, buildings on both sides, ~87 m from the bridge axis). Reset to the spawn below the map's kill height, or after 2 s flipped beyond 70° while nearly still; the seated driver goes along.
+
+### T28 — Vehicle camera
+
+- **Decision:** `vehicle_camera_profile.tres` (7.5 m, pivot 1.9 m, pitch −14°) with the new follow mode: after 1 s without look input the yaw swings back behind the vehicle (`follow_yaw_sharpness` 2.5). The optional speed-dependent distance was not implemented.
+
 ## Performance findings and proposed measures
 
 Status: **measured on 2026-10-24, nothing applied.** Full tables and protocol: `PROJECT_STATE.md`, "Performance diagnosis pass". Raw data and screenshots: `docs/perf/`.
@@ -349,17 +387,17 @@ See "Requirements by phase". `PROJECT_STATE.md` records which parts exist.
 ## Open questions
 
 1. Character model and animations: none exist in the map package. Where will they come from? A placeholder is used until then (D14). The `CharacterVisual` interface (T20) is where they plug in.
-2. Car model: the map has no vehicles. Source needed before Phase 3.
+2. Car model: the map has no vehicles. A placeholder (box body, cylinder wheels) is used (D16); a model plugs in behind `VehicleVisual` with the same wheel order. Source and license still needed.
 3. The settings packages are adopted as profiles (D12). Map-level facade work: see question 21.
 4. Target device list beyond the two test devices. Does the Galaxy Tab A7 class stay a 30 FPS target given the measured visual cost?
 5. App name and final icon; Android release keystore. (Identifiers and debug signing are decided: D8–D10.)
 6. In-game UI language.
 7. Audience and monetization: not specified.
-8. Physics engine for vehicles. **Finding (2026-10-25):** the project setting `physics/3d/physics_engine` is `"DEFAULT"`, and in Godot 4.7.2 that runs **GodotPhysics3D**, not Jolt. Evidence: the world's direct space state is a `GodotPhysicsDirectSpaceState3D` and body states are `GodotPhysicsDirectBodyState3D` (in throwaway projects outside the repository, `"Jolt Physics"` gives `JoltPhysicsDirectSpaceState3D` / `JoltPhysicsDirectBodyState3D`, while `"GodotPhysics3D"` and `"DEFAULT"` both give the Godot classes); a space created through `PhysicsServer3D` keeps space parameters that Jolt ignores and is reported at exit as a `GodotSpace3D` allocation; `ClassDB` lists `GodotPhysicsServer3D` and no Jolt server class. Debug builds log it in the `STARTUP` line (`physics_3d=GodotPhysics3D (setting DEFAULT)`), and `test_active_physics_engine_is_detected` fails if it changes. The setting was not changed (user decision); the vehicle uses `VehicleBody3D` on GodotPhysics3D. Whether to switch to Jolt stays open; see the vehicle findings in `PROJECT_STATE.md`.
+8. Physics engine for vehicles. **Finding (2026-10-25):** the project setting `physics/3d/physics_engine` is `"DEFAULT"`, and in Godot 4.7.2 that runs **GodotPhysics3D**, not Jolt. Evidence: the world's direct space state is a `GodotPhysicsDirectSpaceState3D` and body states are `GodotPhysicsDirectBodyState3D` (in throwaway projects outside the repository, `"Jolt Physics"` gives `JoltPhysicsDirectSpaceState3D` / `JoltPhysicsDirectBodyState3D`, while `"GodotPhysics3D"` and `"DEFAULT"` both give the Godot classes); a space created through `PhysicsServer3D` keeps space parameters that Jolt ignores and is reported at exit as a `GodotSpace3D` allocation; `ClassDB` lists `GodotPhysicsServer3D` and no Jolt server class. Debug builds log it in the `STARTUP` line (`physics_3d=GodotPhysics3D (setting DEFAULT)`), and `test_active_physics_engine_is_detected` fails if it changes. The setting was not changed (user decision); the vehicle uses `VehicleBody3D` on GodotPhysics3D, which showed no serious problem (findings in `PROJECT_STATE.md`, "Phase 3"). **Recommendation:** stay on GodotPhysics3D for now; try Jolt as a measured Phase 4 experiment, because one physics step costs 4.0–5.6 ms on the Galaxy Tab A7 (two per frame at its 30 FPS cap) against 1.0–1.5 ms on the iPhone. A switch needs the user's decision and a re-run of the Phase 1–3 tests and device checks (vehicle tuning in particular: +Z forward, steering sign, damping, and rollover were measured on GodotPhysics3D).
 9. Whether the original explorer demo (`main.tscn`, `scripts/explorer.gd`, `scripts/main.gd`) should be kept long term.
 10. Branch strategy: work currently happens directly on `main`. Decide whether feature branches or pull requests are wanted.
 11. Whether `.vscode/` should be committed, ignored, or left untracked. It is currently left untracked.
-12. Railings, lamps, and other decor have no collision, so the player can walk off bridge decks and quays into the water (then respawns). Should invisible barriers be added along bridges and quays?
+12. Railings, lamps, and other decor have no collision, so the player can walk off bridge decks and quays into the water (then respawns). Should invisible barriers be added along bridges and quays? **Vehicle observations (2026-10-25):** a car driven across the Galata Bridge deck toward the railing passes through it, falls into the water, and resets to its Karaköy spawn with the driver (reached y −5.1, kill height −5.0); pavements and kerbs have no collision of their own, so cars drive onto pavements freely; lamp posts do not stop a car either. With vehicles, barriers along bridge decks and quays (and possibly kerbs) matter more than on foot; not added (out of scope).
 13. Run control style: is the toggle with reset on stick release (T7) what the user wants, or a hold button, or auto-run at full stick tilt?
 14. HUD art: the controls are drawn with plain shapes. Is final art or an icon set planned?
 15. iPhone frame pacing: the 1 % low stays around 41 FPS in every 60-capped run (now also with the high profile, see `PROJECT_STATE.md`). Investigate a display-synchronized 60 Hz instead of `Engine.max_fps`? Not part of the acceptance criterion (average FPS).
@@ -372,8 +410,11 @@ See "Requirements by phase". `PROJECT_STATE.md` records which parts exist.
 22. Damage system: punches only signal hits (T21). Health, damage values, and hit reactions are undefined.
 23. NPCs: none yet. What should they do when hit, and should they use `PlayerController` with an AI `PlayerInputSource` (T3)?
 24. Roll damage immunity (invulnerability frames): none for now (D14). Revisit once damage exists.
-25. Punch tuning: the phase timings and the stop-while-punching rule (T18) were chosen by the agent. Should punching allow slow movement, or turn the body toward the stick at the start?
-26. Should a roll be able to cancel the punch startup too (T18 locks it)?
+25. *(Closed 2026-10-25 by D15: punch timings and stop-while-punching approved.)*
+26. *(Closed 2026-10-25 by D15: the startup stays uncancellable.)*
+27. Vehicle feel: speeds, steering ramp, brake strength, and the hill hold were tuned by the agent; the user's device feedback decides further tuning.
+28. Speed-dependent camera distance while driving (optional in the task, not implemented).
+29. Should steering also offer a drag or tilt mode (T25)?
 
 ## Constraints and priorities
 
@@ -381,4 +422,4 @@ See "Requirements by phase". `PROJECT_STATE.md` records which parts exist.
 - The map original in the source package must not be modified or deleted.
 - Physical device results are reported as NOT RUN until actually performed.
 - No store, TestFlight, or Play Console uploads; no release signing without explicit approval.
-- Current priority: review of Phase 2 (punch and roll with the placeholder); then Phase 3 (vehicle) once its prerequisites are settled, or the map-level facade work (user decision).
+- Current priority: review of Phase 3 (vehicle with a placeholder); then Phase 4 or the map-level facade work (user decision; see `PROJECT_STATE.md`, "Recommended next task").

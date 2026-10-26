@@ -124,9 +124,11 @@ static func frame_stats(frame_us: PackedInt64Array, elapsed_s: float) -> Diction
 	}
 
 
-## Physics tick time (Performance.TIME_PHYSICS_PROCESS: scene physics
+## Physics step time (Performance.TIME_PHYSICS_PROCESS: scene physics
 ## callbacks plus the physics server step), sampled once per frame: mean and
-## 99th percentile in milliseconds.
+## 99th percentile in milliseconds. The monitor reports one step, not the sum
+## of a frame's steps (measured: a 3 ms step reads ~3 ms at both 1 and 2 steps
+## per frame), so a 30 FPS cap with 60 Hz physics costs about twice this per frame.
 static func physics_stats(physics_us: PackedInt64Array) -> Dictionary:
 	if physics_us.is_empty():
 		return {"physics_ms": 0.0, "physics_p99_ms": 0.0}

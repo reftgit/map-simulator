@@ -14,15 +14,19 @@ game/
     state_machine/          PlayerStateMachine, PlayerState, Idle/Walk/Run/Punch/Roll states
     visual/                 CharacterVisual (interface), PlaceholderCharacterVisual (capsule tweens)
   combat/                   Hitbox, Hurtbox (hit detection only; no damage)
-  camera/                   ThirdPersonCamera, CameraProfile, on-foot profile
+  vehicle/                  VehicleController, VehicleIntent, VehicleInputSource, TouchVehicleInput, VehicleDefinition,
+                            VehicleInteraction (get in / out), placeholder_car.tscn
+    definitions/            compact_car.tres (VehicleDefinition of the placeholder car)
+    visual/                 VehicleVisual (interface), PlaceholderVehicleVisual (box body, cylinder wheels, lights)
+  camera/                   ThirdPersonCamera, CameraProfile, on-foot and vehicle profiles
   input/                    MobileInputController, TouchControl, TouchLookArea, TouchButton
-  ui/                       UIController, hud.tscn, icons/ (punch, roll button icons)
+  ui/                       UIController, hud.tscn, icons/ (button icons)
   quality/                  RenderSettings (applies render settings), QualityProfile, QualityProfiles, profiles/high.tres, low.tres
   debug/                    PerfConfig (experiments), PerfBenchmark, TrainingDummy (debug builds only)
 maps/<map_name>/            One folder per map: scene, MapDefinition (.tres), map script, baked occluders (.scn)
 assets/                     Map model and metadata (the 502 MB GLB is not in Git)
 scripts/, main.tscn         Original explorer demo from the map package (desktop only, not used by the game)
-tests/                      Headless test runner, unit and integration suites, fixtures
+tests/                      Headless test runner, unit and integration suites, fixtures (flat map, a second vehicle type)
 tools/                      Development tools (screenshot capture, iOS debug build, occluder bake, perf scripts)
 docs/                       This file, map documentation
 build/                      Export output, ignored by Git except build/.gdignore (keeps Godot from importing it)
@@ -36,6 +40,12 @@ Main (game.gd) ─ wires everything once in _ready()
 ├── WorldManager          loads maps/<map>/<map>.tscn from a MapDefinition; respawn and bounds
 │   ├── IstanbulHalic     map scene: GLB, sky/ambient, sun, water shader, vertex-color fix
 │   │   └── Occluders     baked occluders, added when the profile enables occlusion
+│   ├── PlaceholderCar    VehicleController (VehicleBody3D, layer 4) per MapDefinition.vehicle_spawns
+│   │   ├── Chassis, Cabin       collision boxes
+│   │   ├── Wheel*        VehicleWheel3D ×4 (front steer, rear drive)
+│   │   ├── Seat, ExitLeft, ExitRight  markers (driver's side is +X: the body drives along +Z)
+│   │   ├── InteractionArea      Area3D (mask: player) — "vehicle in reach"
+│   │   └── Visual        PlaceholderVehicleVisual (meshes only)
 │   └── TrainingDummy     debug builds, on demand (DUMMY button): static target with a Hurtbox
 ├── Player                PlayerController (CharacterBody3D, layer 2)
 │   ├── Visual            PlaceholderCharacterVisual → Pivot → Body, Visor, Fist (hidden at rest)
@@ -43,16 +53,25 @@ Main (game.gd) ─ wires everything once in _ready()
 │   └── StateMachine      Idle, Walk, Run, Punch, Roll (child nodes)
 ├── ThirdPersonCamera     top-level rig → PitchPivot → SpringArm3D → Camera3D
 ├── TouchPlayerInput      PlayerInputSource: stick + camera yaw → PlayerIntent
+├── TouchVehicleInput     VehicleInputSource: vehicle buttons/keys → VehicleIntent (given to the driven vehicle)
+├── VehicleInteraction    get in / get out: seats the player, swaps HUD group, input source, camera profile
 └── HUD                   UIController (CanvasLayer): safe area, debug overlay
     └── SafeArea/Controls MobileInputController
-        ├── LookArea      TouchLookArea (right 58 %)
-        ├── Joystick      native VirtualJoystick (left 42 %), drives move_* actions
-        ├── RunButton     TouchButton, toggle
-        ├── PunchButton   TouchButton, one-shot press on touch-down
-        ├── RollButton    TouchButton, one-shot press on touch-down; faded during the roll cooldown
+        ├── LookArea      TouchLookArea (right 58 %), both modes
+        ├── OnFootControls      group shown on foot
+        │   ├── Joystick        native VirtualJoystick (left 42 %), drives move_* actions
+        │   ├── RunButton       TouchButton, toggle
+        │   ├── PunchButton     TouchButton, one-shot press on touch-down
+        │   ├── RollButton      TouchButton, one-shot press on touch-down; faded during the roll cooldown
+        │   └── InteractButton  TouchButton (car icon), visible only with a vehicle in reach
+        ├── VehicleControls     group shown while driving
+        │   ├── SteerLeftButton, SteerRightButton   hold (left side)
+        │   ├── ThrottleButton, BrakeButton, HandbrakeButton "P"   hold (right side)
+        │   └── ExitButton      one-shot (top right); faded while too fast to get out
         ├── DebugViewButton     TouchButton "VIEW", debug builds only (extra_controls)
         ├── DebugQualityButton  TouchButton "Q", cycles quality profiles, debug builds only
-        └── DebugDummyButton    TouchButton "DUMMY", toggles the training dummy, debug builds only
+        ├── DebugDummyButton    TouchButton "DUMMY", toggles the training dummy, debug builds only
+        └── DebugCarButton      TouchButton "CAR", walks the player up to the vehicle, debug builds only
 ```
 
 `game.gd` also owns a `RenderSettings` object (created after the map loads) that applies the quality profile.
@@ -61,14 +80,15 @@ Systems do not search for each other. `game.gd` is the only place that connects 
 
 ## Per-frame data flow
 
-1. **Touch.** The native `VirtualJoystick` writes the `move_left/right/forward/back` actions. `MobileInputController._input()` routes every other touch to one `TouchControl` in priority order (run, punch, roll buttons, `extra_controls`, then look area) and owns that finger until release. A finger that starts on the look area keeps turning the camera even if it slides over a button. Unclaimed touches fall through to the GUI, where the joystick takes them. A punch or roll button touch-down (or the J / Space key) records a one-shot press that is kept until consumed once (`consume_action_press()`).
+1. **Touch.** The native `VirtualJoystick` writes the `move_left/right/forward/back` actions. `MobileInputController._input()` routes every other touch to one `TouchControl` in priority order (run, punch, roll, interact buttons, the vehicle buttons, `extra_controls`, then look area; hidden controls are skipped) and owns that finger until release. A finger that starts on the look area keeps turning the camera even if it slides over a button. Unclaimed touches fall through to the GUI, where the joystick takes them. A punch or roll button touch-down (or the J / Space key) records a one-shot press that is kept until consumed once (`consume_action_press()`).
 2. **Camera (`_process`).** `ThirdPersonCamera` consumes the look delta (radians), clamps pitch, follows the target's interpolated transform, and lets the `SpringArm3D` (sphere, world layer) pull the camera in front of walls.
 3. **Player (`_physics_process`).** `PlayerController` clears its `PlayerIntent` and asks its `input_source` to fill it. `TouchPlayerInput` rotates the stick by the camera yaw (`camera_relative`) and copies the pending punch/roll presses into the intent's one-shot fields. The controller puts those presses into its `ActionBuffer`. The active `PlayerState` starts a buffered action or picks the target speed and transitions; `apply_locomotion()` accelerates, turns the body, and applies gravity. Then the buffer ages, `move_and_slide()` runs, and `CharacterVisual.set_locomotion()` gets the horizontal speed.
-4. **World (`_physics_process`).** `WorldManager` respawns tracked bodies below `kill_height` and clamps them to `bounds`.
+4. **Vehicle (`_physics_process`).** The driven `VehicleController` asks its `input_source` (`TouchVehicleInput`) for a `VehicleIntent`, turns it into steering, engine force, and per-wheel brakes (`drive_command()`, `steer_angle()`, `approach_steer()`), checks its reset conditions, and passes speed, steering, lights, and wheel poses to its `VehicleVisual`. An intent `exit` press asks `VehicleInteraction` to let the player out. Parked vehicles have no input source and hold the handbrake.
+5. **World (`_physics_process`).** `WorldManager` respawns tracked bodies below `kill_height` and clamps them to `bounds` (the player is untracked while driving; vehicles reset themselves).
 
 ## Module map
 
-The specification suggested these modules. Status as of Phase 2:
+The specification suggested these modules. Status as of Phase 3:
 
 | Module | Implementation | Status |
 |---|---|---|
@@ -81,7 +101,8 @@ The specification suggested these modules. Status as of Phase 2:
 | Quality profiles | `game/quality/` (`RenderSettings`, `QualityProfile`) | High (iOS) and Low (Android) |
 | PlayerCombat | `PunchState`, `RollState`, `ActionBuffer`, `game/combat/` (`Hitbox`, `Hurtbox`) | Phase 2: punch, roll; no damage system |
 | PlayerAnimation | `game/player/visual/` (`CharacterVisual` interface, `PlaceholderCharacterVisual`) | Phase 2: placeholder tweens; no model or animations yet |
-| VehicleController, VehicleInteraction | not started | Phase 3 |
+| VehicleController | `game/vehicle/vehicle_controller.gd` + `VehicleDefinition`, `VehicleIntent`, `VehicleInputSource`, `VehicleVisual` | Phase 3: placeholder car on GodotPhysics3D `VehicleBody3D` |
+| VehicleInteraction | `game/vehicle/vehicle_interaction.gd` | Phase 3: get in / out, HUD and camera handover |
 
 ## Extension points
 
@@ -90,7 +111,8 @@ The specification suggested these modules. Status as of Phase 2:
 - **Character model and animations:** replace the `Visual` node of `player.tscn` with a `CharacterVisual` subclass (see "CharacterVisual extension point"). `PlayerController` and the states stay unchanged.
 - **Hit targets (NPCs, props):** give the target a `Hurtbox` (physics layer 3) and react to `hit_received(attacker)`. Damage and reactions belong to the target.
 - **Other drivers (AI, bots, replays):** subclass `PlayerInputSource` and implement `fill_intent()`. The controller does not know where intents come from.
-- **Vehicles (Phase 3 plan):** call `ThirdPersonCamera.set_target(vehicle, vehicle_profile)` with a vehicle `CameraProfile`; give the HUD a vehicle control set next to the on-foot one.
+- **New vehicle type:** see "Vehicles (Phase 3)", "Adding a vehicle type". A scene plus a `VehicleDefinition`; no code.
+- **Other vehicle drivers (AI, replays):** subclass `VehicleInputSource` and set it as the vehicle's `input_source`.
 - **New touch control:** subclass `TouchControl`, add it under `HUD/SafeArea/Controls`, and register it in `MobileInputController`'s priority list.
 
 ## Physics layers
@@ -100,6 +122,7 @@ The specification suggested these modules. Status as of Phase 2:
 | 1 | world | Map static bodies (GLB `-col` nodes). Mask of the player and the camera spring arm. |
 | 2 | player | Player body. |
 | 3 | hurtbox | `Hurtbox` areas (training dummy). Mask of the punch `Hitbox`, which is on no layer. |
+| 4 | vehicle | Vehicle bodies. Mask: world and vehicle. The player and the camera spring arm mask layers 1 and 4 (value 9), so the player cannot walk through a car and the camera stays out of it. A vehicle's `InteractionArea` masks layer 2 (player). |
 
 The map has collision on `Ground_*` terrain (streets included), `Buildings_*`, `Mosque_*`, `TreeTrunks_*`, landmarks, and the two bridge decks. Roads, pavements, railings, lamps, decor, and water have no collision of their own. The debug training dummy's body is on layer 1, so the player and the camera spring arm collide with it.
 
@@ -108,8 +131,9 @@ The map has collision on `Ground_*` terrain (streets included), `Buildings_*`, `
 - Touch is primary. Several fingers work at once; each finger belongs to one control until it lifts.
 - Running is a toggle button that turns off when the joystick finger lifts (`run_resets_on_release`).
 - Punch and roll buttons fire on touch-down; holding does not repeat, and a drag that starts on them never turns the camera.
-- Desktop development: WASD or arrow keys move, Shift runs, J punches, Space rolls, and the mouse emulates touch (`emulate_touch_from_mouse`), so left-drag on the left half is the joystick and left-drag on the right half turns the camera.
-- When the app loses focus or pauses, `MobileInputController.release_all_touches()` drops routed fingers and pending punch/roll presses, turns the run toggle off, sends touch releases so the native joystick forgets its finger, and releases the `move_*`, `run`, `punch`, and `roll` actions. `PlayerController` receives the same notifications and ends a running punch or roll (`interrupt_actions()`).
+- Vehicle controls (shown only while driving): two hold buttons on the left steer (smoothed to an analog value by `steer_rate`), throttle, brake (reverses near standstill), and handbrake "P" on the right, exit at the top right. Getting in uses the on-foot interact button. `set_vehicle_mode()` switches the groups and releases every finger and pending press; punch and roll presses are ignored while driving.
+- Desktop development: WASD or arrow keys move (and drive), Shift runs, J punches, Space rolls (handbrake while driving), E gets in and out, and the mouse emulates touch (`emulate_touch_from_mouse`), so left-drag on the left half is the joystick and left-drag on the right half turns the camera.
+- When the app loses focus or pauses, `MobileInputController.release_all_touches()` drops routed fingers and pending punch/roll presses, turns the run toggle off, sends touch releases so the native joystick forgets its finger, and releases all input actions (`ACTIONS`, vehicle ones included). `PlayerController` receives the same notifications and ends a running punch or roll (`interrupt_actions()`); a `VehicleController` drops the throttle and holds the handbrake until a pedal is pressed again (`release_controls()`).
 
 ## Character actions (Phase 2)
 
@@ -145,12 +169,51 @@ States ask for visual feedback only through `CharacterVisual` (`game/player/visu
 
 An animated model plugs in as another subclass, for example `AnimatedCharacterVisual` with the model and an `AnimationTree`: `set_locomotion()` sets a locomotion `BlendSpace1D` position from the speed (and a falling state from `on_floor`); `play_action()` fires a `OneShot` or travels an `AnimationNodeStateMachine` to the action, scaling the clip so it lasts `duration` and its contact frame lands at `impact`; `stop_action()` aborts the one-shot and returns to locomotion. Replace the `Visual` node in `player.tscn` with that scene and point `PlayerController.visual` at it; no controller or state code changes. Hit timing stays with `PunchState`, so gameplay does not depend on animation lengths. `test_visual_can_be_replaced` swaps in a recording visual to check this contract.
 
+## Vehicles (Phase 3)
+
+A vehicle is a `VehicleBody3D` scene with `VehicleController` (`game/vehicle/`), following the same intent pattern as the player: a `VehicleInputSource` fills a `VehicleIntent` (`steer` −1..1, `throttle` 0..1, `brake` 0..1, `handbrake`, one-shot `exit`) every physics tick, and the controller never reads raw input. Tunables live in a `VehicleDefinition` resource; meshes live behind `VehicleVisual`.
+
+Physics engine: the project runs **GodotPhysics3D** (the `"DEFAULT"` setting in Godot 4.7.2; `STARTUP … physics_3d=GodotPhysics3D (setting DEFAULT)`). Measured `VehicleBody3D` behaviour on it, which the controller relies on:
+
+- The body drives along **+Z**, so vehicles face +Z (the player faces −Z). `get_follow_yaw()` (`rotation.y + PI`) tells the camera where "behind" is; `place_at(t)` turns the body so that its +Z points along a map transform's −Z (map spawns and viewpoints keep the player's convention).
+- Positive `steering` turns **left** with front-wheel steering, so the controller negates the intent's steering (intent +1 = right).
+- The project's default linear damping (0.1) capped the top speed near 15 m/s; vehicles replace it with `VehicleDefinition.linear_damp` (0).
+- 8° of steering at 21 m/s rolled the car over; the steering angle narrows with speed to `steer_at_max_speed_degrees` (5°), checked by `test_throttle_accelerates_forward_up_to_max_speed`.
+
+| `VehicleDefinition` (compact car) | Value | Meaning |
+|---|---|---|
+| `mass`, `center_of_mass`, `linear_damp` | 1200 kg, (0, 0.25, 0), 0 | low centre of mass against rollover |
+| `engine_force`, `max_speed` | 3000 N per traction wheel, 22 m/s | force fades linearly to 0 at max speed |
+| `reverse_force`, `max_reverse_speed`, `reverse_threshold` | 2000 N, 6 m/s, 1 m/s | brake held below the threshold reverses |
+| `brake_force`, `handbrake_force`, `coast_brake`, `hold_speed` | 30, 60 (rear wheels), 1, 0.5 m/s | no pedal: coast; no pedal below `hold_speed`: brakes hold (hills) |
+| `max_steer_degrees`, `steer_at_max_speed_degrees`, `steer_rate`, `steer_return_rate` | 30°, 5°, 3/s, 4/s | button steering ramps to an analog value |
+| `safe_exit_speed` | 1.5 m/s | getting out allowed at or below |
+| `flip_angle_degrees`, `flip_reset_seconds`, `flip_reset_max_speed` | 70°, 2 s, 2 m/s | flipped and nearly still for 2 s → reset |
+| `camera_profile` | `vehicle_camera_profile.tres` | 7.5 m distance, 1.9 m pivot, follow mode |
+
+- **Drive rules** (`VehicleController.drive_command()`): throttle accelerates (and first brakes a vehicle rolling backwards); brake slows a vehicle moving forward faster than `reverse_threshold` and reverses below it; both pedals brake; the handbrake cuts the engine and brakes the rear wheels. Without an input source (parked) or after focus loss / pause (`release_controls()`), the handbrake holds until a pedal is pressed.
+- **Getting in** (`VehicleInteraction`): the vehicle's `InteractionArea` tracks the player; the interact button shows while a vehicle is in reach and the player stands on a floor. Entering calls `PlayerController.set_seated(true)` (hidden, collision shape disabled, no physics processing, actions and presses dropped), keeps the player at the `Seat` marker every tick, switches `MobileInputController` to vehicle mode, gives the vehicle `TouchVehicleInput`, and calls `ThirdPersonCamera.set_target(vehicle, definition.camera_profile)`. `game.gd` untracks the player in `WorldManager` meanwhile.
+- **Getting out** (`request_exit()`): refused at speeds above `safe_exit_speed` ("speed"; the exit button is faded meanwhile). Otherwise `find_exit_transform()` tries each exit marker in order (driver's side first): a ray finds the floor under it, and a shape query with the player's capsule must find no world or vehicle collider there; if no marker qualifies the exit is refused ("blocked"). Refused presses are dropped. On success the vehicle is parked (handbrake), the player is placed and unseated, and the on-foot controls and camera profile return.
+- **Reset:** below the map's `kill_height`, or flipped as above, the vehicle returns to its spawn (`spawn_transform`), and a seated driver goes with it.
+- **Camera follow mode:** `CameraProfile.follow_yaw_sharpness` > 0 swings the yaw back behind the target after `follow_delay` seconds without look input (vehicle profile: 2.5, 1 s); the on-foot profile keeps 0 (no change from Phase 1). The spring arm masks the world and vehicle layers and excludes the followed body.
+- **Placement:** `MapDefinition.vehicle_spawns` (transforms facing −Z); `WorldManager.spawn_vehicles(Main.vehicle_scene)` parks one vehicle per entry; `game.gd` registers them with `VehicleInteraction`. VIEW moves the vehicle instead of the player while driving.
+- **HUD cost** (Mac, low profile, same view): HUD hidden 67 draw calls; on-foot HUD 105 (+5 while the interact button shows); vehicle HUD 118.
+
+### Adding a vehicle type
+
+1. Create a scene with a `VehicleBody3D` root using `vehicle_controller.gd`: collision shapes, four (or more) `VehicleWheel3D` children (`use_as_steering` / `use_as_traction`, suspension and friction), a `Seat` marker, exit markers in the order to try (driver's side first), an `InteractionArea` (Area3D, mask layer 2) around it, and a `VehicleVisual` subclass with its meshes. Forward is +Z; the driver's side is +X. Set `collision_layer` 8 (vehicle) and `collision_mask` 9.
+2. Create a `VehicleDefinition` resource with its mass, engine, brakes, steering, exit speed, reset rule, and camera profile, and assign it to the root's `definition`.
+3. Put the scene in `Main.vehicle_scene` (or spawn it yourself and call `VehicleInteraction.register_vehicle()`).
+
+`tests/fixtures/test_van.tscn` + `test_van_definition.tres` are a second type made this way (heavier, 14 m/s top speed, other wheelbase and exit points); `test_second_vehicle_type_from_definition_and_scene` and `test_second_vehicle_type_enter_and_exit` drive it and get in and out without any code change.
+
 ## Debug measurement tools (debug builds only)
 
 - Overlay (top left): FPS, draw calls, primitives, objects, video memory, engine static memory (current and peak), player state and speed, current viewpoint, quality profile.
-- Log lines: `PERF profile=… view="…" fps=… draw_calls=… …` every 2 s; `QUALITY profile=… experiment=… occluders={…} effective={…}` whenever settings are applied; `STARTUP map_ready_ms=… first_frame_ms=… profile=… occluders={…}` once; `VIEW <name>` on each switch.
+- Log lines: `PERF profile=… view="…" fps=… draw_calls=… …` every 2 s; `QUALITY profile=… experiment=… occluders={…} effective={…}` whenever settings are applied; `STARTUP map_ready_ms=… first_frame_ms=… profile=… occluders={…} physics_3d=<engine> (setting <value>)` once; `VIEW <name>` on each switch.
 - Q button: cycles quality profiles none → high → low (the debug experiment, if any, stays on top).
-- VIEW button: cycles Spawn → the map's `debug_viewpoints` (`MapDefinition`, names in `debug_viewpoint_names`).
+- VIEW button: cycles Spawn → the map's `debug_viewpoints` (`MapDefinition`, names in `debug_viewpoint_names`). While driving it moves the vehicle there.
+- CAR button: puts the player beside the driver's door of the map's first vehicle (it is parked far from the player spawn); logs `CAR walk-up`.
 - DUMMY button: places a training dummy 1.3 m in front of the spawn (0.35 m to the right, so the camera sees it) or removes it. It shows `HITS <n>` above itself and logs `DUMMY hits=<n>` per hit; off by default, so benchmarks and tests run without it.
 - Reading the logs: Android `adb logcat -s godot`; iOS: Godot output goes to the unified log, not to `devicectl --console`; record it with `xcrun xctrace record --template Logging --device <udid> --all-processes` and export the `os-log` table. Screenshots: `adb exec-out screencap -p`, `xcrun devicectl device capture screenshot`. iOS memory and thermal state: Instruments "Activity Monitor" template (`memory-physical-footprint`, `device-thermal-state-intervals`).
 
@@ -183,7 +246,7 @@ godot --headless --path . --script res://tests/map/validate_scene.gd # original 
   godot --path . --resolution 1266x585 --script res://tools/capture_screenshot.gd -- --out=/abs/path/shot.png --walk --run
   ```
 
-  The tool prints renderer, FPS, draw calls, and primitive counts for the frame. `--punch` / `--roll` tap that button, `--frames=N` takes the shot N frames later (mid-action poses), `--dummy` shows the training dummy.
+  The tool prints renderer, FPS, draw calls, and primitive counts for the frame. `--punch` / `--roll` tap that button, `--frames=N` takes the shot N frames later (mid-action poses), `--dummy` shows the training dummy, `--vehicle-hud` shows the vehicle control group.
 
 ## Quality profiles
 
@@ -238,10 +301,16 @@ tools/perf/run_batch.sh android build/perf/android tools/perf/experiments/baseli
 # iOS (debug app installed; Auto-Lock off)
 IOS_UDID=<udid> tools/perf/run_batch.sh ios build/perf/ios tools/perf/experiments/baseline.json ...
 python3 -I tools/perf/summarize.py build/perf/android   # Markdown tables
+# From Phase 3 on: at least three runs per device and viewpoint, one output folder per run
+for run in run1 run2 run3; do tools/perf/run_batch.sh android build/perf/<task>/android/$run tools/perf/experiments/profile_default.json ...; done
+python3 -I tools/perf/median.py build/perf/<task>/android/run1 build/perf/<task>/android/run2 build/perf/<task>/android/run3
 ```
 
+- **Repeats (from 2026-10-25):** at least three runs per device, experiment, and viewpoint; report the median, with every run's value next to it (`tools/perf/median.py`). Identical single runs differed by 2–3 FPS in the tablet's 1 % low.
+- Results also record the physics step time (`physics_ms`, `physics_p99_ms`: `Performance.TIME_PHYSICS_PROCESS` sampled every frame; it reports one 60 Hz step, so at a 30 FPS cap a frame contains two) and whether the run was in a vehicle (`in_vehicle`; `profile_default_vehicle`, `session_profile_vehicle`: the player sits in the map's first vehicle, moved to each viewpoint, no pedal pressed).
+
 - Cold start for every run. Android: the batch waits until the battery is back to its starting temperature (+0.5 °C) and keeps the screen on while plugged in (`svc power stayon usb`, restored afterwards). iOS: each run waits for the Instruments thermal state "Nominal".
-- Unlock both devices before a batch. The Android script only wakes the screen; behind a PIN lock screen the app never comes to the foreground and the run times out (40 min) without results. iOS needs Auto-Lock off.
+- Unlock both devices before a batch. The Android script only wakes the screen; behind a PIN lock screen the app never comes to the foreground and the run times out (40 min) without results. iOS needs Auto-Lock off: a locked iPhone makes every Instruments probe answer "Waiting for device to boot". `ios_bench.sh` first queries the device with `devicectl` (that restored the connection when it showed "available (paired)"), stops after three probes without a thermal state, and tolerates a single probe or process-list dropout.
 - Per viewpoint (Spawn, Karaköy, Galata): 30 s warm-up, 60 s measurement. The app is closed between runs.
 - Recorded per run: Android battery temperature and thermal status at start and end, peak PSS (`dumpsys meminfo` every 15 s); iOS thermal state and app physical footprint from 3 s "Activity Monitor" probes every ~45 s (`tools/perf/parse_xctrace.py`). A run that reaches "Serious" on iOS is invalid.
 - The probes themselves add load. On the tablet, `dumpsys meminfo` every 15 s causes single 100+ ms frames, which lowers the minimum FPS (average unaffected); set `SAMPLE_PSS=0` for frame-pacing measurements. On iOS an Instruments session runs for 3 s of every ~45 s.

@@ -11,6 +11,9 @@
 # 4. Copies results and screenshots back and writes <name>.meta.json.
 # Extra arguments are passed to the app (e.g. --rendering-method gl_compatibility).
 # Env: COOL_TIMEOUT_S (default 2400), MAX_RUN_S (default 1200).
+# The phone must stay unlocked (Auto-Lock off). A locked phone makes every
+# probe "unknown" ("Waiting for device to boot"); after three unknown probes
+# in a row the run stops instead of waiting out the cool-down timeout.
 set -eu
 
 EXP=$1
@@ -31,14 +34,24 @@ probe() {
 	xcrun xctrace record --template "Activity Monitor" --device "$UDID" --all-processes --time-limit 3s \
 		--output "$trace" > /dev/null 2>&1 || true
 	python3 -I "$HERE/parse_xctrace.py" summary "$trace" 2> /dev/null \
-		| python3 -I -c 'import json,sys; d=json.load(sys.stdin); print(json.dumps({"t": int(sys.argv[1]), "thermal": d["thermal_end"], "footprint_mib": d["footprint_peak_mib"]}))' "$1" \
+		| python3 -I -c 'import json,sys; d=json.load(sys.stdin); print(json.dumps({"t": int(sys.argv[1]), "thermal": d["thermal_end"], "footprint_mib": d["footprint_peak_mib"]}))' "$1" 2> /dev/null \
 		|| echo "{\"t\": $1, \"thermal\": \"unknown\", \"footprint_mib\": null}"
 }
 state_of() { python3 -I -c 'import json,sys; print(json.loads(sys.argv[1])["thermal"])' "$1"; }
 
+# Querying the device brings up the CoreDevice connection Instruments needs
+# (it showed "available (paired)" instead of "connected" before).
+xcrun devicectl device info details --device "$UDID" > /dev/null 2>&1 || true
 waited=0
+unknown=0
 line=$(probe 0)
 while [ "$(state_of "$line")" != Nominal ]; do
+	if [ "$(state_of "$line")" = unknown ]; then
+		unknown=$((unknown + 1))
+		[ "$unknown" -ge 3 ] && { echo "no thermal state from Instruments (phone locked or not connected?): $line" >&2; exit 4; }
+	else
+		unknown=0
+	fi
 	[ "$waited" -ge "${COOL_TIMEOUT_S:-2400}" ] && { echo "cool-down timeout: $line" >&2; exit 3; }
 	echo "waiting for Nominal: $line (${waited}s)"
 	sleep 60
@@ -53,10 +66,16 @@ xcrun devicectl device copy to --device "$UDID" --domain-type appDataContainer -
 started=$(date +%s)
 xcrun devicectl device process launch --device "$UDID" --terminate-existing "$BUNDLE" "$@" > /dev/null
 
+# Prints the app's pid, nothing if it is not running, or "?" when devicectl
+# gave no answer (a transient dropout must not end the run).
 app_pid() {
 	xcrun devicectl device info processes --device "$UDID" --json-output - 2> /dev/null | python3 -I -c '
 import json, sys
-d = json.load(sys.stdin)
+try:
+    d = json.load(sys.stdin)
+except ValueError:
+    print("?")
+    sys.exit()
 print(next((p["processIdentifier"] for p in d["result"]["runningProcesses"] if "map_simulator" in p.get("executable", "")), ""))'
 }
 results_ready() {
@@ -77,7 +96,7 @@ while :; do
 done
 wall=$(( $(date +%s) - started ))
 pid=$(app_pid)
-[ -n "$pid" ] && xcrun devicectl device process terminate --device "$UDID" --pid "$pid" > /dev/null 2>&1 || true
+[ -n "$pid" ] && [ "$pid" != "?" ] && xcrun devicectl device process terminate --device "$UDID" --pid "$pid" > /dev/null 2>&1 || true
 probe "$(( $(date +%s) - started ))" >> "$PROBES"
 
 copy_from() {
