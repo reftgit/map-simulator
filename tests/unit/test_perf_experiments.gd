@@ -34,14 +34,28 @@ func test_experiment_files_parse() -> void:
 		if file.ends_with(".json"):
 			var parsed = JSON.parse_string(FileAccess.get_file_as_string(directory.path_join(file)))
 			var config := PerfConfig.from_dict(parsed) if parsed is Dictionary else null
-			check(config != null and config.bench, "%s parses and has a bench section (%s)" % [file, PerfConfig.last_error])
+			var scenario := file.begins_with("scenario_")
+			check(config != null and (config.bench or (scenario and not config.scenario.is_empty())), "%s parses and has a bench (or scenario) section (%s)" % [file, PerfConfig.last_error])
 			check(config == null or config.experiment == file.get_basename(), "%s: experiment name matches the file" % file)
 			var platform_default := file.begins_with("profile_default") or file.begins_with("session_profile")
 			var device_specific := file.begins_with("c_") or file.begins_with("pacing_") or file.begins_with("jolt_") or file.begins_with("session_pacing_")
 			if config and device_specific:
 				check(config.profile in ["low", "high"], "%s: Phase 4 experiments name the device profile they were measured with" % file)
+			elif config and scenario:
+				check(config.profile.is_empty(), "%s: scenarios run with the platform default profile" % file)
 			elif config and not platform_default:
 				check(config.profile == "none", "%s: measured before profiles existed, so it pins profile none" % file)
+
+
+func test_scenario_section_parses_and_rejects_typos() -> void:
+	var config := PerfConfig.from_dict({"experiment": "s", "scenario": {"name": "vehicle_sleep", "rotate_hold_s": 12, "quit_when_done": false}})
+	check(config != null and config.scenario == "vehicle_sleep" and config.scenario_rotate_hold_s == 12.0 and not config.quit_when_done and not config.bench, "scenario section read (%s)" % PerfConfig.last_error)
+	if config:
+		check(config.to_dict().scenario == {"name": "vehicle_sleep", "rotate_hold_s": 12.0}, "scenario recorded in results")
+	check(PerfConfig.from_dict({"experiment": "s", "scenario": {"name": "dance"}}) == null and PerfConfig.last_error.contains("dance"), "unknown scenario rejected")
+	check(PerfConfig.from_dict({"experiment": "s", "scenario": {"name": "vehicle_sleep", "rotate": 3}}) == null, "unknown scenario key rejected")
+	check(PerfConfig.from_dict({"experiment": "s", "scenario": {"name": "orientation"}}) == null, "orientation needs a hold time")
+	check(PerfConfig.from_dict({"experiment": "s"}).scenario.is_empty(), "no scenario by default")
 
 
 func test_frame_stats() -> void:

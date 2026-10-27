@@ -78,6 +78,8 @@ func _ready() -> void:
 		_log_startup()
 		if _experiment and _experiment.bench:
 			_start_benchmark(_experiment)
+		if _experiment and not _experiment.scenario.is_empty():
+			start_scenario(_experiment)
 
 
 ## While driving, the vehicle (not the hidden player) is the body that falls
@@ -233,6 +235,19 @@ static func _body_bounds(body: StaticBody3D) -> AABB:
 		bounds = world_box if first else bounds.merge(world_box)
 		first = false
 	return bounds
+
+
+## Plays the experiment's device scenario (debug builds only: it presses the
+## debug buttons); null in other builds.
+func start_scenario(config: PerfConfig) -> DeviceScenario:
+	if not BuildFeatures.is_debug():
+		print("SCENARIO ignored: not a debug build")
+		return null
+	var scenario := DeviceScenario.new()
+	scenario.config = config
+	scenario.game = self
+	add_child(scenario)
+	return scenario
 
 
 func _start_benchmark(config: PerfConfig) -> PerfBenchmark:

@@ -623,3 +623,24 @@ func test_vehicle_sleep_runtime_key() -> void:
 		await tree.physics_frame
 		ticks += 1
 	check(vehicle.is_asleep(), "parking sleep on again: asleep after %d ticks" % ticks)
+
+
+func test_device_scenario_on_the_map() -> void:
+	# The on-device check of the parked car's sleep (Phase 4b/4c) as the device
+	# plays it: synthetic touches on the debug CAR, interact, pedal, exit, and
+	# VIEW buttons and the joystick; every step must pass on the real map.
+	await _setup()
+	var config := PerfConfig.from_dict({"experiment": "scenario_test", "scenario": {"name": "vehicle_sleep", "rotate_hold_s": 2, "quit_when_done": false}})
+	var scenario: DeviceScenario = game.start_scenario(config)
+	var results: Array = await scenario.finished
+	var steps: Array[String] = []
+	for result: Dictionary in results:
+		steps.append(result.step)
+		check(result.result != "FAIL", "%s: %s (%s)" % [result.step, result.result, result.detail])
+	for step in ["parked_car_asleep", "car_button", "walk_into_car_wakes_it", "asleep_after_stopping", "stays_asleep_beside_it",
+			"get_in_wakes_it", "throttle", "get_out", "asleep_after_getting_out", "slope_setup", "slope_walk_into_car_wakes_it",
+			"slope_asleep_after_stopping", "slope_stays_asleep_beside_it", "rotate_hold", "rotate_release", "done"]:
+		check(step in steps, "step %s ran" % step)
+	check(FileAccess.file_exists(PerfBenchmark.RESULTS_PATH), "results written where the host scripts look")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(PerfBenchmark.RESULTS_PATH))
+

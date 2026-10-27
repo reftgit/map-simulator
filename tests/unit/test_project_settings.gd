@@ -89,6 +89,10 @@ func test_measurement_overrides_do_not_touch_defaults() -> void:
 	var text := FileAccess.get_file_as_string("res://project.godot")
 	check(text.contains('3d/physics_engine.perf_jolt="Jolt Physics"'), "Jolt only behind the perf_jolt tag")
 	check(not text.contains("perf_60hz"), "the 60 Hz measurement tag is gone (60 Hz is the default, D20)")
+	# The device scenario logs the gravity vector as evidence of a turn; the
+	# sensor is on in debug builds only.
+	check(ProjectSettings.get_setting("input_devices/sensors/enable_gravity") == false, "gravity sensor off by default")
+	check(text.contains("sensors/enable_gravity.debug=true"), "gravity sensor only behind the debug tag")
 
 
 func test_ios_display_runs_at_60_hz() -> void:

@@ -74,6 +74,7 @@ vehicle_handbrake={
 
 [input_devices]
 pointing/emulate_touch_from_mouse=true
+sensors/enable_gravity.debug=true
 
 [layer_names]
 3d_physics/layer_1="world"

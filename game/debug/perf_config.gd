@@ -2,10 +2,10 @@ class_name PerfConfig
 extends RefCounted
 ## One performance experiment: render settings layered on top of a quality
 ## profile, runtime (physics and frame) settings, plus optional benchmark
-## parameters. Debug builds and perf_bench release builds only
-## (BuildFeatures). Loaded from JSON (see docs/ARCHITECTURE.md, "Performance
-## experiments"); unknown keys and values are rejected so typos do not
-## silently measure something else.
+## parameters or a device scenario (DeviceScenario, debug builds only). Debug
+## builds and perf_bench release builds only (BuildFeatures). Loaded from
+## JSON (see docs/ARCHITECTURE.md, "Performance experiments"); unknown keys
+## and values are rejected so typos do not silently measure something else.
 ##
 ## `settings` holds only the RenderSettings keys the experiment sets; they
 ## override the profile (experiment > profile > defaults). `profile` picks the
@@ -27,6 +27,9 @@ const RUNTIME_KEYS := {
 	"collider_radius": TYPE_FLOAT,
 	"vsync_mode": TYPE_STRING,
 }
+## Device scenarios (DeviceScenario) and the keys of a "scenario" section.
+const SCENARIOS := ["vehicle_sleep", "orientation"]
+const _SCENARIO_KEYS := ["name", "rotate_hold_s", "quit_when_done"]
 const VSYNC_MODES := {"disabled": DisplayServer.VSYNC_DISABLED, "enabled": DisplayServer.VSYNC_ENABLED,
 		"adaptive": DisplayServer.VSYNC_ADAPTIVE, "mailbox": DisplayServer.VSYNC_MAILBOX}
 
@@ -49,6 +52,12 @@ var quit_when_done := true
 ## viewpoint, no pedal pressed, so it holds still).
 var in_vehicle := false
 
+## Device scenario to play (SCENARIOS), or "" for none.
+var scenario := ""
+## Seconds the scenario holds the joystick while the device is turned; 0
+## leaves the orientation steps out of "vehicle_sleep".
+var scenario_rotate_hold_s := 0.0
+
 const _BENCH_KEYS := ["warmup_s", "measure_s", "views", "session_minutes", "session_view", "screenshots", "quit_when_done", "in_vehicle"]
 
 
@@ -62,7 +71,7 @@ static func from_dict(data: Dictionary) -> PerfConfig:
 	last_error = ""
 	var config := PerfConfig.new()
 	for key in data:
-		if key not in RenderSettings.KEYS and key not in ["experiment", "profile", "bench", "runtime"]:
+		if key not in RenderSettings.KEYS and key not in ["experiment", "profile", "bench", "runtime", "scenario"]:
 			last_error = "unknown key '%s'" % key
 			return null
 	config.experiment = str(data.get("experiment", config.experiment))
@@ -92,7 +101,29 @@ static func from_dict(data: Dictionary) -> PerfConfig:
 		config.screenshots = bool(bench_data.get("screenshots", true))
 		config.quit_when_done = bool(bench_data.get("quit_when_done", true))
 		config.in_vehicle = bool(bench_data.get("in_vehicle", false))
+	if data.has("scenario"):
+		error = _parse_scenario(data.scenario, config)
+		if not error.is_empty():
+			last_error = error
+			return null
 	return config
+
+
+## Reads a "scenario" section into `config`; returns an error message or "".
+static func _parse_scenario(data: Variant, config: PerfConfig) -> String:
+	if not data is Dictionary:
+		return "scenario must be an object"
+	for key in data:
+		if key not in _SCENARIO_KEYS:
+			return "unknown scenario key '%s'" % key
+	config.scenario = str(data.get("name", ""))
+	if config.scenario not in SCENARIOS:
+		return "unknown scenario '%s'" % config.scenario
+	config.scenario_rotate_hold_s = float(data.get("rotate_hold_s", 0.0))
+	if config.scenario == "orientation" and config.scenario_rotate_hold_s <= 0.0:
+		return "the orientation scenario needs rotate_hold_s > 0"
+	config.quit_when_done = bool(data.get("quit_when_done", true))
+	return ""
 
 
 ## Copies and type-checks RenderSettings keys from `data`; returns an error message or "".
@@ -178,4 +209,7 @@ static func load_file(path: String, consume := false) -> PerfConfig:
 
 
 func to_dict() -> Dictionary:
-	return {"experiment": experiment, "profile": profile, "settings": settings, "runtime": runtime}
+	var out := {"experiment": experiment, "profile": profile, "settings": settings, "runtime": runtime}
+	if not scenario.is_empty():
+		out.scenario = {"name": scenario, "rotate_hold_s": scenario_rotate_hold_s}
+	return out
