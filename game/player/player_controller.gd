@@ -59,14 +59,16 @@ func _physics_process(delta: float) -> void:
 	state_machine.physics_update(delta)
 	actions.tick(delta)
 	move_and_slide()
-	if is_on_wall():
+	if is_on_wall() and intent.has_move():
 		_wake_bodies_touched()
 	visual.set_locomotion(get_horizontal_speed(), is_on_floor())
 
 
 ## Wakes bodies that sleep until touched (a parked vehicle, which has
 ## wake_up()) when the body walks into them; a kinematic body does not wake
-## them by itself. Checked only against walls, so a free walk costs nothing.
+## them by itself. Only while the intent moves: standing still against a car
+## on a slope keeps a wall contact, and that must not keep the car awake.
+## Checked only against walls, so a free walk costs nothing.
 func _wake_bodies_touched() -> void:
 	for i in get_slide_collision_count():
 		var body := get_slide_collision(i).get_collider()

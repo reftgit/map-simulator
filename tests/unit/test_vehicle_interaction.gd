@@ -363,6 +363,12 @@ func test_walking_into_a_sleeping_vehicle_wakes_it() -> void:
 	check(vehicle.global_position.distance_to(parked) < 0.01, "the player does not move the car (vehicles do not collide with the player layer)")
 	walk.move = Vector3.ZERO
 	check(await _until_asleep(), "asleep again after the player stops")
+	# Standing still against the car does not keep waking it (found on the
+	# iPhone in Phase 4c: the car stayed awake while the player stood beside it).
+	var wakes := [0]
+	vehicle.sleep_changed.connect(func(asleep: bool) -> void: wakes[0] += int(not asleep))
+	await physics_frames(180)
+	check(wakes[0] == 0 and vehicle.is_asleep(), "stays asleep while the player stands against it (woke %d times in 3 s)" % wakes[0])
 
 
 func test_overlay_status_shows_the_vehicle_while_driving() -> void:
@@ -377,3 +383,30 @@ func test_overlay_status_shows_the_vehicle_while_driving() -> void:
 	var expected := "Driving %.1f m/s | car awake" % vehicle.get_forward_speed()
 	_hold(input.throttle_button, 5, false)
 	check(text == expected and vehicle.get_forward_speed() > 2.0, "driving: the vehicle's speed, not the player's (%s, expected %s)" % [text, expected])
+
+
+func test_standing_against_a_parked_car_on_a_slope_lets_it_sleep() -> void:
+	# Found on the iPhone in Phase 4c: on a sloped street the idle player keeps a
+	# wall contact with the car beside it, and that kept waking the car.
+	var tilt := deg_to_rad(-6.0)
+	var ramp := add_static_box(Vector3(60, 1, 60))
+	ramp.rotation.z = tilt
+	vehicle = instantiate(CAR)
+	vehicle.global_transform = Transform3D(Basis(Vector3.BACK, tilt), Vector3(0, 0.6, 0))
+	player = instantiate("res://game/player/player.tscn")
+	var walk := ScriptedWalk.new()
+	add_node(walk)
+	player.input_source = walk
+	player.teleport(Transform3D(Basis.IDENTITY, Vector3(3.2, 3.2 * tan(tilt) + 0.3, 0)))
+	check(await _until_asleep(), "parked car asleep on the slope")
+	walk.move = Vector3(-1, 0, 0)
+	await physics_frames(90)
+	check(not vehicle.is_asleep(), "walking into it wakes it")
+	walk.move = Vector3.ZERO
+	await physics_frames(120)
+	var awake := 0
+	for i in 300:
+		await tree.physics_frame
+		awake += int(not vehicle.is_asleep())
+	check(player.is_on_wall(), "the idle player still touches the car")
+	check(awake == 0, "the car sleeps while the player stands still against it (awake %d of 300 ticks)" % awake)
