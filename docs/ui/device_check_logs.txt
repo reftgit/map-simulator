@@ -1,0 +1,18 @@
+# Phase 4c device logs (2026-10-27)
+
+## Galaxy Tab A7, debug build of 5d6c8a7, logcat (godot)
+10-27 23:03:33.170 I/godot   (21827): SAFE_AREA window=(2000, 1200) safe=[P: (0, 0), S: (2000, 1200)] canvas=[P: (0.0, 0.0), S: (1500.0, 900.0)] viewport=(1500.0, 900.0)
+10-27 23:03:40.357 I/godot   (21827): STARTUP map_ready_ms=8726 first_frame_ms=9284 profile=low occluders={"ms":88,"occluders":643,"source":"baked","triangles":317518} physics_3d=GodotPhysics3D (setting DEFAULT) vehicles=awake build={"android_frame_pacing":true,"debug_build":true,"display_refresh_rate":60.0000038146973,"ios_allow_high_refresh_rate":false,"max_fps":30,"perf_feature":false,"physics_engine_setting":"DEFAULT","physics_interpolation":true,"physics_ticks":60,"screen_refresh_rate":60.0000038146973,"vsync_mode":1}
+10-27 23:03:42.802 I/godot   (21827): VEHICLE PlaceholderCar asleep
+PERF lines 23:03:45-23:21:50: 545, all view="Spawn" (the logcat capture stopped at 23:21:50; the rotation monitor below and the screenshots cover 23:17-23:55, all at Spawn, untouched), vehicles=asleep: 544
+
+## Galaxy Tab A7 display rotation (adb shell dumpsys input, polled every ~1 s, changes only)
+23:17:20 SurfaceOrientation:3
+23:48:48 
+23:48:51 SurfaceOrientation:3
+(the blank reading at 23:48:48 is a failed poll; rotation 3 = 270 degrees throughout)
+
+## Galaxy Tab A7, Phase 4b check session (debug build of e30942e), logcat (godot)
+10-27 21:18:59.281 I/godot   (19613): STARTUP map_ready_ms=8738 first_frame_ms=9573 profile=low occluders={"ms":90,"occluders":643,"source":"baked","triangles":317518} physics_3d=GodotPhysics3D (setti
+10-27 21:19:01.723 I/godot   (19613): VEHICLE PlaceholderCar asleep
+PERF lines 21:19-22:11: 1592, vehicles=asleep in 1591; no CAR walk-up line

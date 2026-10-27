@@ -20,7 +20,7 @@ game/
     visual/                 VehicleVisual (interface), PlaceholderVehicleVisual (box body, cylinder wheels, lights)
   camera/                   ThirdPersonCamera, CameraProfile, on-foot and vehicle profiles
   input/                    MobileInputController, TouchControl, TouchLookArea, TouchButton
-  ui/                       UIController, hud.tscn, icons/ (button icons)
+  ui/                       UIController, SafeAreaSource, hud.tscn, icons/ (button icons)
   quality/                  RenderSettings (applies render settings), QualityProfile, QualityProfiles, profiles/high.tres, low.tres
   debug/                    PerfConfig (experiments), PerfBenchmark, TrainingDummy (debug builds only)
 maps/<map_name>/            One folder per map: scene, MapDefinition (.tres), map script, baked occluders (.scn)
@@ -55,7 +55,7 @@ Main (game.gd) ─ wires everything once in _ready()
 ├── TouchPlayerInput      PlayerInputSource: stick + camera yaw → PlayerIntent
 ├── TouchVehicleInput     VehicleInputSource: vehicle buttons/keys → VehicleIntent (given to the driven vehicle)
 ├── VehicleInteraction    get in / get out: seats the player, swaps HUD group, input source, camera profile
-└── HUD                   UIController (CanvasLayer): safe area, debug overlay
+└── HUD                   UIController (CanvasLayer): safe area (SafeAreaSource), debug overlay
     └── SafeArea/Controls MobileInputController
         ├── LookArea      TouchLookArea (right 58 %), both modes
         ├── OnFootControls      group shown on foot
@@ -213,7 +213,7 @@ A `VehicleBody3D` at rest is never put to sleep by GodotPhysics3D: the engine's 
 | Wakes when a driver gets in (the `input_source` setter) | `wake_up()` | |
 | Wakes when moved or reset: `place_at()` (spawn, VIEW, teleports), `reset_to_spawn()` | `wake_up()` (setting the velocities there already wakes the body in GodotPhysics3D; the call keeps the rule independent of that) | |
 | Wakes when a rigid body hits it | the physics engine (sleeping rigid bodies join the island of the body that touches them) | |
-| Wakes when the player walks into it (kinematic bodies do not wake it by themselves) | `PlayerController._wake_bodies_touched()`, only while `is_on_wall()`; calls `wake_up()` on colliders that have it | |
+| Wakes when the player walks into it (kinematic bodies do not wake it by themselves) | `PlayerController._wake_bodies_touched()`, only while `is_on_wall()` and the intent moves (Phase 4c: standing still against a car on a slope keeps a wall contact and kept it awake); calls `wake_up()` on colliders that have it | |
 | Wakes when the ground under a wheel is gone (floor removed or switched off) | `_check_ground()`: while asleep, one ray per wheel along the body's down axis every `GROUND_CHECK_INTERVAL` (0.25 s), length radius + rest length + 0.15 m | |
 
 - While asleep, `_physics_process()` only checks the ground; engine, brake, and steering values and the visual stay as they were, so the parked handbrake and hold brakes are still set when it wakes. On a slope it does not move while asleep, and after waking the usual rules apply (parked: handbrake; driver without pedals: hill hold). The `InteractionArea` is a separate `Area3D` and keeps detecting the player while the vehicle sleeps.
@@ -248,7 +248,14 @@ A `VehicleBody3D` at rest is never put to sleep by GodotPhysics3D: the engine's 
 - Camera far plane 1500 m. MSAA 3D 2× (inherited from the map project). Physics interpolation is on (60 Hz physics, smooth at any display rate).
 - **iOS display refresh rate (Phase 4b, P1):** `display/window/ios/allow_high_refresh_rate = false` in `project.godot`, so ProMotion iPhones run the engine's display link at 60 Hz instead of 120 Hz (Godot 4.7.2 `platform/ios/godot_view_ios.mm`: `preferredFrameRate` 60 or 120 from this setting). With 120 Hz and the high profile's 60 FPS cap, frames alternated 8.3 / 25 ms (Phase 4a). The setting is read only by the iOS platform code; Android and desktop are unaffected (Android keeps Swappy frame pacing and the low profile's 30 FPS cap). `screen_get_refresh_rate()` still reports the panel's maximum (120; `UIScreen.maximumFramesPerSecond`), so `build_info()` adds `display_refresh_rate` (60 on iOS with the setting off), which `tools/perf/median.py --pacing` uses.
 - Landscape (`sensor_landscape`), 1440×900 base canvas with `canvas_items` stretch and `expand` aspect, so phones get a wider canvas at 900 units tall.
-- Touch sizes: joystick 220 units, run and roll buttons 124 units, punch button 140 units (hit areas 1.15× the drawn radius). On an iPhone 13 Pro (1170 px landscape height, 460 ppi) that is about 95 pt / 16 mm, 54 pt / 9 mm, and 61 pt / 10 mm; Apple's minimum touch target is 44 pt. Calculated from the layout. Buttons sit bottom-right inside the safe area: run in the corner, punch to its left, roll above it; their hit areas do not overlap (`test_action_buttons_layout`).
+- Touch sizes: joystick 220 units, run and roll buttons 124 units, punch button 140 units (hit areas 1.15× the drawn radius). On an iPhone 13 Pro (1170 px landscape height, 460 ppi) that is about 95 pt / 16 mm, 54 pt / 9 mm, and 61 pt / 10 mm; Apple's minimum touch target is 44 pt. Calculated from the layout; the layout matrix checks every screen (see "Safe area and screen layouts"). Buttons sit bottom-right inside the safe area: run in the corner, punch to its left, roll above it; their hit areas do not overlap (`test_action_buttons_layout`).
+
+## Safe area and screen layouts (Phase 4c)
+
+- **Source:** `UIController.safe_area_source` (`SafeAreaSource`, `game/ui/safe_area_source.gd`) gives the window size and the display safe area in window pixels. The default asks `DisplayServer` (`get_display_safe_area()` on mobile; on desktop there is none and the whole window is safe), so devices behave as before. `SafeAreaSource.fixed(window, safe)` stands in for any screen in tests and in the screenshot tool.
+- **Applying:** `apply_safe_area()` converts the safe area to canvas units (`safe_rect_in_viewport()`; `UIController.safe_rect` keeps the result) and insets `SafeArea` by it plus `edge_margin` (16 units). It runs at start, on viewport size changes, and when the HUD's check every `SAFE_AREA_CHECK_INTERVAL` (0.25 s) sees a different window size or safe area: a 180° turn between the two landscape orientations moves a punch-hole or a navigation bar to the other side without a size change, which the viewport never reports. Any change after the first layout calls `MobileInputController.release_all_touches()`, as on focus loss, so a held joystick or button cannot stay down on a control that moved. Debug and Release Perf builds log `SAFE_AREA window=… safe=… canvas=… viewport=…` on every application. Notched iPhones report symmetric side insets in landscape (47 pt each on the iPhone 13 Pro, per Apple's layout guides; the device's own line was not captured in Phase 4c), so a turn changes nothing there.
+- **Layout matrix** (`tests/unit/test_hud_layout.gd`): nine screens with their safe areas in window pixels (`SCREENS`): 16:9 1920×1080; 19.5:9 iPhone 13 Pro 2532×1170 with the notch on the left and on the right; 20:9 2400×1080 with a punch-hole (110 px) on either side and a 3-button bar (126 px) on the other side or a gesture handle (63 px) at the bottom; 4:3 iPad 2048×1536; 16:10 Tab A7 2000×1200. For each, on foot (with the interact button) and in the vehicle, with the debug overlay and buttons shown, it checks: every visible button inside the platform safe area; hit circles (drawn radius × `hit_scale`) apart; the right-side buttons entirely over the camera drag area and the steering buttons entirely left of it; the joystick zone left of the camera drag area and the joystick at rest (its `initial_offset_ratio`, radius `joystick_size / 2`) inside the safe area and clear of every button; the debug label clear of every button; every hit target and the joystick at least 7 mm on the device (`MIN_TARGET_MM`; Apple's 44 pt minimum is ~7 mm on an iPhone). Size on the device = hit diameter in canvas units × window pixels per canvas unit (the root's final transform: `min(window.x / 1440, window.y / 900)` with `expand`) ÷ the screen's pixels per inch × 25.4. Insets of the Android phones and the ppi values are assumed typical values, not measured devices. The test prints one `layout …` line per screen and group (canvas size, scale, smallest target and gap); results: `PROJECT_STATE.md`, "Phase 4c".
+- **Adding a screen:** add an entry to `SCREENS` (window size, safe area in window pixels as the platform reports it, ppi) and a `test_<name>()` that calls `_check_screen()`; take a reference shot with `tools/capture_screenshot.gd --safe-area=…` (below) at a smaller resolution with the same aspect ratio, scaling the safe area by the same factor. Reference shots: `docs/ui/`.
 
 ## Testing
 
@@ -272,7 +279,7 @@ godot --headless --path . --script res://tests/map/validate_scene.gd # original 
   godot --path . --resolution 1266x585 --script res://tools/capture_screenshot.gd -- --out=/abs/path/shot.png --walk --run
   ```
 
-  The tool prints renderer, FPS, draw calls, and primitive counts for the frame. `--punch` / `--roll` tap that button, `--frames=N` takes the shot N frames later (mid-action poses), `--dummy` shows the training dummy, `--vehicle-hud` shows the vehicle control group.
+  The tool prints renderer, FPS, draw calls, and primitive counts for the frame. `--punch` / `--roll` tap that button, `--frames=N` takes the shot N frames later (mid-action poses), `--dummy` shows the training dummy, `--vehicle-hud` shows the vehicle control group, `--safe-area=X,Y,W,H` gives the HUD a safe area in window pixels and shades the area outside it, `--release-hud` hides the debug overlay and buttons. Example (iPhone 13 Pro at half size): `--resolution 1266x585 … -- --safe-area=70,0,1125,553 --release-hud`.
 
 ## Quality profiles
 

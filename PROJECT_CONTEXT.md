@@ -2,7 +2,7 @@
 
 Planning context and decision rationale. This file does not describe implemented functionality; see `PROJECT_STATE.md` for that.
 
-Last updated: 2026-10-27 (Phase 4b, Claude Code)
+Last updated: 2026-10-27 (Phase 4c, Claude Code)
 
 ## Product vision and goals
 
@@ -193,6 +193,7 @@ PlayerController, PlayerStateMachine, PlayerCombat, PlayerAnimation, ThirdPerson
 
 - **Decision:** P1: every iOS build runs the display at 60 Hz (`display/window/ios/allow_high_refresh_rate = false` in `project.godot`); the high profile keeps its 60 FPS cap. P2: a vehicle with no driver that is at rest is put to sleep (or frozen) and wakes when needed. P3–P8 are not applied: the physics engine (GodotPhysics3D), the 60 Hz physics tick, physics interpolation, and the tablet's frame cap stay as they are; the map, the map pipeline, and the quality profile values do not change.
 - **Implementation (Phase 4b):** P1 as above; the measurement-only "iOS Release Perf 60Hz" preset and its `perf_60hz` override were removed because they would now build the same app. P2 uses `RigidBody3D.sleeping` rather than `freeze` (measured: same cost reduction, but a sleeping body is woken by the engine on contact while a frozen one is an immovable wall); rules in `docs/ARCHITECTURE.md`, "Parked vehicles sleep". Results: `PROJECT_STATE.md`, "Phase 4b".
+- **P2 criterion accepted (2026-10-27, user via reviewer):** the tablet's physics step fell by 0.75 / 0.86 / 0.79 ms against the ≥ 0.8 ms criterion; this is within the measurement noise, and P2 counts as accepted.
 
 ## Application technical decisions
 
@@ -337,6 +338,16 @@ Decisions made by the implementing agent (Claude Code, 2026-10-24). None was spe
 
 - **Decision:** `vehicle_camera_profile.tres` (7.5 m, pivot 1.9 m, pitch −14°) with the new follow mode: after 1 s without look input the yaw swings back behind the vehicle (`follow_yaw_sharpness` 2.5). The optional speed-dependent distance was not implemented.
 
+### T29 — Screen layouts and safe areas (Phase 4c)
+
+- **Decision:** The HUD reads the safe area through an injectable `SafeAreaSource` (default `DisplayServer`, so devices are unchanged), re-applies it when it changes without a size change (checked every 0.25 s; a 180° turn moves a cutout or navigation bar), and releases every finger on such a change, as on focus loss. A headless matrix of nine screens (16:9, iPhone notch left/right, 20:9 punch-hole with a 3-button bar or gesture handle on either side, 4:3 iPad, 16:10 Tab A7) checks both control groups for: safe area, hit areas apart, joystick and camera drag zones clear of buttons, debug overlay clear, and touch targets of at least 7 mm (hit area, from the screen's ppi). Reference shots per screen in `docs/ui/`.
+- **Result:** every combination passed without a layout change (gameplay targets 9.6–21.6 mm, gaps of at least 18 canvas units), so the button layout of T22/T25 stays. The Android insets and ppi values are assumed typical values; no Android phone was available (user, 2026-10-27).
+- **Rationale:** the canvas is 900 units tall on every landscape screen wider than 16:10 and the controls anchor to the safe area's corners, so phones only gain width; the checks pin that down for the screens the game may meet before more devices are available.
+
+### T30 — The player wakes a parked car only while pushing (Phase 4c)
+
+- **Decision:** `PlayerController` wakes bodies it touches only while its intent moves. Found in the Phase 4b on-device check on the iPhone: the idle player standing against a car on a sloped street kept a wall contact, and that kept the car awake. Test: `test_standing_against_a_parked_car_on_a_slope_lets_it_sleep` (fails without the change).
+
 ## Performance findings and proposed measures
 
 Status: **measured on 2026-10-24, nothing applied.** Full tables and protocol: `PROJECT_STATE.md`, "Performance diagnosis pass". Raw data and screenshots: `docs/perf/`.
@@ -447,6 +458,8 @@ See "Requirements by phase". `PROJECT_STATE.md` records which parts exist.
 28. Speed-dependent camera distance while driving (optional in the task, not implemented).
 29. Should steering also offer a drag or tilt mode (T25)?
 30. Map colliders: all 827 are trimesh bodies (`ConcavePolygonShape3D`, 438,012 triangles; Phase 4a census). Should they be replaced by simple shapes (boxes or convex hulls per building, simplified ground) for cheaper physics? Phase 4a found the player and the parked car spending ~1 ms each per step against these trimesh bodies on the Galaxy Tab A7, with ~1.3 ms shared. This changes the map's collision, so it belongs to the same map-pipeline decision as the facade work (open questions 20–21): generate simple colliders in the map generation scripts rather than editing the imported GLB, and decide both together.
+31. Further test devices: only the iPhone 13 Pro and the Galaxy Tab A7 exist; there is no Android phone (user, 2026-10-27). Phone screens other than the iPhone are checked only in the headless layout matrix with assumed insets (T29). Which devices should be added (a 20:9 Android phone with a punch-hole, a smaller or older iPhone, an iPad)?
+32. Button sizes per device class: the smallest gameplay touch target is 18.3–21.6 mm on tablets (Tab A7, iPad) and 9.6–10.8 mm on phones (T29 matrix). Should tablets get smaller controls (closer to the thumbs, less of the picture covered) or small phones larger ones? Nothing changed for now.
 
 ## Constraints and priorities
 
@@ -454,4 +467,4 @@ See "Requirements by phase". `PROJECT_STATE.md` records which parts exist.
 - The map original in the source package must not be modified or deleted.
 - Physical device results are reported as NOT RUN until actually performed.
 - No store, TestFlight, or Play Console uploads; no release signing without explicit approval.
-- Current priority: review of Phase 4b (the tablet criterion missed at two viewpoints and the on-device check not run), then Phase 4c (screens and safe areas, export configuration, platform isolation) or the map-level work on facades and simple colliders (user decision; open questions 20, 21, 30; see `PROJECT_STATE.md`, "Recommended next task").
+- Current priority: review of Phase 4c, then Phase 4d (export configuration review and isolation of platform dependencies) or the map-level work on facades and simple colliders (user decision; open questions 20, 21, 30; see `PROJECT_STATE.md`, "Recommended next task").

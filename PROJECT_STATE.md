@@ -2,17 +2,19 @@
 
 What actually exists in the repository and how it was verified. Plans and decisions belong in `PROJECT_CONTEXT.md`; code structure, build, and test commands are in `docs/ARCHITECTURE.md`.
 
-Last updated: 2026-10-27 (Phase 4b, Claude Code)
+Last updated: 2026-10-28 (Phase 4c, Claude Code)
 
 ## Current phase
 
-**Phase 4b (P1 and P2 applied, D20) done, with one acceptance criterion missed.** P1: every iOS build runs the display at 60 Hz; on the iPhone 13 Pro the "1 % low" rose from ~40–42 to 56.3–58.7 FPS and the frames that were one refresh late (~49 %) went to 0, on foot and in the vehicle, with the 10-minute session at 60 FPS and thermal Nominal. P2: a parked vehicle at rest falls asleep and wakes when needed; on the Galaxy Tab A7 the physics step on foot fell by 0.75 / 0.86 / 0.79 ms (Spawn / Karaköy / Galata) against Phase 4a, short of the ≥ 0.8 ms criterion at Spawn and Galata. The on-device user check was not run. Details: "Phase 4b" below.
+**Phase 4c (on-device check of Phase 4b, screen layouts and safe areas) done; the user parts are partly NOT RUN.** The HUD takes its safe area from an injectable source and re-applies it when it moves without a resize (180° turn); a headless matrix of nine screens passed on foot and in the vehicle without any layout change (gameplay touch targets 9.6–21.6 mm). The Phase 4b check on the iPhone confirmed the parked car's sleep, wake on getting in, wake on a bump, and driving, and found one defect (the car stayed awake while the player stood against it on a slope), fixed in `5d6c8a7`. The Phase 4b check on the tablet and the two-orientation checks on both devices are NOT RUN: the user's answers were not borne out by logs or screenshots. P2's tablet criterion is accepted (D20). Details: "Phase 4c" below.
+
+Before Phase 4c: **Phase 4b (P1 and P2 applied, D20) done, with one acceptance criterion missed (accepted later, D20).** P1: every iOS build runs the display at 60 Hz; on the iPhone 13 Pro the "1 % low" rose from ~40–42 to 56.3–58.7 FPS and the frames that were one refresh late (~49 %) went to 0, on foot and in the vehicle, with the 10-minute session at 60 FPS and thermal Nominal. P2: a parked vehicle at rest falls asleep and wakes when needed; on the Galaxy Tab A7 the physics step on foot fell by 0.75 / 0.86 / 0.79 ms (Spawn / Karaköy / Galata) against Phase 4a, short of the ≥ 0.8 ms criterion at Spawn and Galata. The on-device user check was not run. Details: "Phase 4b" below.
 
 Before Phase 4b: **Phase 4a (release baseline and diagnosis, measurement only) done.** Release builds for measurement ("* Release Perf*" presets, `perf_bench` feature) run on both devices and are proven non-debug. Release changes little against debug. The iPhone's ~41 FPS "1 % low" is a frame-pacing artefact of the 60 FPS limiter on the 120 Hz display (frames alternate 8.3 / 25 ms); at 60 Hz the frames are an even 16.7 ms. On the Galaxy Tab A7 the physics step (≈ 4.7–5.7 ms, two per frame) splits into ≈ 1 ms for the player's `move_and_slide`, ≈ 1 ms for the parked car, and smaller parts; 30 Hz physics destabilizes the car, and Jolt is ~2 ms per step slower. No default was changed; the measured proposals are in `PROJECT_CONTEXT.md`, "Phase 4 proposals". Phases 1–3 and the quality profiles are unchanged.
 
 ## Current objective
 
-Review of Phase 4b (including the missed tablet criterion and the device check still to do), then the remaining Phase 4 items. See "Recommended next task".
+Review of Phase 4c, then Phase 4d (export configuration and platform isolation). See "Recommended next task".
 
 ## Git
 
@@ -51,6 +53,11 @@ Review of Phase 4b (including the missed tablet criterion and the device check s
 - `4ffd799`: fix, the vehicle tracks its own parking sleep (reads between physics steps were wrong).
 - `e30942e`: measurement-only `vehicle_sleep` runtime key and the paired A/B experiments.
 - `e2a4290`: Phase 4b results and documentation (this list completed in the commit after it).
+- `5fa3ed3`: Phase 4b commit list.
+- `a13a534`: the HUD's safe area from an injectable `SafeAreaSource`; layout matrix tests; screenshot tool `--safe-area` / `--release-hud`.
+- `21b252d`: the safe area re-applied when it moves without a resize, with every finger released.
+- `5d6c8a7`: fix, the player wakes a parked car only while pushing (found in the Phase 4b on-device check).
+- Phase 4c results and documentation: the commit after `5d6c8a7` (`git log`).
 
 ## Repository contents
 
@@ -61,7 +68,7 @@ Review of Phase 4b (including the missed tablet criterion and the device check s
 | `project.godot` | Main scene `res://game/main.tscn`; Mobile renderer; sensor landscape; `expand` aspect; physics interpolation; input actions; mouse emulates touch; ETC2/ASTC import (required for Android export); placeholder icon. |
 | `export_presets.cfg` | "Android Debug" (arm64 APK, `com.mirongi.mapsimulator`), "Android Debug Compatibility" (same, with `--rendering-method gl_compatibility`), "iOS Debug" (`com.mirongi.mapsimulator.dev`, team `8N7RYA42S6`, project-only export), and the measurement-only "Android Release Perf", "Android Release Perf Jolt", "iOS Release Perf" (`perf_bench`; release templates). No passwords or keystore paths. |
 | `icon.svg` | Placeholder app icon (capsule character over water). |
-| `tests/` | Headless runner, 146 unit tests, 28 integration tests, fixtures (flat map, second vehicle type `test_van`), original map validation. |
+| `tests/` | Headless runner, 157 unit tests, 28 integration tests, fixtures (flat map, second vehicle type `test_van`), original map validation. |
 | `tools/capture_screenshot.gd` | Windowed render to PNG with render stats. |
 | `tools/build_ios_debug.sh` | iOS debug build without contacting the Apple Developer portal; optional `devicectl` install. |
 | `tools/build_android_perf.sh`, `tools/build_ios_perf.sh` | Release Perf builds for measurements only (debug keystore via environment variables, read from the editor settings: macOS path by default, `GODOT_EDITOR_SETTINGS` elsewhere; Xcode Release without `-allowProvisioningUpdates`). |
@@ -70,7 +77,8 @@ Review of Phase 4b (including the missed tablet criterion and the device check s
 | `maps/istanbul_halic/istanbul_halic_occluders.scn` | Baked occluders, 2,300,873 bytes (643 occluders, 317,518 triangles), referenced by the `MapDefinition`. |
 | `tools/bake_occluders.gd` | Headless occluder bake. |
 | `tools/perf/` | Experiment definitions (`experiments/*.json`), device orchestration (`android_bench.sh`, `ios_bench.sh`, `run_batch.sh`), `parse_xctrace.py`, `summarize.py`, `median.py`, `collider_census.gd`, `vehicle_sleep_cost.gd`. |
-| `docs/perf/` | Diagnosis pass: raw results and conditions (`results/`), 480 px screenshots (`android/`, `ios/`). Profile validation: `profiles/`. Phase 2 regression and HUD screenshots: `phase2/`. Phase 3 three-run results and screenshots: `phase3/`. Phase 4a release, diagnosis, and pacing results plus headless Jolt / 30 Hz / collider census: `phase4a/`. Phase 4b results, the sleep-vs-freeze measurement, overlay screenshots, and a tablet log excerpt: `phase4b/`. 4.0 MB in total. |
+| `docs/perf/` | Diagnosis pass: raw results and conditions (`results/`), 480 px screenshots (`android/`, `ios/`). Profile validation: `profiles/`. Phase 2 regression and HUD screenshots: `phase2/`. Phase 3 three-run results and screenshots: `phase3/`. Phase 4a release, diagnosis, and pacing results plus headless Jolt / 30 Hz / collider census: `phase4a/`. Phase 4b results, the sleep-vs-freeze measurement, overlay screenshots, a tablet log excerpt, and the iPhone frames of the Phase 4b check (`phase4b/device_check/`): `phase4b/`. 4.3 MB in total. |
+| `docs/ui/` | Reference HUD shots for the layout matrix (16 shots, on foot and in the vehicle, insets shaded), device before/after shots, device log excerpts of Phase 4c. 0.9 MB. |
 | `build/.gdignore` | Keeps Godot from scanning or packing build output. Everything else in `build/` is ignored by Git. |
 | `main.tscn`, `scripts/` | Original explorer demo, unchanged. Desktop only. |
 | `assets/istanbul_halic.glb` | 502 MB, **not tracked**. Restore: `docs/maps/istanbul_halic/README.md`. |
@@ -78,6 +86,7 @@ Review of Phase 4b (including the missed tablet criterion and the device check s
 
 ## Implemented features
 
+- **Phase 4c (all builds):** the HUD's safe area comes from `SafeAreaSource` (DisplayServer on devices, unchanged), is re-applied when it changes without a resize (checked every 0.25 s), and such a change releases every finger; `SAFE_AREA` log lines in debug and Release Perf builds. The player wakes a parked car only while pushing into it.
 - **Phase 4b (all builds):** iOS runs the display at 60 Hz (`display/window/ios/allow_high_refresh_rate = false`; P1). Parked vehicles fall asleep after 1 s at rest and wake for a driver, a move or reset, a hit, the player walking into them, or lost ground (P2; `docs/ARCHITECTURE.md`, "Parked vehicles sleep"). Debug overlay: the driven vehicle's speed while driving and `car asleep|awake`; `VEHICLE … asleep|awake` log lines and `vehicles_asleep` in benchmark results (debug and Release Perf builds).
 - **Measurement builds (Phase 4a):** `BuildFeatures` gates the debug overlay (debug builds) and experiments/benchmarks/STARTUP (debug builds and release builds with `perf_bench`); "Android Release Perf", "iOS Release Perf", and the measurement-only variant "Android Release Perf Jolt" (feature-tagged override; the 4a "iOS Release Perf 60Hz" variant was removed in Phase 4b). Experiments gain runtime keys (physics rate, interpolation, player physics, vehicles, collider radius, V-Sync) and results gain frame-time percentiles, a histogram, long frames, physics and process times. None of this changes normal builds.
 - **Phase 3 vehicle (all builds):** placeholder car (box body, cylinder wheels, brake and reverse lights) parked on a Karaköy street; interact button (car icon, E) while in reach and standing; vehicle controls ◀ ▶ (left), throttle, brake/reverse, handbrake "P" (bottom right), exit (top right); exit only at ≤ 1.5 m/s and beside the car (driver's side, else passenger side, else refused; the exit button fades while too fast); focus loss or pause releases the controls and holds the handbrake; hill hold when no pedal is pressed; reset to the spawn after falling below the kill height or 2 s flipped, with the driver; vehicle camera 7.5 m behind with follow mode. Details: `docs/ARCHITECTURE.md`, "Vehicles (Phase 3)".
@@ -92,6 +101,58 @@ Review of Phase 4b (including the missed tablet criterion and the device check s
 - **Quality profiles (all builds):** high (60 FPS cap, occlusion, 200 m visibility range for trees/lamps/decor/facade detail) and low (occlusion, 400 m far plane + depth fog, 100 m ranges, 0.6 render scale, shadows off, LOD threshold 4, 30 FPS cap). Default: iOS → high, Android → low, desktop → none. `--quality=<name>` overrides; debug builds can cycle profiles with the Q button.
 - **Baked occluders** loaded from `maps/istanbul_halic/istanbul_halic_occluders.scn` when a profile enables occlusion; runtime building from collision remains as a fallback with a warning.
 - Debug builds only: performance experiment flags (`PerfConfig`) layered on top of the profile (experiment > profile > defaults), and an automatic benchmark (`PerfBenchmark`) driven by host scripts in `tools/perf/`. Off unless an experiment file or `--perf-config` is given.
+
+## Phase 4c — Phase 4b on-device check, screen layouts and safe areas (2026-10-27/28)
+
+Task rule: a user answer counts only when a log or a screenshot supports it; otherwise the item is NOT RUN. No Android phone is available (user), so phone screens other than the iPhone are covered only by the headless matrix.
+
+### Phase 4b on-device check (debug build of `e30942e`, 2026-10-27)
+
+Evidence: iPhone screenshots about once a second (`devicectl`); the iPhone's Instruments log worked only after the user connected the cable (it failed with "Device got disconnected" over Wi-Fi) and then captured only parts of the session; tablet logcat and screenshots. Frames: `docs/perf/phase4b/device_check/iphone_<time>.jpg`.
+
+| Step | iPhone 13 Pro | Galaxy Tab A7 |
+|---|---|---|
+| Parked car asleep before getting in (CAR, overlay `car asleep`) | PASS: 21:50:59 `Idle 0.0 m/s \| car asleep` beside the car (`iphone_215059`) | NOT RUN |
+| Getting in wakes it | PASS: 21:51:04 `Driving 0.0 m/s \| car awake` (`iphone_215104`) | NOT RUN |
+| After getting out it falls asleep again | PASS: out at 21:51:44 (`car awake`), 21:51:47 `Idle 0.0 m/s \| car asleep` (`iphone_215147`) | NOT RUN |
+| Walking into the car wakes it | PASS: 22:01:15 `Walk 0.0 m/s \| car awake` (`iphone_220115`); asleep again 2 s later as the player walked on | NOT RUN |
+| Standing still against it, it falls asleep again | **FAIL, fixed in `5d6c8a7`**: the player stood against the car on the sloped Galata street and the car stayed `car awake` for about 4.5 minutes (22:01:25–22:06:00, `iphone_220125`). Reproduced headless on a 6° cross slope (awake 300 of 300 ticks) and fixed; not rechecked on a device | NOT RUN |
+| Throttle drives the car off | PASS: 22:06:03 onwards `Driving 6.7 … 25.9 m/s \| car awake` (`iphone_220609`, 22.8 m/s). The car was already awake before getting in this time (defect above); getting into a sleeping car was shown at 21:51, without throttle | NOT RUN |
+| Stutter while turning the camera and driving | only the prepared answer "Akıcı, takılma yok", no sentence of the user's own; that the driving happened is shown by the frames | — |
+
+- Tablet: the user answered twice that the steps were done, but the log has no `CAR walk-up`, the car never woke after 21:19 (every `PERF` line until 22:11 says `vehicles=asleep`), and the screenshots show the same Spawn frame throughout. NOT RUN.
+- iPhone: twice an answer arrived before the screenshots showed the step (step 1 while other steps had been done; the first "Yaptım" for driving with no driving on screen). Each item above is counted from the frames only.
+
+### Layout matrix (headless, `tests/unit/test_hud_layout.gd`, debug overlay shown)
+
+| Screen (window px), safe area px | Canvas, px/unit | On foot | Vehicle | Smallest gameplay target on foot / vehicle | Smallest debug target | Smallest gameplay gap on foot / vehicle (units) |
+|---|---|---|---|---|---|---|
+| 16:9 1920×1080, none | 1600×900, 1.200 | PASS | PASS | 10.8 / 10.1 mm | 8.4 mm | 31 / 18 |
+| 19.5:9 iPhone 13 Pro 2532×1170, notch left: (141, 0, 2250, 1107) | 1947×900, 1.300 | PASS | PASS | 10.2 / 9.6 mm | 7.9 mm | 31 / 18 |
+| iPhone, notch right (iOS reports the same insets) | 1947×900, 1.300 | PASS | PASS | 10.2 / 9.6 mm | 7.9 mm | 31 / 18 |
+| 20:9 2400×1080, punch-hole left, 3-button bar right: (110, 0, 2164, 1080) | 2000×900, 1.200 | PASS | PASS | 10.6 / 9.9 mm | 8.2 mm | 31 / 18 |
+| 20:9, punch-hole right, 3-button bar left: (126, 0, 2164, 1080) | 2000×900, 1.200 | PASS | PASS | 10.6 / 9.9 mm | 8.2 mm | 31 / 18 |
+| 20:9, punch-hole left, gesture handle: (110, 0, 2290, 1017) | 2000×900, 1.200 | PASS | PASS | 10.6 / 9.9 mm | 8.2 mm | 31 / 18 |
+| 20:9, punch-hole right, gesture handle: (0, 0, 2290, 1017) | 2000×900, 1.200 | PASS | PASS | 10.6 / 9.9 mm | 8.2 mm | 31 / 18 |
+| 4:3 iPad 2048×1536: (0, 48, 2048, 1448) | 1440×1080, 1.422 | PASS | PASS | 19.5 / 18.3 mm | 15.1 mm | 31 / 18 |
+| 16:10 Tab A7 2000×1200, none (immersive) | 1500×900, 1.333 | PASS | PASS | 21.6 / 20.2 mm | 16.7 mm | 31 / 18 |
+
+- Threshold 7 mm on the hit area (drawn diameter × 1.15); ppi assumed: 401 (16:9), 460 (iPhone), 411 (20:9), 264 (iPad), 224 (Tab A7). The debug VIEW and Q buttons' hit circles are 2 units apart (debug builds only).
+- `test_safe_area_change_without_resize_is_applied_and_releases_fingers`: PASS (the punch-hole and the bar swap sides at the same window size; within 0.35 s the new safe area is applied and the held joystick and run button are released).
+- Mutation checks: safe area not applied → 8 tests fail (the seven screens with insets and the rotation test; 16:9 and the Tab A7 have none); the exit button moved above the safe area → 10 fail (all nine screens and `test_vehicle_controls_layout_and_group_switch`); no periodic check → 1 fails; no finger release → 1 fails.
+- No combination failed, so no control moved; the layout of T22/T25 stays. HUD draw calls were not re-measured (the task asks for it only if the layout changed); the periodic check is one `DisplayServer` query every 0.25 s.
+- Reference shots: `docs/ui/<screen>_<on_foot|vehicle>.jpg`, release HUD, the area outside the safe area shaded, taken on the Mac at a smaller resolution with the same aspect ratio (for example 1266×585 for the iPhone). One iPhone set covers both orientations.
+
+### Both landscape orientations on the devices (debug build of `5d6c8a7`)
+
+- Neither test device changes its safe area on a 180° turn: the tablet runs immersive without a cutout (`SAFE_AREA window=(2000, 1200) safe=[(0, 0), (2000, 1200)]`, `docs/ui/device_check_logs.txt`), and the iPhone's side insets are symmetric. The re-application path is therefore covered only by the headless test.
+- iPhone: answered "Yaptım, sorun yok", but the frames of 23:11–23:14 show the same idle Spawn picture without any joystick input, and the captured log (23:12–23:14) has no new `SAFE_AREA` line; a turn itself is not visible in screenshots. NOT RUN.
+- Tablet: answered "Tablette yaptım", but the system rotation stayed at 270° (`SurfaceOrientation:3`) from 23:17 to 23:55 and the frames show the same Spawn picture without input. NOT RUN.
+- HUD before and after on the devices: `docs/ui/device_after_iphone.jpg` and `device_after_tablet.jpg` (this build) match `docs/perf/phase4b/iphone_overlay_car_asleep.jpg` and `tablet_overlay_car_asleep.jpg` (Phase 4b build) control for control.
+
+### Device classes not tested on hardware
+
+Android phones of any kind, iPads, iPhones other than the 13 Pro (smaller screens, Dynamic Island, Home-button models), foldables, Android tablets with visible system bars. Only the headless matrix covers them, with assumed insets and ppi.
 
 ## Phase 4b — P1 (iOS 60 Hz display) and P2 (parked vehicles sleep) (2026-10-26/27)
 
@@ -182,7 +243,7 @@ The first device run (build `54a5b97`) recorded `vehicles_asleep` 1.0 for the dr
 
 Debug builds of `54a5b97` on both devices. Screenshots and logs show the parked car asleep on both: overlay `Idle 0.0 m/s | car asleep` (`docs/perf/phase4b/iphone_overlay_car_asleep.jpg`, `tablet_overlay_car_asleep.jpg`), tablet log `VEHICLE PlaceholderCar asleep` 2.4 s after the first frame and 528 of 529 `PERF` lines with `vehicles=asleep` over 17 minutes (`tablet_debug_log_excerpt.txt`).
 
-The user first chose the prepared answers ("Akıcı, takılma yok", "Evet, sorunsuz", "Evet, doğru", "Denedim, aynı"), but the logs and screenshots of both devices showed no interaction during that time (no CAR press, no getting in, the car never woken, the same Spawn frame before and after). Asked again, the user answered "Şimdi yapamam". **The check (stutter while turning the camera and driving, getting into a sleeping car and driving off, walking into the car) is NOT RUN.** On the devices, getting into the car from the benchmark's in-vehicle runs is shown by the results (driven car awake, `vehicles_asleep` 0.000); driving off from sleep and the player bump rest on the automated tests. Debug builds of the final code (`e30942e`) are now installed on both devices for the check.
+The user first chose the prepared answers ("Akıcı, takılma yok", "Evet, sorunsuz", "Evet, doğru", "Denedim, aynı"), but the logs and screenshots of both devices showed no interaction during that time (no CAR press, no getting in, the car never woken, the same Spawn frame before and after). Asked again, the user answered "Şimdi yapamam". **The check (stutter while turning the camera and driving, getting into a sleeping car and driving off, walking into the car) is NOT RUN.** On the devices, getting into the car from the benchmark's in-vehicle runs is shown by the results (driven car awake, `vehicles_asleep` 0.000); driving off from sleep and the player bump rest on the automated tests. Debug builds of the final code (`e30942e`) are now installed on both devices for the check. Checked on the iPhone in Phase 4c (see there).
 
 ## Phase 4a — release baseline, CPU/physics, and frame pacing diagnosis (2026-10-26)
 
@@ -649,7 +710,7 @@ Thermal state: Nominal at all 13 probes (0–601 s). App footprint 1,022–1,044
 | Behavior | Evidence |
 |---|---|
 | Project imports cleanly. | `godot --headless --path . --import`: exit 0, no errors or warnings (after adding `build/.gdignore`). |
-| Automated tests pass. | `run_tests.gd` → `RESULT 174 passed, 0 failed, 0 skipped`, exit 0; unit only → 146 passed, exit 0; without the GLB → `RESULT 146 passed, 0 failed, 28 skipped`, exit 2 (2026-10-27, Phase 4b; GLB SHA-256 re-verified afterwards). Phase 4a (2026-10-26): 161 passed. With Jolt (temporary `override.cfg`): 160 passed, 1 failed (the GodotPhysics3D pin). At 30 Hz physics: 148 passed, 13 failed (see "Phase 4a"). `tests/map/validate_scene.gd` → `VALIDATION PASS`. |
+| Automated tests pass. | `run_tests.gd` → `RESULT 185 passed, 0 failed, 0 skipped`, exit 0; unit only → 157 passed, exit 0; without the GLB → `RESULT 157 passed, 0 failed, 28 skipped`, exit 2 (2026-10-28, Phase 4c; GLB SHA-256 re-verified afterwards). Phase 4b: 174; Phase 4a: 161. With Jolt (temporary `override.cfg`): 160 passed, 1 failed (the GodotPhysics3D pin). At 30 Hz physics: 148 passed, 13 failed (see "Phase 4a"). `tests/map/validate_scene.gd` → `VALIDATION PASS`. |
 | Phase 4b sleep, wake, overlay, iOS 60 Hz. | See "Phase 4b", including the mutation checks. |
 | Phase 4a gating and flags. | `test_build_features.gd` (feature logic, release HUD without debug controls, presets: `perf_bench` only in Release Perf presets, `perf_jolt` only in its preset and no `perf_60hz` preset left, keystore fields empty, no personal paths), `test_release_perf_build_runs_benchmarks_without_debug_ui`, `test_normal_release_ignores_experiments`, `test_runtime_experiment_keys_apply_on_the_map`, `test_runtime_keys_parse_and_reject_typos`, `test_frame_time_distribution`, `test_measurement_overrides_do_not_touch_defaults`. |
 | Phase 3 vehicle. | See "Phase 3 — vehicle system", including the mutation checks. |
@@ -666,7 +727,8 @@ Thermal state: Nominal at all 13 probes (0–601 s). App footprint 1,022–1,044
 
 ## Unverified behaviors
 
-- Phase 4b on-device check with the user (stutter while turning the camera and driving on the iPhone, getting into a sleeping car and driving off, walking into the car): NOT RUN (see "Phase 4b", "On-device check"). Driving off from sleep and the player bump are covered by automated tests only.
+- Phase 4c on-device checks NOT RUN (see "Phase 4c"): the Phase 4b steps on the tablet; both landscape orientations on both devices, including a joystick held through the turn; the stutter while turning the camera and driving in the user's own words (only the prepared answer was chosen); the fix `5d6c8a7` on a device (headless test only).
+- Screens other than the iPhone 13 Pro and the Galaxy Tab A7 (Android phones, iPads, other iPhones): headless layout matrix only, with assumed insets and ppi.
 - Why the tablet's paired A/B gain from sleeping (0.35–0.81 ms) is smaller than Phase 4a's "car removed" figure (≈ 1.0 ms), and why the A/B sleep-on runs had more 50 ms frames at Galata.
 - The P2 gain on the iPhone in the vehicle (the driven car is awake; nothing to gain) and on other devices.
 
@@ -739,9 +801,9 @@ Thermal state: Nominal at all 13 probes (0–601 s). App footprint 1,022–1,044
 
 ## Required manual actions
 
-- **iPhone: set Auto-Lock back to its previous value** (set to "Never" for the Phase 4b measurements).
-- **Phase 4b on-device check** (not run): on the iPhone (and optionally the tablet) turn the camera and drive and describe any stutter in your own words; press CAR, check the overlay says `car asleep`, walk into the car's side (it should say `car awake`, then `car asleep` about a second after you stop), get in and drive off. Debug builds of `e30942e` are installed on both devices for this.
-- Decide whether the tablet's P2 result (physics step −0.75 / −0.86 / −0.79 ms against the ≥ 0.8 ms criterion) is accepted as it is.
+- **iPhone: set Auto-Lock back to its previous value**, if it is still on "Never".
+- **On-device checks still to do** (debug builds of `5d6c8a7` are installed on both devices; each takes a few minutes and is only counted with log or screenshot evidence): on the tablet, press CAR (overlay `car asleep`), walk into the car (`car awake`), get in and hold the throttle; on both devices, hold the joystick, turn the device 180° between the two landscape orientations, release, and turn back; on the iPhone, stand still against the car on a sloped street (it should say `car asleep` after about a second; fix `5d6c8a7`); and the stutter while turning the camera and driving, in your own words.
+- Open questions 31 (further test devices; no Android phone so far) and 32 (button sizes per device class).
 - Open questions 2 (car model source), 12 (barriers), 22–24 (damage, NPCs, roll immunity), 28–29 (camera distance, steering modes) remain.
 - Decide on the map-level facade work, simple map colliders, and bringing the map generation scripts into the repository (open questions 20, 21, 30).
 - Later: create the new Apple Developer account, then update the team ID and bundle ID (decision D8).
@@ -749,17 +811,20 @@ Thermal state: Nominal at all 13 probes (0–601 s). App footprint 1,022–1,044
 
 ## Current priorities
 
-1. Review of Phase 4b: the missed tablet criterion and the on-device check still to do.
-2. Phase 4c (the remaining Phase 4 items, below) or the map-level work (facades and simple colliders; user decision).
+1. Review of Phase 4c and the on-device checks still to do.
+2. Phase 4d (export configuration and platform isolation) or the map-level work (facades and simple colliders; user decision).
 
 ## Recommended next task
 
-**Phase 4c: screens, export configuration, and platform isolation (the remaining Phase 4 items).** Start with the Phase 4b on-device check, which takes minutes with the installed debug builds.
+**Phase 4d: export configuration review and isolation of platform dependencies (the last Phase 4 items).** Start with the on-device checks still open from Phase 4b/4c (above).
 
-1. **UI on different phone screens and safe areas.** Run the HUD headlessly over a matrix of window sizes and safe-area insets (16:9, 19.5:9 and 20:9 phones with the notch on either side in both landscape orientations, 4:3 tablets, an Android cutout and navigation bar) and assert: every control inside the safe rect, hit areas not overlapping, touch targets at least 44 pt (from the DPI), the debug overlay not covering controls; save reference screenshots with `tools/capture_screenshot.gd`. Check both landscape orientations on the two devices (`sensor_landscape` puts the notch on either side).
-2. **Export configuration review.** Go through every preset: version name and code, orientation, architectures, minimum OS / SDK, permissions (the game needs none), icons and app name, texture compression, include/exclude filters (tests, tools, docs out of every build, as in the Release Perf presets), iOS capabilities and the privacy manifest requirements, and what a normal (non-perf) release preset would need without creating a release keystore (D10). Record the result and pin it with a test of `export_presets.cfg`.
-3. **Platform isolation.** Collect the platform-dependent decisions now spread over `QualityProfiles` (platform rule), `UIController.apply_safe_area()` (`mobile`), `PerfConfig.external_dir()` (Android), `display_refresh_rate()` (iOS), and `BuildFeatures` into one module with an injectable platform, so tests can run the iOS and Android paths on the desktop; a test fails on `OS.has_feature("ios"|"android"|"mobile")` outside it.
+1. **Export configuration review.** Go through every preset in `export_presets.cfg` and record the result in `docs/ARCHITECTURE.md`: version name and code, orientation, architectures (arm64 only), minimum iOS version and Android min/target SDK, permissions (none are set in the presets; confirm in the exported manifest that none are requested), app name and icon, texture compression, include/exclude filters (every preset excludes `tests/`, `tools/`, `docs/` today; pin it), immersive mode, iOS capabilities, and the iOS privacy manifest requirement for the APIs the engine uses. Describe what a normal (non-perf) release preset would need without creating a release keystore (D10) or registering the final bundle ID (D8).
+2. **Platform isolation.** Collect the platform decisions now spread over `QualityProfiles.default_name()` (iOS / Android rule), `SafeAreaSource` (`mobile`), `PerfConfig.external_dir()` (Android), `game.display_refresh_rate()` (iOS), and `BuildFeatures` into one `Platform` module with an injectable platform, so tests can run the iOS and Android paths on the desktop.
 
-Acceptance: layout matrix tests and screenshots; preset test; no platform check outside the module (test); full suite PASS with Phase 1–4b behaviour unchanged; device check of both landscape orientations with the user.
+Acceptance criteria:
+- A test of `export_presets.cfg` that pins the reviewed values (arm64 only, the exclude filters in every preset, no permissions, empty keystore fields, no personal paths, the bundle and package IDs of D8) and fails when one changes.
+- Export of every preset from the command line succeeds (the APKs and Xcode projects build; no install or upload), with the exported sizes recorded.
+- No `OS.has_feature("ios"|"android"|"mobile")` outside the platform module (a test greps `game/` and fails otherwise); the iOS and Android paths of the quality rule, the safe area, the external folder, and the display rate each run in a test with the injected platform.
+- Phase 1–4c tests unchanged and passing; device builds of both platforms start and log the same `QUALITY`, `STARTUP`, and `SAFE_AREA` values as before (log evidence).
 
-Not part of it: map, facade, or collider changes (open questions 20, 21, 30 wait for the user's map-pipeline decision), P3–P8 (D20).
+Not part of it: store, TestFlight, or Play Console uploads, release signing, map, facade, or collider changes (open questions 20, 21, 30), P3–P8 (D20).
