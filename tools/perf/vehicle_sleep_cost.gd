@@ -1,13 +1,14 @@
 extends SceneTree
 ## Physics step cost of the parked vehicle in each rest state on the real map
-## (headless, on this machine): awake (parking sleep off), asleep
-## (RigidBody3D.sleeping, what VehicleController uses), frozen (freeze in
+## (headless, on this machine): awake (parking sleep off), asleep (the
+## VehicleController parking rule: RigidBody3D.sleeping), frozen (freeze in
 ## static mode), and removed (out of the simulation: the Phase 4a
 ## "vehicles": false upper bound). The player's physics is paused so the
 ## vehicle is the only moving part. Prints one line per mode and round: mean
 ## and median physics step (Performance.TIME_PHYSICS_PROCESS) and the most
 ## active bodies the physics server reported. Then throws a 400 kg box at
-## the asleep and at the frozen vehicle and reports what happens.
+## the asleep and at the frozen vehicle and reports what happens (whether
+## the physics server simulates it afterwards, read during a physics tick).
 ##   godot --headless --path . --script res://tools/perf/vehicle_sleep_cost.gd [-- --ticks=600 --rounds=3]
 
 const MODES := ["awake", "asleep", "frozen", "removed"]
@@ -30,15 +31,14 @@ func _run() -> void:
 	await _frames(120)
 	game.player.set_physics_process(false)
 	var car: VehicleController = game.world.vehicles[0]
-	# The tool sets each state itself.
+	# The tool switches the parking rule itself.
 	car.definition = car.definition.duplicate()
-	car.definition.sleep_when_parked = false
 	print("engine %s, %d ticks per mode and round" % [Engine.get_version_info().string, ticks])
 	print("| Mode | Round | Physics step mean ms | Median ms | Active bodies |")
 	print("|---|---|---|---|---|")
 	for round in rounds:
 		for mode in MODES:
-			_set_mode(car, mode)
+			await _set_mode(car, mode)
 			await _frames(30)
 			var samples: Array[float] = []
 			var active := 0
@@ -52,10 +52,10 @@ func _run() -> void:
 				mean += value / samples.size()
 			print("| %s | %d | %.4f | %.4f | %d |" % [mode, round + 1, mean, samples[samples.size() / 2], active])
 	for mode in ["asleep", "frozen"]:
-		_set_mode(car, "awake")
+		await _set_mode(car, "awake")
 		car.reset_to_spawn()
 		await _frames(120)
-		_set_mode(car, mode)
+		await _set_mode(car, mode)
 		await _frames(5)
 		var start := car.global_position
 		var box := RigidBody3D.new()
@@ -69,7 +69,8 @@ func _run() -> void:
 		box.linear_velocity = car.global_basis.z * 8.0
 		root.add_child(box)
 		await _frames(90)
-		print("box hit, %s: vehicle moved %.3f m, simulated afterwards: %s" % [mode, car.global_position.distance_to(start), not car.is_asleep()])
+		var simulated: bool = not PhysicsServer3D.body_get_state(car.get_rid(), PhysicsServer3D.BODY_STATE_SLEEPING)
+		print("box hit, %s: vehicle moved %.3f m, simulated afterwards: %s" % [mode, car.global_position.distance_to(start), simulated])
 		box.queue_free()
 	quit()
 
@@ -77,10 +78,15 @@ func _run() -> void:
 func _set_mode(car: VehicleController, mode: String) -> void:
 	car.process_mode = Node.PROCESS_MODE_INHERIT
 	car.freeze = false
-	car.sleeping = false
+	car.definition.sleep_when_parked = mode == "asleep"
+	car.wake_up()
 	match mode:
 		"asleep":
-			car.sleeping = true
+			for i in 600:
+				if car.is_asleep():
+					break
+				await physics_frame
+			assert(car.is_asleep(), "the parked vehicle did not fall asleep")
 		"frozen":
 			car.freeze_mode = RigidBody3D.FREEZE_MODE_STATIC
 			car.freeze = true

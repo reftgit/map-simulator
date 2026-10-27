@@ -1,0 +1,4 @@
+{"experiment": "c_vehicle_sleep_off", "device": "android", "battery_c_start": 27.0, "battery_c_end": 29.5,
+ "thermal_status_start": "0", "thermal_status_end": "0",
+ "pss_peak_kb": 0, "wall_s": 214, "started": "2026-10-27 20:31:48",
+ "cool_wait_s": 0, "cool_target_c": "27.5"}

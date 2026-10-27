@@ -1,0 +1,17 @@
+engine 4.7.2-stable (official), 600 ticks per mode and round
+| Mode | Round | Physics step mean ms | Median ms | Active bodies |
+|---|---|---|---|---|
+| awake | 1 | 1.3802 | 0.5670 | 1 |
+| asleep | 1 | 0.3141 | 0.2490 | 0 |
+| frozen | 1 | 0.2158 | 0.2010 | 0 |
+| removed | 1 | 0.1610 | 0.1350 | 0 |
+| awake | 2 | 0.8008 | 0.4170 | 1 |
+| asleep | 2 | 0.2118 | 0.1960 | 0 |
+| frozen | 2 | 0.3314 | 0.3040 | 0 |
+| removed | 2 | 0.2181 | 0.1850 | 0 |
+| awake | 3 | 0.5625 | 0.5900 | 1 |
+| asleep | 3 | 0.2133 | 0.2310 | 0 |
+| frozen | 3 | 0.5128 | 0.2590 | 0 |
+| removed | 3 | 0.2481 | 0.2290 | 0 |
+box hit, asleep: vehicle moved 0.379 m, simulated afterwards: true
+box hit, frozen: vehicle moved 0.000 m, simulated afterwards: false

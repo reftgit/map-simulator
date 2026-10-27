@@ -2,7 +2,7 @@
 
 Planning context and decision rationale. This file does not describe implemented functionality; see `PROJECT_STATE.md` for that.
 
-Last updated: 2026-10-26 (Phase 4a measurements, Claude Code)
+Last updated: 2026-10-27 (Phase 4b, Claude Code)
 
 ## Product vision and goals
 
@@ -189,6 +189,11 @@ PlayerController, PlayerStateMachine, PlayerCombat, PlayerAnimation, ThirdPerson
 - **Decision:** Phase 4a measures release builds for local testing only. Android: the release-template APK is signed with the existing debug keystore. iOS: the Xcode Release configuration with the existing development signing (automatic, without `-allowProvisioningUpdates`). Nothing is uploaded anywhere; no release keystore is created. Jolt Physics may be tried for measurement only, in a separate build. Defaults (physics engine, tick rate, quality profiles, renderer, frame limiting) do not change in this task; findings go to the user as proposals.
 - **Implementation:** `perf_bench` custom feature only in the "* Release Perf*" presets (`docs/ARCHITECTURE.md`, "Build features").
 
+### D20 — Phase 4 proposals P1 and P2 approved and applied (2026-10-26, user decision)
+
+- **Decision:** P1: every iOS build runs the display at 60 Hz (`display/window/ios/allow_high_refresh_rate = false` in `project.godot`); the high profile keeps its 60 FPS cap. P2: a vehicle with no driver that is at rest is put to sleep (or frozen) and wakes when needed. P3–P8 are not applied: the physics engine (GodotPhysics3D), the 60 Hz physics tick, physics interpolation, and the tablet's frame cap stay as they are; the map, the map pipeline, and the quality profile values do not change.
+- **Implementation (Phase 4b):** P1 as above; the measurement-only "iOS Release Perf 60Hz" preset and its `perf_60hz` override were removed because they would now build the same app. P2 uses `RigidBody3D.sleeping` rather than `freeze` (measured: same cost reduction, but a sleeping body is woken by the engine on contact while a frozen one is an immovable wall); rules in `docs/ARCHITECTURE.md`, "Parked vehicles sleep". Results: `PROJECT_STATE.md`, "Phase 4b".
+
 ## Application technical decisions
 
 Decisions made by the implementing agent (Claude Code, 2026-10-24). None was specified by the user unless stated; each can be revisited. Code structure: `docs/ARCHITECTURE.md`.
@@ -373,14 +378,14 @@ The tablet package (low) is a best-effort profile; the chunk-granular visibility
 
 Keep the **Mobile** renderer. On the tablet, Compatibility was ~20 % faster on the unchanged scene but used ~914 MiB peak PSS instead of ~510 MiB, has no occlusion culling (Mobile with occlusion alone beat it: 10.3 / 14.0 / 16.4 vs 8.0 / 7.0 / 9.2 FPS), and it does not start on the iPhone (framebuffer creation and GLES3 shader compilation fail on iOS 26.6.1). FSR is unavailable on Mobile in Godot 4.7.2; MetalFX spatial produced no thermal benefit.
 
-## Phase 4 proposals (measured 2026-10-26, not applied)
+## Phase 4 proposals (measured 2026-10-26; P1 and P2 applied in Phase 4b)
 
-Each proposal comes from the Phase 4a measurements (`PROJECT_STATE.md`, "Phase 4a"); none is applied until the user decides.
+Each proposal comes from the Phase 4a measurements (`PROJECT_STATE.md`, "Phase 4a"). P1 and P2 were approved and applied (D20); P3–P8 are not applied.
 
 | # | Proposal | Measured gain | Risk / behaviour change |
 |---|---|---|---|
-| P1 | iPhone: display at 60 Hz (`allow_high_refresh_rate = false`), keep `max_fps` 60 | 1 % low 41.9 → 55.4–55.5; long frames 49.5 % → ~0; average and thermal unchanged | None for gameplay; no 120 Hz option (high is capped at 60 anyway). Affects all ProMotion iPhones. |
-| P2 | Parked vehicles: freeze or let sleep when nobody drives and they are at rest | Upper bound ≈ 1.0 ms per physics step on the tablet (≈ 2 ms per frame at 30 FPS); not measured on the iPhone | Must wake for getting in, resets, and the hill hold; the interaction area must keep working. |
+| P1 | **Applied (D20).** iPhone: display at 60 Hz (`allow_high_refresh_rate = false`), keep `max_fps` 60 | 1 % low 41.9 → 55.4–55.5; long frames 49.5 % → ~0; average and thermal unchanged | None for gameplay; no 120 Hz option (high is capped at 60 anyway). Affects all ProMotion iPhones. |
+| P2 | **Applied (D20)** as sleep. Parked vehicles: freeze or let sleep when nobody drives and they are at rest | Upper bound ≈ 1.0 ms per physics step on the tablet (≈ 2 ms per frame at 30 FPS); not measured on the iPhone. **Phase 4b result:** −0.75 / −0.86 / −0.79 ms on foot against Phase 4a (criterion ≥ 0.8 ms missed at two viewpoints); same-session A/B 0.35–0.81 ms; iPhone −0.17 to −0.44 ms | Must wake for getting in, resets, and the hill hold; the interaction area must keep working. |
 | P3 | Player: skip `move_and_slide` while standing still on a floor | Upper bound ≈ 0.85–1.15 ms per step on the tablet (only while idle) | Floor snapping and respawn edge cases; little gain while moving. Low priority. |
 | P4 | Physics at 30 Hz on the tablet | One step per frame instead of two (≈ 5 ms per frame); 1 % low +0.8 to +2.0 | The car becomes unstable (58.7 m/s, rollover) and the punch lasts 0.5 s; would need vehicle substepping or retuning. Not recommended now. |
 | P5 | Jolt Physics | None: ~2 ms per step slower on the tablet | Not recommended (open question 8). |
@@ -388,7 +393,7 @@ Each proposal comes from the Phase 4a measurements (`PROJECT_STATE.md`, "Phase 4
 | P7 | Physics interpolation off | ≤ 0.3 ms per step | Visible stutter at 120 Hz and with the camera; not recommended. |
 | P8 | Tablet frame cap: keep `Engine.max_fps` 30 with Swappy | — (uncapped averages 37–40 FPS but alternates 16.7 / 33.3 ms frames) | Keep as is. |
 
-Order suggested: P1, then P2, then re-measure; P3 and P6 only if the tablet still needs margin.
+Order suggested: P1, then P2, then re-measure (done in Phase 4b); P3 and P6 only if the tablet still needs margin.
 
 ## Planned features
 
@@ -426,8 +431,8 @@ See "Requirements by phase". `PROJECT_STATE.md` records which parts exist.
 12. Railings, lamps, and other decor have no collision, so the player can walk off bridge decks and quays into the water (then respawns). Should invisible barriers be added along bridges and quays? **Vehicle observations (2026-10-25):** a car driven across the Galata Bridge deck toward the railing passes through it, falls into the water, and resets to its Karaköy spawn with the driver (reached y −5.1, kill height −5.0); pavements and kerbs have no collision of their own, so cars drive onto pavements freely; lamp posts do not stop a car either. With vehicles, barriers along bridge decks and quays (and possibly kerbs) matter more than on foot; not added (out of scope).
 13. Run control style: is the toggle with reset on stick release (T7) what the user wants, or a hold button, or auto-run at full stick tilt?
 14. HUD art: the controls are drawn with plain shapes. Is final art or an icon set planned?
-15. iPhone frame pacing. **Finding (2026-10-26, Phase 4a):** with the default 120 Hz display (`display/window/ios/allow_high_refresh_rate = true`) and `Engine.max_fps` 60, frames alternate 8.3 / 25 ms (49.5 % of frames one refresh late); the ~41 FPS "1 % low" is these 25 ms frames. With the display at 60 Hz (the same setting off; measured in the "iOS Release Perf 60Hz" build) the frames are an even 16.7 ms: 1 % low 55.4–55.5 (the rest is ±1 ms timing jitter), long frames ~0, average 60.0 and thermal Nominal over 3 × 10 minutes, the same with `max_fps` 0 (V-Sync only). Sources: Godot ProjectSettings reference ("If true, iOS devices that support high refresh rate/"ProMotion" will be allowed to render at up to 120 frames per second"); Godot 4.7.2 source `drivers/apple_embedded/godot_view_apple_embedded.mm` (`CADisplayLink.preferredFramesPerSecond` from the view's preferred rate) and `platform/ios/display_server_ios.mm` (`screen_get_refresh_rate` from `UIScreen.maximumFramesPerSecond`); the export template's Info.plist always sets `CADisableMinimumFrameDurationOnPhone`. Proposal P1 below; not applied.
-16. Startup target: debug builds needed ~8–15 s to the map on the tablet. **Release (2026-10-26, Phase 4a):** map ready 6.2 s (median of 30 launches, 6.0–9.2 s), first frame 6.7 s on the Galaxy Tab A7; 1.39 s / 1.46 s on the iPhone 13 Pro (debug 8.1 / 8.6 s and 1.54 / 1.61 s). What is acceptable is still open.
+15. *(Closed 2026-10-27 by D20: every iOS build runs the display at 60 Hz. Phase 4b measured on the iPhone 13 Pro, release: 1 % low 56.3–58.7 FPS at the three viewpoints on foot and in the vehicle, 0 long frames, the 10-minute session at 60 FPS with thermal Nominal; `PROJECT_STATE.md`, "Phase 4b".)* iPhone frame pacing. **Finding (2026-10-26, Phase 4a):** with the default 120 Hz display (`display/window/ios/allow_high_refresh_rate = true`) and `Engine.max_fps` 60, frames alternate 8.3 / 25 ms (49.5 % of frames one refresh late); the ~41 FPS "1 % low" is these 25 ms frames. With the display at 60 Hz (the same setting off; measured in the "iOS Release Perf 60Hz" build) the frames are an even 16.7 ms: 1 % low 55.4–55.5 (the rest is ±1 ms timing jitter), long frames ~0, average 60.0 and thermal Nominal over 3 × 10 minutes, the same with `max_fps` 0 (V-Sync only). Sources: Godot ProjectSettings reference ("If true, iOS devices that support high refresh rate/"ProMotion" will be allowed to render at up to 120 frames per second"); Godot 4.7.2 source `drivers/apple_embedded/godot_view_apple_embedded.mm` (`CADisplayLink.preferredFramesPerSecond` from the view's preferred rate) and `platform/ios/display_server_ios.mm` (`screen_get_refresh_rate` from `UIScreen.maximumFramesPerSecond`); the export template's Info.plist always sets `CADisableMinimumFrameDurationOnPhone`. Proposal P1 below; not applied.
+16. Startup target: debug builds needed ~8–15 s to the map on the tablet. **Release (2026-10-26, Phase 4a):** map ready 6.2 s (median of 30 launches, 6.0–9.2 s), first frame 6.7 s on the Galaxy Tab A7; 1.39 s / 1.46 s on the iPhone 13 Pro (debug 8.1 / 8.6 s and 1.54 / 1.61 s). Phase 4b: the tablet's launches during the measurement batches took 9.4 s to the map (median of 12; battery 34–39 °C), but alternating launches of the Phase 4a and 4b APKs at 30–31 °C gave 7.05 and 6.98 s, so the time depends on the tablet's state, not on the build; iPhone 1.37 s. What is acceptable is still open.
 17. Is a visible loss of distant facade detail (beyond ~200 m) acceptable on the iPhone long term?
 18. Automatic GPU/device detection for choosing a profile (instead of the per-platform rule), e.g. for strong Android phones or older iPhones?
 19. A user-facing graphics settings menu to pick the profile?
@@ -441,6 +446,7 @@ See "Requirements by phase". `PROJECT_STATE.md` records which parts exist.
 27. *(Closed 2026-10-26 by D18: no change needed.)*
 28. Speed-dependent camera distance while driving (optional in the task, not implemented).
 29. Should steering also offer a drag or tilt mode (T25)?
+30. Map colliders: all 827 are trimesh bodies (`ConcavePolygonShape3D`, 438,012 triangles; Phase 4a census). Should they be replaced by simple shapes (boxes or convex hulls per building, simplified ground) for cheaper physics? Phase 4a found the player and the parked car spending ~1 ms each per step against these trimesh bodies on the Galaxy Tab A7, with ~1.3 ms shared. This changes the map's collision, so it belongs to the same map-pipeline decision as the facade work (open questions 20–21): generate simple colliders in the map generation scripts rather than editing the imported GLB, and decide both together.
 
 ## Constraints and priorities
 
@@ -448,4 +454,4 @@ See "Requirements by phase". `PROJECT_STATE.md` records which parts exist.
 - The map original in the source package must not be modified or deleted.
 - Physical device results are reported as NOT RUN until actually performed.
 - No store, TestFlight, or Play Console uploads; no release signing without explicit approval.
-- Current priority: review of Phase 4a and a decision on the Phase 4 proposals (P1 and P2 suggested first); the map-level facade work after that or in parallel (user decision; see `PROJECT_STATE.md`, "Recommended next task").
+- Current priority: review of Phase 4b (the tablet criterion missed at two viewpoints and the on-device check not run), then Phase 4c (screens and safe areas, export configuration, platform isolation) or the map-level work on facades and simple colliders (user decision; open questions 20, 21, 30; see `PROJECT_STATE.md`, "Recommended next task").

@@ -6,7 +6,7 @@
 # below this temperature before starting; default: no wait), COOL_TIMEOUT_S,
 # SAMPLE_PSS=0 (skip `dumpsys meminfo` sampling, which can cause frame hitches).
 # Output in <out>: <name>.json (app results), <name>.log (engine log),
-# <name>.meta.json (temperatures, thermal status, peak PSS), shots/*.jpg.
+# <name>.meta.json (temperatures, thermal status, peak PSS, cool-down wait), shots/*.jpg.
 # A debug APK is reached with `run-as` (user://). A release perf APK is not
 # debuggable, so the experiment and the results go through the app-specific
 # external folder instead (PerfConfig.external_dir()); the app creates that
@@ -22,8 +22,8 @@ mkdir -p "$OUT/shots"
 battery_c() { adb shell dumpsys battery | awk -F': ' '/temperature/ { printf "%.1f", $2 / 10; exit }'; }
 thermal_status() { adb shell dumpsys thermalservice | awk -F': ' '/Thermal Status/ { print $2; exit }'; }
 
+waited=0
 if [ -n "${COOL_MAX_C:-}" ]; then
-	waited=0
 	while [ "$(echo "$(battery_c) > $COOL_MAX_C" | bc)" = 1 ]; do
 		[ "$waited" -ge "${COOL_TIMEOUT_S:-900}" ] && { echo "cool-down timeout at $(battery_c) C" >&2; break; }
 		sleep 30
@@ -92,6 +92,7 @@ fi
 cat > "$OUT/$NAME.meta.json" << EOF
 {"experiment": "$NAME", "device": "android", "battery_c_start": $start_c, "battery_c_end": $(battery_c),
  "thermal_status_start": "$start_status", "thermal_status_end": "$(thermal_status)",
- "pss_peak_kb": $peak_pss, "wall_s": $(( $(date +%s) - started )), "started": "$(date -r "$started" '+%Y-%m-%d %H:%M:%S')"}
+ "pss_peak_kb": $peak_pss, "wall_s": $(( $(date +%s) - started )), "started": "$(date -r "$started" '+%Y-%m-%d %H:%M:%S')",
+ "cool_wait_s": $waited, "cool_target_c": "${COOL_MAX_C:-}"}
 EOF
 echo "$NAME done: $(grep -c 'BENCH {' "$OUT/$NAME.log") results, peak PSS ${peak_pss} kB, battery ${start_c} -> $(battery_c) C"
