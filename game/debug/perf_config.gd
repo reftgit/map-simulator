@@ -130,12 +130,11 @@ static func _parse_settings(data: Dictionary, out: Dictionary) -> String:
 
 
 ## The app-specific external Documents folder on Android (created when first
-## asked for), or "" elsewhere. Experiment and result files also go through
-## it, because adb reaches it without `run-as`, which release builds lack.
+## asked for), or "" elsewhere (Platform.external_data_dir()). Experiment and
+## result files also go through it, because adb reaches it without `run-as`,
+## which release builds lack.
 static func external_dir() -> String:
-	if not OS.has_feature("android"):
-		return ""
-	return OS.get_system_dir(OS.SYSTEM_DIR_DOCUMENTS, false)
+	return Platform.current().external_data_dir()
 
 
 ## Copies and type-checks runtime keys; returns an error message or "".

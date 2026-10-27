@@ -51,9 +51,13 @@ func _restore() -> void:
 
 
 func test_platform_rule() -> void:
-	var ios := func(feature: String) -> bool: return feature in ["ios", "mobile"]
-	var android := func(feature: String) -> bool: return feature in ["android", "mobile"]
-	var desktop := func(feature: String) -> bool: return feature in ["macos", "pc"]
+	var fake_platform := preload("res://tests/fixtures/fake_platform.gd")
+	var ios: Platform = fake_platform.new()
+	ios.features.assign(["ios", "mobile"])
+	var android: Platform = fake_platform.new()
+	android.features.assign(["android", "mobile"])
+	var desktop: Platform = fake_platform.new()
+	desktop.features.assign(["macos", "pc"])
 	check(QualityProfiles.default_name(ios) == "high", "iOS -> high")
 	check(QualityProfiles.default_name(android) == "low", "Android -> low")
 	check(QualityProfiles.default_name(desktop) == "none", "desktop -> none")

@@ -15,11 +15,11 @@ static var perf_feature_override := -1
 
 
 static func is_debug() -> bool:
-	return OS.is_debug_build() if debug_override < 0 else debug_override == 1
+	return Platform.current().is_debug_build() if debug_override < 0 else debug_override == 1
 
 
 static func has_perf_feature() -> bool:
-	return OS.has_feature(PERF_FEATURE) if perf_feature_override < 0 else perf_feature_override == 1
+	return Platform.current().has_feature(PERF_FEATURE) if perf_feature_override < 0 else perf_feature_override == 1
 
 
 ## Performance experiments, benchmarks, and the STARTUP log line.

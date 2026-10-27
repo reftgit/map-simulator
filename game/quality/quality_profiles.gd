@@ -20,11 +20,12 @@ static func names() -> Array[String]:
 	return all
 
 
-## Platform rule. `has_feature` is injectable for tests.
-static func default_name(has_feature := Callable(OS, "has_feature")) -> String:
-	if has_feature.call("ios"):
+## Platform rule, for `platform` or else Platform.current().
+static func default_name(platform: Platform = null) -> String:
+	var on := platform if platform else Platform.current()
+	if on.is_ios():
 		return "high"
-	if has_feature.call("android"):
+	if on.is_android():
 		return "low"
 	return NONE
 

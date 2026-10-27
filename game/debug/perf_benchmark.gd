@@ -196,7 +196,7 @@ func _record(result: Dictionary) -> void:
 	result["in_vehicle"] = config.in_vehicle
 	result["profile"] = game.quality_profile
 	result["renderer"] = RenderingServer.get_current_rendering_method()
-	result["window"] = str(DisplayServer.window_get_size())
+	result["window"] = str(Platform.current().window_size())
 	results.append(result)
 	print("BENCH ", JSON.stringify(result))
 

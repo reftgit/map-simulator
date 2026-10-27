@@ -95,8 +95,7 @@ func test_ios_display_runs_at_60_hz() -> void:
 	# P1 (D20): ProMotion iPhones would otherwise run the display link at 120 Hz,
 	# and the 60 FPS cap alternated 8.3 / 25 ms frames (Phase 4a).
 	check(ProjectSettings.get_setting_with_override("display/window/ios/allow_high_refresh_rate") == false, "high refresh rate off in every build")
-	var game_script: GDScript = load("res://game/game.gd")
-	check(game_script.display_refresh_rate(120.0, true, false) == 60.0, "ProMotion iPhone: frames paced at 60 Hz")
-	check(game_script.display_refresh_rate(60.0, true, false) == 60.0, "60 Hz iPhone (or Low Power Mode) stays at 60")
-	check(game_script.display_refresh_rate(120.0, true, true) == 120.0, "with the setting on, 120 Hz")
-	check(game_script.display_refresh_rate(90.0, false, false) == 90.0, "the setting is iOS only: other platforms keep the screen rate")
+	check(Platform.paced_refresh_rate(120.0, true, false) == 60.0, "ProMotion iPhone: frames paced at 60 Hz")
+	check(Platform.paced_refresh_rate(60.0, true, false) == 60.0, "60 Hz iPhone (or Low Power Mode) stays at 60")
+	check(Platform.paced_refresh_rate(120.0, true, true) == 120.0, "with the setting on, 120 Hz")
+	check(Platform.paced_refresh_rate(90.0, false, false) == 90.0, "the setting is iOS only: other platforms keep the screen rate")
