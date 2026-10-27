@@ -1,8 +1,8 @@
 class_name UIController
 extends CanvasLayer
 ## HUD root. Keeps the controls inside the device safe area (notch, rounded
-## corners, home indicator, cutouts, navigation bars; from a SafeAreaSource),
-## fades the roll button while the bound player's
+## corners, home indicator, cutouts, navigation bars; from a SafeAreaSource,
+## re-applied when it changes), fades the roll button while the bound player's
 ## roll is on cooldown and the exit button while the bound vehicle is too fast
 ## to get out, and, in debug builds only, shows a performance
 ## overlay (with the player's or the driven vehicle's speed and whether each
@@ -19,6 +19,11 @@ signal debug_quality_requested
 signal debug_dummy_requested
 ## Emitted when the debug CAR button is tapped.
 signal debug_car_requested
+
+## How often the safe area is checked for changes the viewport does not
+## report (s): a 180° turn between the two landscape orientations moves a
+## cutout or navigation bar to the other side without changing the size.
+const SAFE_AREA_CHECK_INTERVAL := 0.25
 
 ## Extra space between the safe area and the controls, in canvas units.
 @export var edge_margin := 16.0
@@ -41,6 +46,10 @@ var safe_rect := Rect2()
 var _player: PlayerController
 var _vehicle: VehicleController
 var _ticks := 0
+var _applied := false
+var _applied_window := Vector2i.ZERO
+var _applied_safe := Rect2i()
+var _safe_area_check_in := SAFE_AREA_CHECK_INTERVAL
 
 @onready var input: MobileInputController = $SafeArea/Controls
 @onready var _safe_area: Control = $SafeArea
@@ -79,14 +88,21 @@ func bind_vehicle(vehicle: VehicleController) -> void:
 	_vehicle = vehicle
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	_safe_area_check_in -= delta
+	if _safe_area_check_in <= 0.0:
+		_safe_area_check_in = SAFE_AREA_CHECK_INTERVAL
+		if safe_area_source.window_size() != _applied_window or safe_area_source.safe_area() != _applied_safe:
+			apply_safe_area()
 	if _player and input.roll_button:
 		input.roll_button.dimmed = _player.actions.is_blocked(&"roll")
 	if _vehicle and input.exit_button:
 		input.exit_button.dimmed = not _vehicle.can_exit_at_current_speed()
 
 
-## Fits the controls into the safe area.
+## Fits the controls into the safe area. When the window or the safe area
+## changed since the last time, every finger is released as on focus loss: a
+## held control may now sit somewhere else.
 func apply_safe_area() -> void:
 	var viewport_size := get_viewport().get_visible_rect().size
 	var window := safe_area_source.window_size()
@@ -96,6 +112,12 @@ func apply_safe_area() -> void:
 	_safe_area.offset_top = safe_rect.position.y + edge_margin
 	_safe_area.offset_right = safe_rect.end.x - viewport_size.x - edge_margin
 	_safe_area.offset_bottom = safe_rect.end.y - viewport_size.y - edge_margin
+	var changed := _applied and (window != _applied_window or safe_px != _applied_safe)
+	_applied = true
+	_applied_window = window
+	_applied_safe = safe_px
+	if changed:
+		input.release_all_touches()
 	if BuildFeatures.perf_enabled():
 		print("SAFE_AREA window=%s safe=%s canvas=%s viewport=%s" % [window, safe_px, safe_rect, viewport_size])
 

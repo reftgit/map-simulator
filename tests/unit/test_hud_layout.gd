@@ -75,6 +75,29 @@ func test_16x10_tab_a7() -> void:
 	await _check_screen("16x10_tab_a7")
 
 
+func test_safe_area_change_without_resize_is_applied_and_releases_fingers() -> void:
+	# A 180° turn moves a punch-hole and a navigation bar to the other side; the
+	# window size stays the same, so only the periodic check notices.
+	await _show("20x9_hole_left_buttons_right")
+	var before := hud.safe_rect
+	var stick := input.joystick.get_global_rect().position + input.joystick.get_global_rect().size * Vector2(0.4, 0.6)
+	touch(0, stick, true)
+	drag(0, stick, stick + Vector2(0, -80))
+	touch(1, input.run_button.get_global_rect().get_center(), true)
+	await process_frames(2)
+	check(input.get_move_vector() != Vector2.ZERO, "joystick held before the turn")
+	var turned: Dictionary = SCREENS["20x9_hole_right_buttons_left"]
+	hud.safe_area_source = SafeAreaSource.fixed(turned.window, turned.safe)
+	await _seconds(UIController.SAFE_AREA_CHECK_INTERVAL + 0.1)
+	check(not hud.safe_rect.is_equal_approx(before), "safe area re-applied after the turn (%s -> %s)" % [before, hud.safe_rect])
+	var expected := UIController.safe_rect_in_viewport(turned.safe, turned.window, _viewport_size())
+	check(hud.safe_rect.is_equal_approx(expected), "the new safe area (%s, expected %s)" % [hud.safe_rect, expected])
+	check(input.get_move_vector() == Vector2.ZERO, "the held joystick was released")
+	check(not input.run_button.is_down, "the held button was released")
+	touch(0, stick + Vector2(0, -80), false)
+	touch(1, input.run_button.get_global_rect().get_center(), false)
+
+
 ## Lays the HUD out on `screen` (debug overlay on) and checks both groups.
 func _check_screen(screen_name: String) -> void:
 	await _show(screen_name)
@@ -186,3 +209,9 @@ func _joystick_circle() -> Vector3:
 
 func _viewport_size() -> Vector2:
 	return tree.root.get_visible_rect().size
+
+
+func _seconds(seconds: float) -> void:
+	var until := Time.get_ticks_msec() + int(seconds * 1000)
+	while Time.get_ticks_msec() < until:
+		await tree.process_frame
