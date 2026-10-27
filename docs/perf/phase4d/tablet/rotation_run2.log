@@ -1,0 +1,4 @@
+01:09:19 before: accelerometer_rotation=1 user_rotation=0, display rotation 1
+01:09:36 turned: user_rotation=3, display rotation 3
+01:10:08 turned back: user_rotation=1, display rotation 1
+01:10:12 restored accelerometer_rotation=1 user_rotation=0, display rotation 0

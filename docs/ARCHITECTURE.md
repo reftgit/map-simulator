@@ -22,7 +22,8 @@ game/
   input/                    MobileInputController, TouchControl, TouchLookArea, TouchButton
   ui/                       UIController, SafeAreaSource, hud.tscn, icons/ (button icons)
   quality/                  RenderSettings (applies render settings), QualityProfile, QualityProfiles, profiles/high.tres, low.tres
-  debug/                    PerfConfig (experiments), PerfBenchmark, TrainingDummy (debug builds only)
+  debug/                    PerfConfig (experiments), PerfBenchmark, DeviceScenario, TrainingDummy, BuildFeatures
+  platform/                 Platform: the only code that asks the OS which platform this is (Phase 4d)
 maps/<map_name>/            One folder per map: scene, MapDefinition (.tres), map script, baked occluders (.scn)
 assets/                     Map model and metadata (the 502 MB GLB is not in Git)
 scripts/, main.tscn         Original explorer demo from the map package (desktop only, not used by the game)
@@ -30,7 +31,7 @@ tests/                      Headless test runner, unit and integration suites, f
 tools/                      Development tools (screenshot capture, iOS debug build, occluder bake, perf scripts)
 docs/                       This file, map documentation
 build/                      Export output, ignored by Git except build/.gdignore (keeps Godot from importing it)
-export_presets.cfg          "Android Debug", "Android Debug Compatibility", and "iOS Debug" presets
+export_presets.cfg          Six presets: Android/iOS debug, Android compatibility, three Release Perf (see "Export presets")
 ```
 
 ## Runtime structure
@@ -250,6 +251,31 @@ A `VehicleBody3D` at rest is never put to sleep by GodotPhysics3D: the engine's 
 - Landscape (`sensor_landscape`), 1440×900 base canvas with `canvas_items` stretch and `expand` aspect, so phones get a wider canvas at 900 units tall.
 - Touch sizes: joystick 220 units, run and roll buttons 124 units, punch button 140 units (hit areas 1.15× the drawn radius). On an iPhone 13 Pro (1170 px landscape height, 460 ppi) that is about 95 pt / 16 mm, 54 pt / 9 mm, and 61 pt / 10 mm; Apple's minimum touch target is 44 pt. Calculated from the layout; the layout matrix checks every screen (see "Safe area and screen layouts"). Buttons sit bottom-right inside the safe area: run in the corner, punch to its left, roll above it; their hit areas do not overlap (`test_action_buttons_layout`).
 
+## Platform module (Phase 4d)
+
+`Platform` (`game/platform/platform.gd`) is the one place that asks the OS which platform the game runs on and reads the platform's services. Systems call `Platform.current()`.
+
+| Raw source (a fake overrides it) | Real implementation |
+|---|---|
+| `has_feature(tag)` | `OS.has_feature` |
+| `is_debug_build()` | `OS.is_debug_build` |
+| `window_size()` | `DisplayServer.window_get_size` |
+| `system_safe_area()` | `DisplayServer.get_display_safe_area` |
+| `screen_refresh_rate()` | `DisplayServer.screen_get_refresh_rate` (the panel's maximum) |
+| `allow_high_refresh_rate()` | the iOS setting with feature-tag overrides |
+| `documents_dir()` | `OS.get_system_dir(SYSTEM_DIR_DOCUMENTS, false)` |
+
+| Rule (same for real and fake) | Used by |
+|---|---|
+| `is_ios()`, `is_android()`, `is_mobile()` | `QualityProfiles.default_name()` (iOS → high, Android → low, else none) |
+| `display_safe_area()`: the system safe area on mobile, empty elsewhere | `SafeAreaSource` → `UIController` |
+| `display_refresh_rate()`: `paced_refresh_rate()` (iOS with the setting off → at most 60) | `game.build_info()` |
+| `external_data_dir()`: the Documents folder on Android, "" elsewhere | `PerfConfig.external_dir()` (benchmark and scenario files) |
+| `is_debug_build()`, `has_feature("perf_bench")` | `BuildFeatures` (its test overrides stay) |
+
+- **Testing a platform path:** subclass `Platform` (`tests/fixtures/fake_platform.gd`: feature tags and raw values as fields), install it with `Platform.use(fake)`, and reset with `Platform.use(null)` in `cleanup()`. `tests/unit/test_platform.gd` runs the iOS, Android, and desktop paths of the quality rule, the safe area source and the HUD, the external folder, the display rate, and the build features this way.
+- **Rule:** no script under `game/` other than `game/platform/` may call `OS.has_feature(`, `OS.is_debug_build(`, `OS.get_name(`, `Callable(OS`, `get_display_safe_area(`, `screen_get_refresh_rate(`, or use `SYSTEM_DIR_DOCUMENTS`; `test_only_the_platform_module_asks_the_os` scans for them. A new platform-dependent decision gets a raw source and a rule in `Platform` and a fake-platform test.
+
 ## Safe area and screen layouts (Phase 4c)
 
 - **Source:** `UIController.safe_area_source` (`SafeAreaSource`, `game/ui/safe_area_source.gd`) gives the window size and the display safe area in window pixels. The default asks `DisplayServer` (`get_display_safe_area()` on mobile; on desktop there is none and the whole window is safe), so devices behave as before. `SafeAreaSource.fixed(window, safe)` stands in for any screen in tests and in the screenshot tool.
@@ -309,7 +335,7 @@ Permanent render settings per device class, applied in every build.
 
 Temporary settings layered on top of a profile for measurements. They run in debug builds and in release builds exported with the `perf_bench` custom feature (see "Build features"); normal release builds ignore them. With no experiment and the "none" profile the game runs with scene defaults (`test_no_perf_experiment_by_default`).
 
-- **Flags:** `PerfConfig` (`game/debug/perf_config.gd`) holds one experiment, parsed from JSON; unknown keys, categories, or profiles are rejected. Keys: `experiment`, `profile` (`none`/`high`/`low`; omitted = platform default), the `RenderSettings` keys `hide` (categories), `visibility_end` ({category: metres}), `camera_far` + `fog`, `shadows` (`default`/`off`/`single`), `render_scale` + `scaling_mode` (`bilinear`/`metalfx`; FSR is Forward+ only in Godot 4.7.2), `max_fps`, `occlusion`, `lod_threshold`, a `runtime` section (below), and an optional `bench` section (`warmup_s` 30, `measure_s` 60, `views`, `session_minutes`, `session_view`, `screenshots`, `quit_when_done`, `in_vehicle`). Experiments from the 2026-10-24 diagnosis pin `"profile": "none"`, the condition they were measured under; Phase 4 experiments (`c_*`, `pacing_*`, `jolt_*`, `session_pacing_*`) name the device profile (`low` tablet, `high` iPhone).
+- **Flags:** `PerfConfig` (`game/debug/perf_config.gd`) holds one experiment, parsed from JSON; unknown keys, categories, or profiles are rejected. Keys: `experiment`, `profile` (`none`/`high`/`low`; omitted = platform default), the `RenderSettings` keys `hide` (categories), `visibility_end` ({category: metres}), `camera_far` + `fog`, `shadows` (`default`/`off`/`single`), `render_scale` + `scaling_mode` (`bilinear`/`metalfx`; FSR is Forward+ only in Godot 4.7.2), `max_fps`, `occlusion`, `lod_threshold`, a `runtime` section (below), and an optional `bench` section (`warmup_s` 30, `measure_s` 60, `views`, `session_minutes`, `session_view`, `screenshots`, `quit_when_done`, `in_vehicle`), or a `scenario` section (debug builds; see "Device scenario"). Experiments from the 2026-10-24 diagnosis pin `"profile": "none"`, the condition they were measured under; Phase 4 experiments (`c_*`, `pacing_*`, `jolt_*`, `session_pacing_*`) name the device profile (`low` tablet, `high` iPhone).
 - **Runtime keys** (`PerfConfig.RUNTIME_KEYS`, applied by `Main.apply_runtime_settings()`, measurement only): `physics_ticks` (Engine physics rate), `physics_interpolation`, `player_physics` (false pauses the player's `_physics_process`, so no `move_and_slide`), `vehicles` (false takes the parked vehicles out of the simulation), `collider_radius` (map static bodies whose ground-plane bounds are farther than this from the player are disabled and leave the physics space; re-evaluated at each viewpoint; 0 = all off, which needs `player_physics: false`), `vsync_mode` (`disabled`/`enabled`/`adaptive`/`mailbox`), `vehicle_sleep` (false keeps parked vehicles awake, Phase 4b A/B; applied to a copy of each vehicle's definition). Keys an experiment leaves out keep their defaults; the result's `config.runtime` records them.
 - **Applying:** `game.apply_perf_experiment()` merges the experiment over its profile and applies it through the same `RenderSettings`; there is no separate experiment code path.
 - **Categories** (by node-name prefix, checked in this order; every one of the 3,055 map meshes matches one, enforced by `test_perf_categories_cover_every_map_mesh`; defined in `RenderSettings.CATEGORIES`):
@@ -326,6 +352,33 @@ Temporary settings layered on top of a profile for measurements. They run in deb
 
 - **Loading:** `game.gd` reads `--perf-config=<path>` from the command line (desktop) or a one-shot `perf_bench.json` (devices; deleted when read) from `user://`, or on Android from the app-specific external folder `OS.get_system_dir(SYSTEM_DIR_DOCUMENTS, false)` (`/sdcard/Android/data/<package>/files/Documents`): a release APK is not debuggable, so `run-as` cannot reach `user://`, but adb reaches that folder directly. Experiment definitions live in `tools/perf/experiments/*.json`.
 - **Benchmark:** `PerfBenchmark` visits each viewpoint, waits `warmup_s`, then records every frame time for `measure_s`: average FPS (frames / time), 1 % low (FPS at the 99th-percentile frame time), minimum FPS (longest frame), frame-time percentiles (`frame_p50_ms`, `frame_p90_ms`, `frame_p99_ms`), a 1 ms histogram (`frame_hist_ms`, 0–99 ms plus one bin for longer frames), `long_frames` (over 1.25 × the median, i.e. at least one display refresh late), the physics step and process times (`physics_ms`/`physics_p99_ms`, `process_ms`/`process_p99_ms`: `Performance.TIME_PHYSICS_PROCESS` and `TIME_PROCESS` sampled every frame), and per-second averages of draw calls, primitives, and objects, plus peak video memory and engine static memory, and `vehicles_asleep` (share of frames in which the map's vehicles slept). Each result records the active profile and `in_vehicle`; the results file also has `startup` with the build kind and frame/physics settings (`debug_build`, `perf_feature`, `physics_ticks`, `physics_interpolation`, `max_fps`, `vsync_mode`, `screen_refresh_rate` (panel maximum), `display_refresh_rate` (the rate frames are paced to), `ios_allow_high_refresh_rate`, `android_frame_pacing`) and the vehicles' sleep state at the first frame (`vehicles`). It logs `BENCH {json}` lines, writes `user://bench_results.json` (with the profile, the occluder source and load time, and the startup times), saves 640 px JPEG screenshots to `user://bench/`, then quits (Android) or hides the map and drops to 5 FPS until the host terminates it (iOS ignores `quit()`).
+
+### Device scenario (Phase 4d)
+
+An experiment with a `scenario` section (`name`: `vehicle_sleep` or `orientation`; `rotate_hold_s`; `quit_when_done`) makes a debug build play `DeviceScenario` instead of a benchmark: synthetic touches through `Input.parse_input_event` (the path real touches take) on the debug CAR and VIEW buttons, the joystick, and the interact, throttle, handbrake, and exit buttons, with one `SCENARIO step=<name> result=<PASS|FAIL|INFO> t=<s> <details>` log line per step. Results go to the benchmark's results file, so the host scripts collect them.
+
+- `vehicle_sleep`: parked car asleep → CAR → walk into the car (wakes) → let go (asleep within 4 s, and asleep for 3 s more while the player stands against it) → get in (wakes) → throttle above 5 m/s → handbrake, get out → asleep; then the same on the sloped Galata street (VIEW while driving). With `rotate_hold_s` > 0 it continues with `orientation`.
+- `orientation`: holds the joystick for `rotate_hold_s` while the device is turned, logging the gravity vector (the gravity sensor is enabled for debug builds only: `input_devices/sensors/enable_gravity.debug=true`), the applied safe area, and the stick once a second; then releases and checks that the stick reads zero and the player stops.
+- Experiments: `scenario_vehicle_sleep.json`, `scenario_vehicle_sleep_rotate.json` (12 s hold), `scenario_orientation.json` (30 s). Headless: `test_device_scenario_on_the_map`.
+
+```bash
+# Android (debug APK installed, device unlocked); the cue script turns the device during the hold
+tools/perf/android_rotate_on_cue.sh build/perf/scenario &
+tools/perf/android_bench.sh tools/perf/experiments/scenario_vehicle_sleep_rotate.json build/perf/scenario
+# Turning by hand and restoring (the cue script restores the noted values itself):
+adb shell settings get system accelerometer_rotation; adb shell settings get system user_rotation
+adb shell settings put system accelerometer_rotation 0; adb shell settings put system user_rotation 1   # or 3
+adb shell dumpsys input | grep SurfaceOrientation   # the display's rotation
+# iOS (debug app installed, iPhone unlocked)
+xcrun devicectl device copy to --device <udid> --domain-type appDataContainer --domain-identifier com.mirongi.mapsimulator.dev \
+	--source tools/perf/experiments/scenario_vehicle_sleep.json --destination Documents/perf_bench.json
+xcrun devicectl device process launch --device <udid> --terminate-existing com.mirongi.mapsimulator.dev
+xcrun devicectl device copy from --device <udid> --domain-type appDataContainer --domain-identifier com.mirongi.mapsimulator.dev \
+	--source Documents/bench_results.json --destination results.json   # repeat until present
+```
+
+- `android_rotate_on_cue.sh` reads only log lines from its own start (an earlier run's cues may still be in the buffer), gives every `adb` call inside its log loop `/dev/null` as stdin (otherwise `adb` swallows log lines), notes the original rotation settings, and restores them when the scenario ends or the script exits.
+- On iOS, Godot's log lines reached the Instruments "Logging" capture only partly or not at all in Phases 4c–4d (and not at all over Wi-Fi); the results file the app writes is the reliable evidence. A device lying flat shows gravity ≈ (0, 0, −9.8) whatever its rotation (seen on both devices); held upright in landscape, a 180° turn should flip the sign of the horizontal component (not yet observed: the iPhone stayed flat in Phase 4d).
 
 ### Measurement protocol and host scripts
 
@@ -353,7 +406,7 @@ python3 -I tools/perf/median.py build/perf/<task>/android/run1 build/perf/<task>
 
 ## Build features
 
-`BuildFeatures` (`game/debug/build_features.gd`) decides what a build may do beyond gameplay:
+`BuildFeatures` (`game/debug/build_features.gd`) decides what a build may do beyond gameplay (it reads the build kind and the `perf_bench` tag from `Platform`):
 
 | Build | Debug overlay, VIEW/Q/DUMMY/CAR | Experiments, benchmark, STARTUP log |
 |---|---|---|
@@ -382,6 +435,22 @@ tools/build_ios_debug.sh <device-udid> # build and install with devicectl
 - Identifiers: Android `com.mirongi.mapsimulator`; iOS debug `com.mirongi.mapsimulator.dev` on the temporary team in `export_presets.cfg`. The final iOS ID `com.mirongi.mapsimulator` must not be registered from this Mac (`PROJECT_CONTEXT.md` D8–D9).
 - Requirements: Godot 4.7.2 export templates; Android SDK, JDK, and debug keystore configured in the Godot editor settings; Xcode with a signing identity and a matching team profile.
 - The imported map is about 195 MB of the 224 MB APK.
+
+## Export presets (reviewed in Phase 4d)
+
+| Preset | Platform | Template | Features | ID | Output (command line) | Size (2026-10-28) |
+|---|---|---|---|---|---|---|
+| Android Debug | Android | debug | — | `com.mirongi.mapsimulator` | `build/android/map-simulator-debug.apk` | 226,088,394 B |
+| Android Debug Compatibility | Android | debug | — (`--rendering-method gl_compatibility`) | same | `build/android/map-simulator-debug-compat.apk` | 226,088,394 B |
+| Android Release Perf | Android | release | `perf_bench` | same | `build/android/map-simulator-release-perf.apk` | 224,273,387 B |
+| Android Release Perf Jolt | Android | release | `perf_bench`, `perf_jolt` | same | `build/android/map-simulator-release-perf-jolt.apk` | 224,273,387 B |
+| iOS Debug | iOS | debug | — | `com.mirongi.mapsimulator.dev`, team `8N7RYA42S6` | Xcode project (`map_simulator_dev.pck` 198,268,320 B; project 618 MiB) | — |
+| iOS Release Perf | iOS | release | `perf_bench` | same | Xcode project (`map_simulator_perf.pck` 198,268,352 B; project 556 MiB) | — |
+
+- **Version:** the name comes from `application/config/version` (0.1.0) only; the presets' `version/name` and `application/short_version` are empty and inherit it (`EditorExportPreset::get_version()`). The build number is 1 in every preset (`version/code`, `application/version`); raise both together.
+- **Android (template builds, no Gradle):** arm64-v8a only; minSdk 24, targetSdk 36, compileSdk 36 (the Godot 4.7.2 template; Google Play has required target 36 for new apps and updates since 31 August 2026); no permissions in the manifests (checked with `aapt dump permissions` on all four APKs; Godot adds none in debug either); `screenOrientation` userLandscape with orientation and screen size handled in-app (no restart on a turn); immersive mode; ETC2/ASTC textures; app label "İstanbul • Haliç" and the project icon.
+- **iOS:** arm64; deployment target 15.0 (Godot's default); iPhone and iPad; landscape left and right only, full screen; `UIRequiredDeviceCapabilities` gets `iphone-ipad-minimum-performance-a12` automatically with the Mobile renderer (A12 devices and newer); `ITSAppUsesNonExemptEncryption` false; no capabilities, usage descriptions, or tracking. The export writes `PrivacyInfo.xcprivacy` with Godot's default required-reason entries (file timestamp DDA9.1/C617.1, system boot time 35F9.1, disk space E174.1/85F4.1) and tracking off.
+- Every preset excludes `tests/*`, `tools/*`, `docs/*`. `tests/unit/test_export_presets.gd` pins all of this (with `test_build_features.gd` for `perf_bench` and personal paths); evidence: `docs/perf/phase4d/export/export_check.txt`.
 
 ### Release Perf builds (measurement only)
 

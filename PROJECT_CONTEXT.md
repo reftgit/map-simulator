@@ -2,7 +2,7 @@
 
 Planning context and decision rationale. This file does not describe implemented functionality; see `PROJECT_STATE.md` for that.
 
-Last updated: 2026-10-27 (Phase 4c, Claude Code)
+Last updated: 2026-10-28 (Phase 4d, Claude Code)
 
 ## Product vision and goals
 
@@ -348,6 +348,21 @@ Decisions made by the implementing agent (Claude Code, 2026-10-24). None was spe
 
 - **Decision:** `PlayerController` wakes bodies it touches only while its intent moves. Found in the Phase 4b on-device check on the iPhone: the idle player standing against a car on a sloped street kept a wall contact, and that kept the car awake. Test: `test_standing_against_a_parked_car_on_a_slope_lets_it_sleep` (fails without the change).
 
+### T31 — Platform module (Phase 4d)
+
+- **Decision:** `Platform` (`game/platform/platform.gd`) is the only code that reads OS feature tags, the build kind, the window and safe area, the screen refresh rate, and the external Documents folder; its rules (safe area only on mobile, external folder only on Android, iOS pacing at 60 Hz with the setting off) sit on overridable raw sources. `QualityProfiles`, `SafeAreaSource`, `PerfConfig`, `BuildFeatures`, `PerfBenchmark`, and `game.gd` use it; behaviour is unchanged (device logs identical, `PROJECT_STATE.md`, "Phase 4d"). Tests install a fake platform; a scan test fails on platform calls anywhere else in `game/`.
+- **Rationale:** the iOS and Android paths could only be exercised on devices; now each runs in a desktop test, and new platform decisions have one place to go.
+
+### T32 — Export configuration (Phase 4d)
+
+- **Decision:** the version name has one source, `application/config/version` (0.1.0); preset name fields stay empty. The build number is the same in every preset (1). Android stays on the template build (no Gradle): its minSdk 24 / targetSdk 36 come from the Godot 4.7.2 template. iOS keeps Godot's default deployment target 15.0 and the export's generated privacy manifest. No permissions, capabilities, usage descriptions, or tracking anywhere. `test_export_presets.gd` pins the reviewed values.
+- **Consequences recorded:** the Mobile renderer makes the iOS app require an A12 or newer device (`iphone-ipad-minimum-performance-a12`, added by the exporter); Android needs API 24 or newer.
+
+### T33 — Automatic on-device checks (Phase 4d)
+
+- **Decision:** checks that can be scripted run as a `DeviceScenario` in a debug build (synthetic touches, `SCENARIO` log lines, a results file); the host turns Android devices with adb (`android_rotate_on_cue.sh`, which restores the rotation settings). Only steps that need a hand (turning an iPhone) are asked of the user, and they count only with evidence (gravity sensor values, screenshots, logs). The gravity sensor is enabled in debug builds only, for that evidence.
+- **Rationale:** in Phases 4b–4c several user answers were not borne out by logs or screenshots; scripted checks give evidence without depending on that.
+
 ## Performance findings and proposed measures
 
 Status: **measured on 2026-10-24, nothing applied.** Full tables and protocol: `PROJECT_STATE.md`, "Performance diagnosis pass". Raw data and screenshots: `docs/perf/`.
@@ -406,6 +421,18 @@ Each proposal comes from the Phase 4a measurements (`PROJECT_STATE.md`, "Phase 4
 
 Order suggested: P1, then P2, then re-measure (done in Phase 4b); P3 and P6 only if the tablet still needs margin.
 
+## Before a store release (checklist; nothing of this is created yet)
+
+Written in Phase 4d (2026-10-28). The measurement and debug presets are not release presets; a normal release preset per platform would need, in this order:
+
+1. **Identity:** the new Apple Developer account and its Team ID (D8: update `application/app_store_team_id`), the final bundle ID `com.mirongi.mapsimulator` registered there and only there, an App Store Connect app record; on Android a Play Console app for `com.mirongi.mapsimulator`.
+2. **Signing:** an Android release keystore created and backed up outside the repository, passed at export time through `GODOT_ANDROID_KEYSTORE_RELEASE_*` as the Release Perf builds already do (D10; never in `export_presets.cfg`); Play App Signing enrolment; on iOS an "Apple Distribution" identity and an App Store provisioning profile (`application/export_method_release` = App Store), still without `-allowProvisioningUpdates` unless the user decides otherwise (D9).
+3. **Versioning:** raise `application/config/version` for each release and the build number in every preset together (Android `version/code`, iOS `application/version`); the stores reject a repeated build number.
+4. **Build format:** Google Play takes an Android App Bundle (AAB), which needs the Gradle build (`gradle_build/use_gradle_build`, `gradle_build/export_format` = AAB) and the Android build template installed in the project; that also makes `gradle_build/min_sdk` / `target_sdk` settable. Target API: Google Play requires API 36 for new apps and updates since 31 August 2026 (https://developer.android.com/google/play/requirements/target-sdk); the template already targets 36. iOS: an archive and upload from Xcode or `xcodebuild -exportArchive`.
+5. **Privacy:** Apple: "Starting May 1, 2024, apps that don't describe their use of required reason API in their privacy manifest file aren't accepted by App Store Connect" (https://developer.apple.com/documentation/bundleresources/describing-use-of-required-reason-api). Godot 4.7.2 writes `PrivacyInfo.xcprivacy` from the preset's `privacy/*` options (template `misc/dist/apple_embedded_xcode/PrivacyInfo.xcprivacy`, defaults in `editor/export/editor_export_platform_apple_embedded.cpp`): file timestamp DDA9.1 + C617.1, system boot time 35F9.1, disk space E174.1 + 85F4.1, no user defaults (none used by Godot's Apple platform code), tracking off, no collected data. Still open for a store build: the App Store Connect privacy labels; a check that every bundled framework (for example MoltenVK) carries its own manifest where Apple requires it (Apple: "For each executable or dynamic library … the bundle … needs to include a privacy manifest file"); and re-checking the reasons if plugins or networking are added. Google Play: the Data safety form; a privacy policy URL.
+6. **Store assets and metadata:** final app name and icon (open question 5), all icon sizes the stores need, a launch screen, screenshots per device class, age rating, export compliance (the iOS build already declares `ITSAppUsesNonExemptEncryption` = false).
+7. **Release builds:** the quality profiles and the game are not debug-only, but `BuildFeatures` hides the debug overlay and experiments only when neither debug nor `perf_bench`: a release preset must carry no `perf_bench` (pinned by `test_build_features.gd`).
+
 ## Planned features
 
 Everything listed under "Requirements by phase" from Phase 2 onward, plus the remaining Phase 4 and 5 work.
@@ -432,7 +459,7 @@ See "Requirements by phase". `PROJECT_STATE.md` records which parts exist.
 2. Car model: the map has no vehicles. A placeholder (box body, cylinder wheels) is used (D16); a model plugs in behind `VehicleVisual` with the same wheel order. Source and license still needed.
 3. The settings packages are adopted as profiles (D12). Map-level facade work: see question 21.
 4. Target device list beyond the two test devices. Does the Galaxy Tab A7 class stay a 30 FPS target given the measured visual cost?
-5. App name and final icon; Android release keystore. (Identifiers and debug signing are decided: D8–D10.)
+5. App name and final icon; Android release keystore. (Identifiers and debug signing are decided: D8–D10.) Everything a store release needs is listed in "Before a store release"; none of it is created.
 6. In-game UI language.
 7. Audience and monetization: not specified.
 8. Physics engine for vehicles. **Finding (2026-10-25):** the project setting `physics/3d/physics_engine` is `"DEFAULT"`, and in Godot 4.7.2 that runs **GodotPhysics3D**, not Jolt. Evidence: the world's direct space state is a `GodotPhysicsDirectSpaceState3D` and body states are `GodotPhysicsDirectBodyState3D` (in throwaway projects outside the repository, `"Jolt Physics"` gives `JoltPhysicsDirectSpaceState3D` / `JoltPhysicsDirectBodyState3D`, while `"GodotPhysics3D"` and `"DEFAULT"` both give the Godot classes); a space created through `PhysicsServer3D` keeps space parameters that Jolt ignores and is reported at exit as a `GodotSpace3D` allocation; `ClassDB` lists `GodotPhysicsServer3D` and no Jolt server class. Debug builds log it in the `STARTUP` line (`physics_3d=GodotPhysics3D (setting DEFAULT)`), and `test_active_physics_engine_is_detected` fails if it changes. The setting was not changed (user decision); the vehicle uses `VehicleBody3D` on GodotPhysics3D, which showed no serious problem (findings in `PROJECT_STATE.md`, "Phase 3"). **Recommendation:** stay on GodotPhysics3D for now; try Jolt as a measured Phase 4 experiment, because one physics step costs 4.0–5.6 ms on the Galaxy Tab A7 (two per frame at its 30 FPS cap) against 1.0–1.5 ms on the iPhone. A switch needs the user's decision and a re-run of the Phase 1–3 tests and device checks (vehicle tuning in particular: +Z forward, steering sign, damping, and rollover were measured on GodotPhysics3D). **Jolt measurement (2026-10-26, Phase 4a, tablet, release):** one physics step 6.69 / 6.78 / 6.88 ms on foot vs 4.79 / 4.69 / 5.59 ms with GodotPhysics3D (in the vehicle 6.14–6.36 vs 3.54–4.22 ms), 1 % low slightly lower (24.0–24.7 vs 24.9–26.0), map ready 6.9 vs 6.2 s; the headless suite passes with Jolt except the test that pins GodotPhysics3D. **Recommendation now:** keep GodotPhysics3D; Jolt brings no gain for this scene on this device.
@@ -458,8 +485,9 @@ See "Requirements by phase". `PROJECT_STATE.md` records which parts exist.
 28. Speed-dependent camera distance while driving (optional in the task, not implemented).
 29. Should steering also offer a drag or tilt mode (T25)?
 30. Map colliders: all 827 are trimesh bodies (`ConcavePolygonShape3D`, 438,012 triangles; Phase 4a census). Should they be replaced by simple shapes (boxes or convex hulls per building, simplified ground) for cheaper physics? Phase 4a found the player and the parked car spending ~1 ms each per step against these trimesh bodies on the Galaxy Tab A7, with ~1.3 ms shared. This changes the map's collision, so it belongs to the same map-pipeline decision as the facade work (open questions 20–21): generate simple colliders in the map generation scripts rather than editing the imported GLB, and decide both together.
-31. Further test devices: only the iPhone 13 Pro and the Galaxy Tab A7 exist; there is no Android phone (user, 2026-10-27). Phone screens other than the iPhone are checked only in the headless layout matrix with assumed insets (T29). Which devices should be added (a 20:9 Android phone with a punch-hole, a smaller or older iPhone, an iPad)?
+31. Further test devices: only the iPhone 13 Pro and the Galaxy Tab A7 exist; there is no Android phone (user, 2026-10-27). Phone screens other than the iPhone are checked only in the headless layout matrix with assumed insets (T29). Which devices should be added (a 20:9 Android phone with a punch-hole, a smaller or older iPhone, an iPad)? Since Phase 4d the device scenario (T33) can check any added device automatically.
 32. Button sizes per device class: the smallest gameplay touch target is 18.3–21.6 mm on tablets (Tab A7, iPad) and 9.6–10.8 mm on phones (T29 matrix). Should tablets get smaller controls (closer to the thumbs, less of the picture covered) or small phones larger ones? Nothing changed for now.
+33. The iPhone's two-orientation check (holding the joystick through a 180° turn) is still NOT RUN: in Phase 4d the gravity sensor showed the phone lying flat for the whole 90 s window. It needs the user to hold the phone upright and turn it once while `scenario_orientation` runs.
 
 ## Constraints and priorities
 
@@ -467,4 +495,4 @@ See "Requirements by phase". `PROJECT_STATE.md` records which parts exist.
 - The map original in the source package must not be modified or deleted.
 - Physical device results are reported as NOT RUN until actually performed.
 - No store, TestFlight, or Play Console uploads; no release signing without explicit approval.
-- Current priority: review of Phase 4c, then Phase 4d (export configuration review and isolation of platform dependencies) or the map-level work on facades and simple colliders (user decision; open questions 20, 21, 30; see `PROJECT_STATE.md`, "Recommended next task").
+- Current priority: review of Phase 4d and of Phase 4 as a whole (`PROJECT_STATE.md`, "Phase 4 status"); then Phase 5 (extensibility validation) or the map-level work on facades and simple colliders (user decision; open questions 20, 21, 30; comparison in `PROJECT_STATE.md`, "Recommended next task").

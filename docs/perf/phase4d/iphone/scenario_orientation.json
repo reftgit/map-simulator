@@ -1,0 +1,596 @@
+{
+  "config": {
+    "experiment": "scenario_orientation_ios",
+    "profile": "",
+    "runtime": {},
+    "scenario": {
+      "name": "orientation",
+      "rotate_hold_s": 90.0
+    },
+    "settings": {}
+  },
+  "profile": "high",
+  "scenario": [
+    {
+      "detail": "scenario=orientation rotate_hold_s=90",
+      "result": "INFO",
+      "step": "start",
+      "t": 0.0
+    },
+    {
+      "detail": "READY hold 90 s; gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_hold",
+      "t": 0.3
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 1.3
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 2.3
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 3.3
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 4.3
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 5.3
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 6.3
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 7.3
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 8.3
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 9.3
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 10.3
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 11.3
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 12.3
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 13.3
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 14.3
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 15.3
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 16.3
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 17.3
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 18.3
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 19.3
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 20.4
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 21.4
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 22.4
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 23.4
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 24.4
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 25.4
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 26.4
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 27.4
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 28.4
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 29.4
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 30.5
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 31.5
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 32.5
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 33.5
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 34.5
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 35.5
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 36.5
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 37.5
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 38.5
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 39.5
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 40.5
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 41.5
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 42.5
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 43.5
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 44.5
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 45.5
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 46.5
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 47.5
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 48.5
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 49.5
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 50.5
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 51.5
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 52.6
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 53.6
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 54.6
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 55.6
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 56.6
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 57.6
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 58.6
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 59.6
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 60.6
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 61.6
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 62.6
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 63.6
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 64.6
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 65.6
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 66.6
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 67.6
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 68.6
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 69.6
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 70.6
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 71.6
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 72.6
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 73.6
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 74.6
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 75.6
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 76.6
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 77.6
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 78.7
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 79.7
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 80.7
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 81.7
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 82.7
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 83.7
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 84.7
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 85.7
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 86.7
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 87.7
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 88.7
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 89.7
+    },
+    {
+      "detail": "gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 90.7
+    },
+    {
+      "detail": "after release: stick (0.0, 0.0), speed 0.00 m/s; gravity (0.0, -0.2, -9.8), safe area [P: (108.423, 0.0), S: (1730.154, 853.8462)], stick (0.0, 0.0)",
+      "result": "PASS",
+      "step": "rotate_release",
+      "t": 91.7
+    },
+    {
+      "detail": "passed=1 failed=0",
+      "result": "PASS",
+      "step": "done",
+      "t": 91.7
+    }
+  ],
+  "startup": {
+    "android_frame_pacing": true,
+    "debug_build": true,
+    "display_refresh_rate": 60.0,
+    "first_frame_ms": 1629,
+    "ios_allow_high_refresh_rate": false,
+    "map_ready_ms": 1560,
+    "max_fps": 60,
+    "perf_feature": false,
+    "physics_3d": "GodotPhysics3D",
+    "physics_engine_setting": "DEFAULT",
+    "physics_interpolation": true,
+    "physics_ticks": 60,
+    "screen_refresh_rate": 120.0,
+    "vehicles": "awake",
+    "vsync_mode": 1
+  }
+}

@@ -1,0 +1,30 @@
+10-28 01:06:32.176  5353  5381 I godot   : SAFE_AREA window=(2000, 1200) safe=[P: (0, 0), S: (2000, 1200)] canvas=[P: (0.0, 0.0), S: (1500.0, 900.0)] viewport=(1500.0, 900.0)
+10-28 01:06:38.409  5353  5381 I godot   : SCENARIO step=start result=INFO t=0.0 scenario=vehicle_sleep rotate_hold_s=12
+10-28 01:06:41.272  5353  5381 I godot   : SCENARIO step=parked_car_asleep result=PASS t=2.9 car asleep
+10-28 01:06:42.309  5353  5381 I godot   : SCENARIO step=car_button result=PASS t=3.9 distance 2.5 m, car asleep, interact button true
+10-28 01:06:42.702  5353  5381 I godot   : SCENARIO step=walk_into_car_wakes_it result=PASS t=4.3 player on a wall true, car awake
+10-28 01:06:44.009  5353  5381 I godot   : SCENARIO step=asleep_after_stopping result=PASS t=5.6 after 1.3 s
+10-28 01:06:47.019  5353  5381 I godot   : SCENARIO step=stays_asleep_beside_it result=PASS t=8.6 player touched the car true, distance 1.37 m
+10-28 01:06:47.538  5353  5381 I godot   : SCENARIO step=get_in_wakes_it result=PASS t=9.1 driving true, car awake
+10-28 01:06:48.736  5353  5381 I godot   : SCENARIO step=throttle result=PASS t=10.3 forward speed 5.0 m/s
+10-28 01:06:50.091  5353  5381 I godot   : SCENARIO step=get_out result=PASS t=11.7 speed when stopped 0.07 m/s
+10-28 01:06:50.618  5353  5381 I godot   : SCENARIO step=asleep_after_getting_out result=PASS t=12.2 car asleep
+10-28 01:06:54.693  5353  5381 I godot   : SCENARIO step=slope_setup result=PASS t=16.3 view Galata street, facing south, ground slope under the car 12.6°
+10-28 01:06:55.451  5353  5381 I godot   : SCENARIO step=slope_walk_into_car_wakes_it result=PASS t=17.0 player on a wall true, car awake
+10-28 01:06:57.254  5353  5381 I godot   : SCENARIO step=slope_asleep_after_stopping result=PASS t=18.8 after 1.8 s
+10-28 01:07:00.255  5353  5381 I godot   : SCENARIO step=slope_stays_asleep_beside_it result=PASS t=21.8 player touched the car true, distance 1.26 m
+10-28 01:07:00.559  5353  5381 I godot   : SCENARIO step=rotate_hold result=INFO t=22.1 READY hold 12 s; gravity (0.0, 0.1, -9.8), safe area [P: (0.0, 0.0), S: (1500.0, 900.0)], stick (0.0, -1.0)
+10-28 01:07:01.571  5353  5381 I godot   : SCENARIO step=rotate_sample result=INFO t=23.2 gravity (0.0, 0.1, -9.8), safe area [P: (0.0, 0.0), S: (1500.0, 900.0)], stick (0.0, -1.0)
+10-28 01:07:02.589  5353  5381 I godot   : SCENARIO step=rotate_sample result=INFO t=24.2 gravity (0.0, 0.1, -9.8), safe area [P: (0.0, 0.0), S: (1500.0, 900.0)], stick (0.0, -1.0)
+10-28 01:07:03.590  5353  5381 I godot   : SCENARIO step=rotate_sample result=INFO t=25.2 gravity (0.0, 0.1, -9.8), safe area [P: (0.0, 0.0), S: (1500.0, 900.0)], stick (0.0, -1.0)
+10-28 01:07:04.623  5353  5381 I godot   : SCENARIO step=rotate_sample result=INFO t=26.2 gravity (0.0, 0.1, -9.8), safe area [P: (0.0, 0.0), S: (1500.0, 900.0)], stick (0.0, -1.0)
+10-28 01:07:05.626  5353  5381 I godot   : SCENARIO step=rotate_sample result=INFO t=27.2 gravity (0.0, 0.1, -9.8), safe area [P: (0.0, 0.0), S: (1500.0, 900.0)], stick (0.0, -1.0)
+10-28 01:07:06.657  5353  5381 I godot   : SCENARIO step=rotate_sample result=INFO t=28.2 gravity (0.0, 0.1, -9.8), safe area [P: (0.0, 0.0), S: (1500.0, 900.0)], stick (0.0, -1.0)
+10-28 01:07:07.660  5353  5381 I godot   : SCENARIO step=rotate_sample result=INFO t=29.3 gravity (0.0, 0.1, -9.8), safe area [P: (0.0, 0.0), S: (1500.0, 900.0)], stick (0.0, -1.0)
+10-28 01:07:08.663  5353  5381 I godot   : SCENARIO step=rotate_sample result=INFO t=30.3 gravity (0.0, 0.1, -9.8), safe area [P: (0.0, 0.0), S: (1500.0, 900.0)], stick (0.0, -1.0)
+10-28 01:07:09.665  5353  5381 I godot   : SCENARIO step=rotate_sample result=INFO t=31.3 gravity (0.0, 0.1, -9.8), safe area [P: (0.0, 0.0), S: (1500.0, 900.0)], stick (0.0, -1.0)
+10-28 01:07:10.692  5353  5381 I godot   : SCENARIO step=rotate_sample result=INFO t=32.3 gravity (0.0, 0.1, -9.8), safe area [P: (0.0, 0.0), S: (1500.0, 900.0)], stick (0.0, -1.0)
+10-28 01:07:11.692  5353  5381 I godot   : SCENARIO step=rotate_sample result=INFO t=33.3 gravity (0.0, 0.1, -9.8), safe area [P: (0.0, 0.0), S: (1500.0, 900.0)], stick (0.0, -1.0)
+10-28 01:07:12.727  5353  5381 I godot   : SCENARIO step=rotate_sample result=INFO t=34.3 gravity (0.0, 0.1, -9.8), safe area [P: (0.0, 0.0), S: (1500.0, 900.0)], stick (0.0, -1.0)
+10-28 01:07:13.759  5353  5381 I godot   : SCENARIO step=rotate_release result=PASS t=35.4 after release: stick (0.0, 0.0), speed 0.00 m/s; gravity (0.0, 0.1, -9.8), safe area [P: (0.0, 0.0), S: (1500.0, 900.0)], stick (0.0, 0.0)
+10-28 01:07:13.759  5353  5381 I godot   : SCENARIO step=done result=PASS t=35.4 passed=14 failed=0

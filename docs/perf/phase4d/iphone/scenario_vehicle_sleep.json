@@ -1,0 +1,122 @@
+{
+  "config": {
+    "experiment": "scenario_vehicle_sleep",
+    "profile": "",
+    "runtime": {},
+    "scenario": {
+      "name": "vehicle_sleep",
+      "rotate_hold_s": 0.0
+    },
+    "settings": {}
+  },
+  "profile": "high",
+  "scenario": [
+    {
+      "detail": "scenario=vehicle_sleep rotate_hold_s=0",
+      "result": "INFO",
+      "step": "start",
+      "t": 0.0
+    },
+    {
+      "detail": "car asleep",
+      "result": "PASS",
+      "step": "parked_car_asleep",
+      "t": 2.6
+    },
+    {
+      "detail": "distance 2.5 m, car asleep, interact button true",
+      "result": "PASS",
+      "step": "car_button",
+      "t": 3.6
+    },
+    {
+      "detail": "player on a wall true, car awake",
+      "result": "PASS",
+      "step": "walk_into_car_wakes_it",
+      "t": 4.0
+    },
+    {
+      "detail": "after 1.3 s",
+      "result": "PASS",
+      "step": "asleep_after_stopping",
+      "t": 5.3
+    },
+    {
+      "detail": "player touched the car true, distance 1.37 m",
+      "result": "PASS",
+      "step": "stays_asleep_beside_it",
+      "t": 8.3
+    },
+    {
+      "detail": "driving true, car awake",
+      "result": "PASS",
+      "step": "get_in_wakes_it",
+      "t": 8.8
+    },
+    {
+      "detail": "forward speed 5.1 m/s",
+      "result": "PASS",
+      "step": "throttle",
+      "t": 10.1
+    },
+    {
+      "detail": "speed when stopped 0.08 m/s",
+      "result": "PASS",
+      "step": "get_out",
+      "t": 11.4
+    },
+    {
+      "detail": "car asleep",
+      "result": "PASS",
+      "step": "asleep_after_getting_out",
+      "t": 11.9
+    },
+    {
+      "detail": "view Galata street, facing south, ground slope under the car 12.6°",
+      "result": "PASS",
+      "step": "slope_setup",
+      "t": 15.9
+    },
+    {
+      "detail": "player on a wall true, car awake",
+      "result": "PASS",
+      "step": "slope_walk_into_car_wakes_it",
+      "t": 16.6
+    },
+    {
+      "detail": "after 1.8 s",
+      "result": "PASS",
+      "step": "slope_asleep_after_stopping",
+      "t": 18.5
+    },
+    {
+      "detail": "player touched the car true, distance 1.26 m",
+      "result": "PASS",
+      "step": "slope_stays_asleep_beside_it",
+      "t": 21.5
+    },
+    {
+      "detail": "passed=13 failed=0",
+      "result": "PASS",
+      "step": "done",
+      "t": 21.5
+    }
+  ],
+  "startup": {
+    "android_frame_pacing": true,
+    "debug_build": true,
+    "display_refresh_rate": 60.0,
+    "first_frame_ms": 1690,
+    "ios_allow_high_refresh_rate": false,
+    "map_ready_ms": 1591,
+    "max_fps": 60,
+    "perf_feature": false,
+    "physics_3d": "GodotPhysics3D",
+    "physics_engine_setting": "DEFAULT",
+    "physics_interpolation": true,
+    "physics_ticks": 60,
+    "screen_refresh_rate": 120.0,
+    "vehicles": "awake",
+    "vsync_mode": 1
+  }
+}

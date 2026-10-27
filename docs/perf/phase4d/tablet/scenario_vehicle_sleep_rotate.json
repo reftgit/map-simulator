@@ -1,0 +1,206 @@
+{
+  "config": {
+    "experiment": "scenario_vehicle_sleep_rotate",
+    "profile": "",
+    "runtime": {},
+    "scenario": {
+      "name": "vehicle_sleep",
+      "rotate_hold_s": 12.0
+    },
+    "settings": {}
+  },
+  "profile": "low",
+  "scenario": [
+    {
+      "detail": "scenario=vehicle_sleep rotate_hold_s=12",
+      "result": "INFO",
+      "step": "start",
+      "t": 0.0
+    },
+    {
+      "detail": "car asleep",
+      "result": "PASS",
+      "step": "parked_car_asleep",
+      "t": 2.9
+    },
+    {
+      "detail": "distance 2.5 m, car asleep, interact button true",
+      "result": "PASS",
+      "step": "car_button",
+      "t": 3.9
+    },
+    {
+      "detail": "player on a wall true, car awake",
+      "result": "PASS",
+      "step": "walk_into_car_wakes_it",
+      "t": 4.3
+    },
+    {
+      "detail": "after 1.3 s",
+      "result": "PASS",
+      "step": "asleep_after_stopping",
+      "t": 5.6
+    },
+    {
+      "detail": "player touched the car true, distance 1.37 m",
+      "result": "PASS",
+      "step": "stays_asleep_beside_it",
+      "t": 8.6
+    },
+    {
+      "detail": "driving true, car awake",
+      "result": "PASS",
+      "step": "get_in_wakes_it",
+      "t": 9.1
+    },
+    {
+      "detail": "forward speed 5.0 m/s",
+      "result": "PASS",
+      "step": "throttle",
+      "t": 10.3
+    },
+    {
+      "detail": "speed when stopped 0.07 m/s",
+      "result": "PASS",
+      "step": "get_out",
+      "t": 11.7
+    },
+    {
+      "detail": "car asleep",
+      "result": "PASS",
+      "step": "asleep_after_getting_out",
+      "t": 12.2
+    },
+    {
+      "detail": "view Galata street, facing south, ground slope under the car 12.6°",
+      "result": "PASS",
+      "step": "slope_setup",
+      "t": 16.3
+    },
+    {
+      "detail": "player on a wall true, car awake",
+      "result": "PASS",
+      "step": "slope_walk_into_car_wakes_it",
+      "t": 17.0
+    },
+    {
+      "detail": "after 1.8 s",
+      "result": "PASS",
+      "step": "slope_asleep_after_stopping",
+      "t": 18.8
+    },
+    {
+      "detail": "player touched the car true, distance 1.26 m",
+      "result": "PASS",
+      "step": "slope_stays_asleep_beside_it",
+      "t": 21.8
+    },
+    {
+      "detail": "READY hold 12 s; gravity (0.0, 0.1, -9.8), safe area [P: (0.0, 0.0), S: (1500.0, 900.0)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_hold",
+      "t": 22.1
+    },
+    {
+      "detail": "gravity (0.0, 0.1, -9.8), safe area [P: (0.0, 0.0), S: (1500.0, 900.0)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 23.2
+    },
+    {
+      "detail": "gravity (0.0, 0.1, -9.8), safe area [P: (0.0, 0.0), S: (1500.0, 900.0)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 24.2
+    },
+    {
+      "detail": "gravity (0.0, 0.1, -9.8), safe area [P: (0.0, 0.0), S: (1500.0, 900.0)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 25.2
+    },
+    {
+      "detail": "gravity (0.0, 0.1, -9.8), safe area [P: (0.0, 0.0), S: (1500.0, 900.0)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 26.2
+    },
+    {
+      "detail": "gravity (0.0, 0.1, -9.8), safe area [P: (0.0, 0.0), S: (1500.0, 900.0)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 27.2
+    },
+    {
+      "detail": "gravity (0.0, 0.1, -9.8), safe area [P: (0.0, 0.0), S: (1500.0, 900.0)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 28.2
+    },
+    {
+      "detail": "gravity (0.0, 0.1, -9.8), safe area [P: (0.0, 0.0), S: (1500.0, 900.0)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 29.3
+    },
+    {
+      "detail": "gravity (0.0, 0.1, -9.8), safe area [P: (0.0, 0.0), S: (1500.0, 900.0)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 30.3
+    },
+    {
+      "detail": "gravity (0.0, 0.1, -9.8), safe area [P: (0.0, 0.0), S: (1500.0, 900.0)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 31.3
+    },
+    {
+      "detail": "gravity (0.0, 0.1, -9.8), safe area [P: (0.0, 0.0), S: (1500.0, 900.0)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 32.3
+    },
+    {
+      "detail": "gravity (0.0, 0.1, -9.8), safe area [P: (0.0, 0.0), S: (1500.0, 900.0)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 33.3
+    },
+    {
+      "detail": "gravity (0.0, 0.1, -9.8), safe area [P: (0.0, 0.0), S: (1500.0, 900.0)], stick (0.0, -1.0)",
+      "result": "INFO",
+      "step": "rotate_sample",
+      "t": 34.3
+    },
+    {
+      "detail": "after release: stick (0.0, 0.0), speed 0.00 m/s; gravity (0.0, 0.1, -9.8), safe area [P: (0.0, 0.0), S: (1500.0, 900.0)], stick (0.0, 0.0)",
+      "result": "PASS",
+      "step": "rotate_release",
+      "t": 35.4
+    },
+    {
+      "detail": "passed=14 failed=0",
+      "result": "PASS",
+      "step": "done",
+      "t": 35.4
+    }
+  ],
+  "startup": {
+    "android_frame_pacing": true,
+    "debug_build": true,
+    "display_refresh_rate": 60.0000038146973,
+    "first_frame_ms": 8763,
+    "ios_allow_high_refresh_rate": false,
+    "map_ready_ms": 8281,
+    "max_fps": 30,
+    "perf_feature": false,
+    "physics_3d": "GodotPhysics3D",
+    "physics_engine_setting": "DEFAULT",
+    "physics_interpolation": true,
+    "physics_ticks": 60,
+    "screen_refresh_rate": 60.0000038146973,
+    "vehicles": "awake",
+    "vsync_mode": 1
+  }
+}
