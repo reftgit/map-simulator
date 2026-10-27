@@ -3,6 +3,7 @@ config_version=5
 
 [application]
 config/name="İstanbul • Haliç"
+config/version="0.1.0"
 run/main_scene="res://game/main.tscn"
 config/features=PackedStringArray("4.7", "Mobile")
 config/description="OSM tabanlı, stilize İstanbul çevresi. © OpenStreetMap contributors."
