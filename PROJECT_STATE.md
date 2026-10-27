@@ -48,7 +48,9 @@ Review of Phase 4b (including the missed tablet criterion and the device check s
 - `d63464d`: Phase 4a results and documentation.
 - `ce22319`: P1, the iOS display at 60 Hz by default; the "iOS Release Perf 60Hz" preset removed.
 - `54a5b97`: P2, parked vehicles sleep; the overlay shows the driven vehicle's speed.
-- Phase 4b results and documentation: the commit after `54a5b97` (`git log`).
+- `4ffd799`: fix, the vehicle tracks its own parking sleep (reads between physics steps were wrong).
+- `e30942e`: measurement-only `vehicle_sleep` runtime key and the paired A/B experiments.
+- `e2a4290`: Phase 4b results and documentation (this list completed in the commit after it).
 
 ## Repository contents
 
