@@ -1,7 +1,8 @@
 class_name UIController
 extends CanvasLayer
 ## HUD root. Keeps the controls inside the device safe area (notch, rounded
-## corners, home indicator), fades the roll button while the bound player's
+## corners, home indicator, cutouts, navigation bars; from a SafeAreaSource),
+## fades the roll button while the bound player's
 ## roll is on cooldown and the exit button while the bound vehicle is too fast
 ## to get out, and, in debug builds only, shows a performance
 ## overlay (with the player's or the driven vehicle's speed and whether each
@@ -30,6 +31,12 @@ var view_name := ""
 var profile_name := ""
 ## The map's vehicles; the overlay and PERF lines show whether each is awake.
 var vehicles: Array[VehicleController] = []
+## Window size and safe area in window pixels (DisplayServer by default;
+## tests and the screenshot tool put in fixed values).
+var safe_area_source := SafeAreaSource.new()
+## The safe area in canvas units as last applied (the controls keep
+## edge_margin inside it).
+var safe_rect := Rect2()
 
 var _player: PlayerController
 var _vehicle: VehicleController
@@ -79,15 +86,18 @@ func _process(_delta: float) -> void:
 		input.exit_button.dimmed = not _vehicle.can_exit_at_current_speed()
 
 
+## Fits the controls into the safe area.
 func apply_safe_area() -> void:
 	var viewport_size := get_viewport().get_visible_rect().size
-	var safe := Rect2(Vector2.ZERO, viewport_size)
-	if OS.has_feature("mobile"):
-		safe = safe_rect_in_viewport(DisplayServer.get_display_safe_area(), DisplayServer.window_get_size(), viewport_size)
-	_safe_area.offset_left = safe.position.x + edge_margin
-	_safe_area.offset_top = safe.position.y + edge_margin
-	_safe_area.offset_right = safe.end.x - viewport_size.x - edge_margin
-	_safe_area.offset_bottom = safe.end.y - viewport_size.y - edge_margin
+	var window := safe_area_source.window_size()
+	var safe_px := safe_area_source.safe_area()
+	safe_rect = safe_rect_in_viewport(safe_px, window, viewport_size)
+	_safe_area.offset_left = safe_rect.position.x + edge_margin
+	_safe_area.offset_top = safe_rect.position.y + edge_margin
+	_safe_area.offset_right = safe_rect.end.x - viewport_size.x - edge_margin
+	_safe_area.offset_bottom = safe_rect.end.y - viewport_size.y - edge_margin
+	if BuildFeatures.perf_enabled():
+		print("SAFE_AREA window=%s safe=%s canvas=%s viewport=%s" % [window, safe_px, safe_rect, viewport_size])
 
 
 ## Converts the display safe area (window pixels) to HUD canvas units.

@@ -1,12 +1,17 @@
 extends SceneTree
 ## Renders the game in a real window and saves a screenshot plus render stats.
 ## Development aid for checking HUD layout and visuals without a device.
-##   godot --path . --resolution 1266x585 --script res://tools/capture_screenshot.gd -- --out=/abs/path/shot.png [--walk] [--run] [--yaw=DEG] [--punch] [--roll] [--frames=N] [--dummy] [--vehicle-hud]
+##   godot --path . --resolution 1266x585 --script res://tools/capture_screenshot.gd -- --out=/abs/path/shot.png [--walk] [--run] [--yaw=DEG] [--punch] [--roll] [--frames=N] [--dummy] [--vehicle-hud] [--safe-area=X,Y,W,H] [--release-hud]
 ## --walk holds the joystick forward (with --run, after tapping the run button)
 ## so the screenshot shows the controls in use. --punch / --roll tap that
 ## button; --frames sets how many frames later the shot is taken (default 90),
 ## e.g. a few frames for a mid-action pose. --dummy shows the debug training
 ## dummy in front of the spawn. --vehicle-hud shows the vehicle control group.
+## --safe-area gives the HUD a safe area in window pixels, as a phone with a
+## notch, cutout, or navigation bar would report it, and shades the area
+## outside it; --release-hud hides the debug overlay and buttons. The layout
+## depends only on the aspect ratio and the safe area's share of the window,
+## so a phone screen can be shot at a smaller resolution with the same ratio.
 
 var _options := {}
 
@@ -24,8 +29,16 @@ func _run() -> void:
 		printerr("Missing --out=/absolute/path.png")
 		quit(1)
 		return
+	if _options.has("release-hud"):
+		BuildFeatures.debug_override = 0
 	var game: Node = (load("res://game/main.tscn") as PackedScene).instantiate()
 	root.add_child(game)
+	if _options.has("safe-area"):
+		var v := str(_options["safe-area"]).split(",")
+		var safe := Rect2i(int(v[0]), int(v[1]), int(v[2]), int(v[3]))
+		game.hud.safe_area_source = SafeAreaSource.fixed(DisplayServer.window_get_size(), safe)
+		game.hud.apply_safe_area()
+		_shade_outside(game.hud.safe_rect)
 	for i in 30:
 		await physics_frame
 	if _options.has("yaw"):
@@ -72,6 +85,29 @@ func _run() -> void:
 	])
 	print("STATE ", game.player.state_machine.get_state_name(), " speed %.2f" % game.player.get_horizontal_speed())
 	quit()
+
+
+## Darkens the canvas outside `safe` (canvas units), where a notch, cutout,
+## or system bar would be.
+func _shade_outside(safe: Rect2) -> void:
+	var layer := CanvasLayer.new()
+	layer.layer = 100
+	root.add_child(layer)
+	var full := root.get_visible_rect()
+	var bands: Array[Rect2] = [
+		Rect2(full.position, Vector2(safe.position.x, full.size.y)),
+		Rect2(Vector2(safe.end.x, 0.0), Vector2(full.end.x - safe.end.x, full.size.y)),
+		Rect2(Vector2(safe.position.x, 0.0), Vector2(safe.size.x, safe.position.y)),
+		Rect2(Vector2(safe.position.x, safe.end.y), Vector2(safe.size.x, full.end.y - safe.end.y)),
+	]
+	for band in bands:
+		if band.has_area():
+			var shade := ColorRect.new()
+			shade.color = Color(0.0, 0.0, 0.0, 0.55)
+			shade.position = band.position
+			shade.size = band.size
+			shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			layer.add_child(shade)
 
 
 ## `position` is in HUD canvas units; input events carry window pixels.
