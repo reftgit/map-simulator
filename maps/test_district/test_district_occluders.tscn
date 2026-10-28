@@ -1,0 +1,59 @@
+[gd_scene format=3]
+
+[sub_resource type="ArrayOccluder3D" id="ArrayOccluder3D_41yq6"]
+vertices = PackedVector3Array(-10, -7, -10, 10, -7, -10, -10, 7, -10, 10, 7, -10, -10, -7, 10, 10, -7, 10, -10, 7, 10, 10, 7, 10)
+indices = PackedInt32Array(0, 2, 3, 0, 3, 1, 4, 5, 7, 4, 7, 6, 0, 1, 5, 0, 5, 4, 2, 6, 7, 2, 7, 3, 0, 4, 6, 0, 6, 2, 1, 3, 7, 1, 7, 5)
+
+[sub_resource type="ArrayOccluder3D" id="ArrayOccluder3D_3b0eq"]
+vertices = PackedVector3Array(-9, -11, -10, 9, -11, -10, -9, 11, -10, 9, 11, -10, -9, -11, 10, 9, -11, 10, -9, 11, 10, 9, 11, 10)
+indices = PackedInt32Array(0, 2, 3, 0, 3, 1, 4, 5, 7, 4, 7, 6, 0, 1, 5, 0, 5, 4, 2, 6, 7, 2, 7, 3, 0, 4, 6, 0, 6, 2, 1, 3, 7, 1, 7, 5)
+
+[sub_resource type="ArrayOccluder3D" id="ArrayOccluder3D_y8sei"]
+vertices = PackedVector3Array(-10, -5, -12, 10, -5, -12, -10, 5, -12, 10, 5, -12, -10, -5, 12, 10, -5, 12, -10, 5, 12, 10, 5, 12)
+indices = PackedInt32Array(0, 2, 3, 0, 3, 1, 4, 5, 7, 4, 7, 6, 0, 1, 5, 0, 5, 4, 2, 6, 7, 2, 7, 3, 0, 4, 6, 0, 6, 2, 1, 3, 7, 1, 7, 5)
+
+[sub_resource type="ArrayOccluder3D" id="ArrayOccluder3D_s0yd4"]
+vertices = PackedVector3Array(-8, -13, -8, 8, -13, -8, -8, 13, -8, 8, 13, -8, -8, -13, 8, 8, -13, 8, -8, 13, 8, 8, 13, 8)
+indices = PackedInt32Array(0, 2, 3, 0, 3, 1, 4, 5, 7, 4, 7, 6, 0, 1, 5, 0, 5, 4, 2, 6, 7, 2, 7, 3, 0, 4, 6, 0, 6, 2, 1, 3, 7, 1, 7, 5)
+
+[sub_resource type="ArrayOccluder3D" id="ArrayOccluder3D_t7487"]
+vertices = PackedVector3Array(-12, -4, -10, 12, -4, -10, -12, 4, -10, 12, 4, -10, -12, -4, 10, 12, -4, 10, -12, 4, 10, 12, 4, 10)
+indices = PackedInt32Array(0, 2, 3, 0, 3, 1, 4, 5, 7, 4, 7, 6, 0, 1, 5, 0, 5, 4, 2, 6, 7, 2, 7, 3, 0, 4, 6, 0, 6, 2, 1, 3, 7, 1, 7, 5)
+
+[sub_resource type="ArrayOccluder3D" id="ArrayOccluder3D_qojun"]
+vertices = PackedVector3Array(-7, -6, -7, 7, -6, -7, -7, 6, -7, 7, 6, -7, -7, -6, 7, 7, -6, 7, -7, 6, 7, 7, 6, 7)
+indices = PackedInt32Array(0, 2, 3, 0, 3, 1, 4, 5, 7, 4, 7, 6, 0, 1, 5, 0, 5, 4, 2, 6, 7, 2, 7, 3, 0, 4, 6, 0, 6, 2, 1, 3, 7, 1, 7, 5)
+
+[sub_resource type="ArrayOccluder3D" id="ArrayOccluder3D_y2gbp"]
+vertices = PackedVector3Array(-6, -5, -6, 6, -5, -6, -6, 5, -6, 6, 5, -6, -6, -5, 6, 6, -5, 6, -6, 5, 6, 6, 5, 6)
+indices = PackedInt32Array(0, 2, 3, 0, 3, 1, 4, 5, 7, 4, 7, 6, 0, 1, 5, 0, 5, 4, 2, 6, 7, 2, 7, 3, 0, 4, 6, 0, 6, 2, 1, 3, 7, 1, 7, 5)
+
+[node name="Occluders" type="Node3D" unique_id=2033002122]
+
+[node name="Buildings_NW1" type="OccluderInstance3D" parent="." unique_id=1283066232]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 7, -20)
+occluder = SubResource("ArrayOccluder3D_41yq6")
+
+[node name="Buildings_NW2" type="OccluderInstance3D" parent="." unique_id=577523245]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -45, 11, -42)
+occluder = SubResource("ArrayOccluder3D_3b0eq")
+
+[node name="Buildings_NE1" type="OccluderInstance3D" parent="." unique_id=212757813]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 5, -22)
+occluder = SubResource("ArrayOccluder3D_y8sei")
+
+[node name="Buildings_NE2" type="OccluderInstance3D" parent="." unique_id=447062669]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 45, 13, -45)
+occluder = SubResource("ArrayOccluder3D_s0yd4")
+
+[node name="Buildings_SW1" type="OccluderInstance3D" parent="." unique_id=1347769583]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -22, 4, 22)
+occluder = SubResource("ArrayOccluder3D_t7487")
+
+[node name="Buildings_SW2" type="OccluderInstance3D" parent="." unique_id=1351692692]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -45, 6, 45)
+occluder = SubResource("ArrayOccluder3D_qojun")
+
+[node name="Buildings_SE1" type="OccluderInstance3D" parent="." unique_id=1921087425]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 52, 5, 52)
+occluder = SubResource("ArrayOccluder3D_y2gbp")
