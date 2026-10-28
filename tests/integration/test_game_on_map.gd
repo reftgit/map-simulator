@@ -739,3 +739,22 @@ func test_npcs_patrol_the_bridge_beside_the_spawn() -> void:
 		check(absf(across) > 10.0, "%s keeps at least 10 m from the walking line of the spawn (%.1f m)" % [npc.name, across])
 	check(player.state_machine.get_state_name() == &"Idle" and _on_bridge_deck(), "the player stands at the spawn as before")
 
+
+func test_device_scenario_extensibility() -> void:
+	# The Phase 5 on-device check as the device plays it: MAP to the test
+	# district, the van, punching an NPC, MAP back (node count as before),
+	# then the vehicle_sleep steps on İstanbul.
+	await _setup()
+	var config := PerfConfig.from_dict({"experiment": "scenario_test", "scenario": {"name": "extensibility", "quit_when_done": false}})
+	var scenario: DeviceScenario = game.start_scenario(config)
+	var results: Array = await scenario.finished
+	var steps: Array[String] = []
+	for result: Dictionary in results:
+		steps.append(result.step)
+		check(result.result != "FAIL", "%s: %s (%s)" % [result.step, result.result, result.detail])
+	for step in ["map_switch", "van_parked", "van_walk_up", "van_get_in", "van_throttle", "van_get_out", "van_asleep_after_getting_out",
+			"npc_patrols", "npc_hit_reaction", "npc_one_hit_per_punch", "npc_patrol_resumes", "map_back", "parked_car_asleep",
+			"get_in_wakes_it", "slope_stays_asleep_beside_it", "done"]:
+		check(step in steps, "step %s ran" % step)
+	check(game.map_definition.id == "istanbul_halic", "back on İstanbul at the end")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(PerfBenchmark.RESULTS_PATH))

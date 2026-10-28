@@ -56,6 +56,7 @@ func test_scenario_section_parses_and_rejects_typos() -> void:
 	check(PerfConfig.from_dict({"experiment": "s", "scenario": {"name": "vehicle_sleep", "rotate": 3}}) == null, "unknown scenario key rejected")
 	check(PerfConfig.from_dict({"experiment": "s", "scenario": {"name": "orientation"}}) == null, "orientation needs a hold time")
 	check(PerfConfig.from_dict({"experiment": "s"}).scenario.is_empty(), "no scenario by default")
+	check(PerfConfig.from_dict({"experiment": "s", "scenario": {"name": "extensibility"}}).scenario == "extensibility", "the Phase 5 scenario")
 
 
 func test_frame_stats() -> void:

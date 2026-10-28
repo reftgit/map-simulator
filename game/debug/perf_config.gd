@@ -32,7 +32,7 @@ const RUNTIME_KEYS := {
 	"vsync_mode": TYPE_STRING,
 }
 ## Device scenarios (DeviceScenario) and the keys of a "scenario" section.
-const SCENARIOS := ["vehicle_sleep", "orientation"]
+const SCENARIOS := ["vehicle_sleep", "orientation", "extensibility"]
 const _SCENARIO_KEYS := ["name", "rotate_hold_s", "quit_when_done"]
 const VSYNC_MODES := {"disabled": DisplayServer.VSYNC_DISABLED, "enabled": DisplayServer.VSYNC_ENABLED,
 		"adaptive": DisplayServer.VSYNC_ADAPTIVE, "mailbox": DisplayServer.VSYNC_MAILBOX}
