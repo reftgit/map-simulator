@@ -3,15 +3,23 @@ extends Node
 ## profile, and connects input, camera, and HUD. Systems do not look each
 ## other up; they are wired here.
 
-@export var map_definition: MapDefinition
+## The maps the game can load; the first is the default (MapRegistry).
+@export var maps: MapRegistry
 ## Parked at each of the map's vehicle spawns.
 @export var vehicle_scene: PackedScene
+
+## A map finished loading (at start and after switch_map()).
+signal map_changed(definition: MapDefinition)
 
 ## Debug builds: training dummy position relative to the spawn (m, forward is
 ## -Z). Close enough that a punch from the spawn reaches it, and a little to
 ## the right so the camera behind the player sees it.
 const DUMMY_OFFSET := Vector3(0.35, 0.0, -1.3)
 
+## The loaded map.
+var map_definition: MapDefinition
+## Set before the node enters the tree to start on another map (tests).
+var requested_map := ""
 var render_settings: RenderSettings
 ## Active quality profile name ("none", "high", "low").
 var quality_profile := QualityProfiles.NONE
@@ -38,8 +46,8 @@ var _static_bodies := []  # [StaticBody3D, AABB] pairs, built on first use
 
 
 func _ready() -> void:
-	world.load_map(map_definition)
-	player.teleport(world.get_spawn_transform())
+	if BuildFeatures.perf_enabled():
+		_experiment = _load_perf_experiment()
 	world.track(player)
 
 	player_input.input = hud.input
@@ -54,18 +62,11 @@ func _ready() -> void:
 	vehicle_interaction.setup(player, camera_rig, hud.input, vehicle_input)
 	vehicle_interaction.entered.connect(_on_vehicle_entered)
 	vehicle_interaction.exited.connect(_on_vehicle_exited)
-	if vehicle_scene:
-		for vehicle in world.spawn_vehicles(vehicle_scene):
-			vehicle_interaction.register_vehicle(vehicle)
-			if BuildFeatures.perf_enabled():
-				vehicle.sleep_changed.connect(_log_vehicle_sleep.bind(vehicle))
 	hud.vehicles = world.vehicles
 
-	render_settings = RenderSettings.new(world.map_root, camera_rig.camera, get_viewport(), map_definition.occluders_path)
-	if BuildFeatures.perf_enabled():
-		_experiment = _load_perf_experiment()
-		if _experiment:
-			apply_runtime_settings(_experiment.runtime)
+	_load_map(_initial_map(OS.get_cmdline_user_args()))
+	if _experiment:
+		apply_runtime_settings(_experiment.runtime)
 	set_quality_profile(_initial_profile())
 
 	if BuildFeatures.is_debug():
@@ -74,12 +75,62 @@ func _ready() -> void:
 		hud.debug_quality_requested.connect(cycle_quality_profile)
 		hud.debug_dummy_requested.connect(toggle_training_dummy)
 		hud.debug_car_requested.connect(walk_up_to_vehicle)
+		hud.debug_map_requested.connect(cycle_map)
 	if BuildFeatures.perf_enabled():
 		_log_startup()
 		if _experiment and _experiment.bench:
 			_start_benchmark(_experiment)
 		if _experiment and not _experiment.scenario.is_empty():
 			start_scenario(_experiment)
+	map_changed.emit(map_definition)
+
+
+## Loads `definition`, puts the player at its spawn, parks its vehicles, and
+## captures its render defaults for the quality profiles.
+func _load_map(definition: MapDefinition) -> void:
+	map_definition = definition
+	world.load_map(definition)
+	player.teleport(world.get_spawn_transform())
+	camera_rig.snap_behind_target()
+	if vehicle_scene:
+		for vehicle in world.spawn_vehicles(vehicle_scene):
+			vehicle_interaction.register_vehicle(vehicle)
+			if BuildFeatures.perf_enabled():
+				vehicle.sleep_changed.connect(_log_vehicle_sleep.bind(vehicle))
+	render_settings = RenderSettings.new(world.map_root, camera_rig.camera, get_viewport(), definition.occluders_path)
+	hud.map_name = definition.id
+
+
+## Replaces the loaded map with `definition`: the old map, its vehicles, and
+## the training dummy are freed, the player goes to the new spawn, and the
+## quality profile (and experiment) is applied to the new map. Refused while
+## driving. Returns whether the map was switched.
+func switch_map(definition: MapDefinition) -> bool:
+	if vehicle_interaction.is_driving():
+		print("MAP switch refused: get out of the vehicle first")
+		return false
+	var started := Time.get_ticks_msec()
+	if training_dummy:
+		toggle_training_dummy()
+	# Back to the scene defaults, so that the new map's RenderSettings
+	# captures those and not the old map's profile values.
+	render_settings.apply({})
+	_static_bodies.clear()
+	hud.input.release_all_touches()
+	_load_map(definition)
+	if _experiment:
+		apply_runtime_settings(_experiment.runtime)
+	set_quality_profile(quality_profile)
+	_view_index = 0
+	hud.view_name = get_view_names()[0]
+	print("MAP %s loaded in %d ms" % [definition.id, Time.get_ticks_msec() - started])
+	map_changed.emit(definition)
+	return true
+
+
+## Debug builds: loads the next map of the registry.
+func cycle_map() -> void:
+	switch_map(maps.next_after(map_definition))
 
 
 ## While driving, the vehicle (not the hidden player) is the body that falls
@@ -259,6 +310,22 @@ func _start_benchmark(config: PerfConfig) -> PerfBenchmark:
 	return bench
 
 
+## Map at startup: requested_map (tests); in debug and Release Perf builds
+## the experiment's "map" key, else --map=<id> in `args`; otherwise, and
+## always in normal release builds, the registry's first map. An unknown id
+## falls back to the first map with a warning.
+func _initial_map(args: PackedStringArray) -> MapDefinition:
+	var id := requested_map
+	if id.is_empty() and BuildFeatures.perf_enabled():
+		id = _experiment.map if _experiment and not _experiment.map.is_empty() else MapRegistry.id_from_args(args)
+	if not id.is_empty():
+		var found := maps.find(id)
+		if found:
+			return found
+		push_warning("Unknown map '%s'; loading '%s'" % [id, maps.default_map().id])
+	return maps.default_map()
+
+
 ## Profile at startup, strongest first: the experiment's "profile" key,
 ## `--quality=<name>`, then the platform rule (iOS high, Android low, else none).
 func _initial_profile() -> String:
@@ -306,10 +373,10 @@ func _log_startup() -> void:
 		await RenderingServer.frame_post_draw
 	var physics := physics_engine_name(world.get_world_3d().direct_space_state)
 	startup = {"map_ready_ms": map_ready_ms, "first_frame_ms": Time.get_ticks_msec(), "physics_3d": physics,
-			"vehicles": hud.vehicle_states()}
+			"map": map_definition.id, "vehicles": hud.vehicle_states()}
 	startup.merge(build_info())
-	print("STARTUP map_ready_ms=%d first_frame_ms=%d profile=%s occluders=%s physics_3d=%s (setting %s) vehicles=%s build=%s user_dir=%s" % [map_ready_ms,
-			startup.first_frame_ms, quality_profile, JSON.stringify(render_settings.occluder_report), physics,
+	print("STARTUP map_ready_ms=%d first_frame_ms=%d map=%s profile=%s occluders=%s physics_3d=%s (setting %s) vehicles=%s build=%s user_dir=%s" % [map_ready_ms,
+			startup.first_frame_ms, map_definition.id, quality_profile, JSON.stringify(render_settings.occluder_report), physics,
 			ProjectSettings.get_setting("physics/3d/physics_engine"), startup.vehicles, JSON.stringify(build_info()), OS.get_user_data_dir()])
 
 

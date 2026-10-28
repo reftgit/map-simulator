@@ -569,6 +569,7 @@ func test_release_perf_build_runs_benchmarks_without_debug_ui() -> void:
 		check((benches[0] as PerfBenchmark).results.size() == 3, "benchmark produced results")
 	check(game.startup.has("debug_build") and game.startup.has("physics_ticks"), "STARTUP data with build info (%s)" % [game.startup.keys()])
 	check(game.startup.has("vehicles") and game.startup.has("display_refresh_rate"), "STARTUP data with vehicle state and display refresh rate (%s)" % [game.startup.keys()])
+	check(game.startup.get("map") == "istanbul_halic", "STARTUP data names the map")
 	check(not game.hud.get_node("SafeArea/DebugLabel").visible and not game.hud.get_node("SafeArea/Controls/DebugCarButton").visible, "no debug overlay or buttons")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(PerfBenchmark.RESULTS_PATH))
 	BuildFeatures.reset_overrides()
@@ -644,3 +645,69 @@ func test_device_scenario_on_the_map() -> void:
 	check(FileAccess.file_exists(PerfBenchmark.RESULTS_PATH), "results written where the host scripts look")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(PerfBenchmark.RESULTS_PATH))
 
+
+
+func _fixture_map() -> MapDefinition:
+	var definition := MapDefinition.new()
+	definition.id = "fixture"
+	definition.scene_path = "res://tests/fixtures/flat_map.tscn"
+	definition.player_spawn_position = Vector3(2, 0.1, 3)
+	definition.bounds = Rect2(-20, -20, 40, 40)
+	return definition
+
+
+func _node_count() -> int:
+	return int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT))
+
+
+func test_map_switch_replaces_the_map_and_frees_the_old_one() -> void:
+	await _setup()
+	var saved_fps := Engine.max_fps
+	# Low uses occlusion, so the baked occluders are part of both counts.
+	game.set_quality_profile("low")
+	await physics_frames(10)
+	var before := _node_count()
+	var old_map: Node = game.world.map_root
+	var old_vehicle := _vehicle()
+	var changed: Array[String] = []
+	game.map_changed.connect(func(definition: MapDefinition) -> void: changed.append(definition.id))
+	check(game.switch_map(_fixture_map()), "switched to the fixture map")
+	await physics_frames(30)
+	check(not is_instance_valid(old_map) and not is_instance_valid(old_vehicle), "the old map and its vehicle are freed")
+	check(game.world.map_root.name == &"FlatMap" and game.world.vehicles.is_empty(), "fixture map loaded, no vehicles")
+	check(player.global_position.distance_to(Vector3(2, 0, 3)) < 0.3 and player.is_on_floor(), "player on the new spawn's floor (%s)" % player.global_position)
+	check(rig.target == player and rig.global_position.distance_to(player.global_position) < 4.0, "camera on the player")
+	check(game.quality_profile == "low" and is_equal_approx(rig.camera.far, 400.0) and Engine.max_fps == 30, "the profile applied to the new map")
+	check(not input.interact_button.visible and game.vehicle_interaction.nearby_vehicle() == null, "no vehicle in reach")
+	check(game.hud.map_name == "fixture", "the overlay names the map")
+	check(game.switch_map(game.maps.find("istanbul_halic")), "switched back")
+	await physics_frames(60)
+	check(changed == (["fixture", "istanbul_halic"] as Array[String]), "map_changed for both switches (%s)" % [changed])
+	check(game.world.vehicles.size() == 1 and _vehicle().is_inside_tree(), "the vehicle parked again")
+	check(Vector2(player.global_position.x - SPAWN.x, player.global_position.z - SPAWN.z).length() < 0.2 and _on_bridge_deck(), "back on the bridge spawn")
+	check(game.render_settings.occluder_report.get("source") == "baked", "baked occluders loaded again (%s)" % [game.render_settings.occluder_report])
+	check(_node_count() == before, "node count back to the start after both switches (%d, before %d)" % [_node_count(), before])
+	await _get_in()
+	check(game.vehicle_interaction.is_driving(), "the new vehicle can be driven")
+	game.set_quality_profile("none")
+	Engine.max_fps = saved_fps
+
+
+func test_map_switch_refused_while_driving() -> void:
+	await _setup()
+	await _get_in()
+	var map: Node = game.world.map_root
+	check(not game.switch_map(_fixture_map()), "refused while driving")
+	check(game.world.map_root == map and game.vehicle_interaction.is_driving(), "same map, still driving")
+
+
+func test_debug_map_button_loads_the_next_map() -> void:
+	await _setup()
+	var button: TouchButton = game.hud.get_node("SafeArea/Controls/DebugMapButton")
+	check(button.visible == OS.is_debug_build(), "MAP button only in debug builds")
+	var expected: MapDefinition = game.maps.next_after(game.map_definition)
+	var old_map: Node = game.world.map_root
+	_tap(button, 1)
+	await physics_frames(30)
+	check(game.map_definition == expected and game.world.map_root != old_map, "next map of the registry loaded (%s)" % game.map_definition.id)
+	check(player.is_on_floor(), "player standing on the new map")

@@ -3,6 +3,8 @@ extends Resource
 ## What gameplay needs to know about a map. A new map is a scene plus one of
 ## these resources; player, camera, and input code stay unchanged.
 
+## Short name for --map=<id>, experiments, and logs (MapRegistry).
+@export var id := ""
 @export var display_name := ""
 @export_file("*.tscn") var scene_path := ""
 @export var player_spawn_position := Vector3.ZERO

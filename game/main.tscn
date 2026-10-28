@@ -1,7 +1,7 @@
 [gd_scene load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://game/game.gd" id="1_game"]
-[ext_resource type="Resource" path="res://maps/istanbul_halic/istanbul_halic.tres" id="2_map"]
+[ext_resource type="Resource" path="res://game/world/maps.tres" id="2_maps"]
 [ext_resource type="Script" path="res://game/world/world_manager.gd" id="3_world"]
 [ext_resource type="PackedScene" path="res://game/player/player.tscn" id="4_player"]
 [ext_resource type="PackedScene" path="res://game/camera/third_person_camera.tscn" id="5_camera"]
@@ -13,7 +13,7 @@
 
 [node name="Main" type="Node"]
 script = ExtResource("1_game")
-map_definition = ExtResource("2_map")
+maps = ExtResource("2_maps")
 vehicle_scene = ExtResource("10_car")
 
 [node name="WorldManager" type="Node3D" parent="."]

@@ -8,8 +8,8 @@ extends CanvasLayer
 ## overlay (with the player's or the driven vehicle's speed and whether each
 ## vehicle is awake or asleep), logs the same numbers as "PERF" lines
 ## (readable from adb logcat or the Xcode console), and offers VIEW
-## (measurement viewpoints), Q (quality profile), DUMMY (training dummy), and
-## CAR (walk-up to the vehicle) buttons.
+## (measurement viewpoints), Q (quality profile), DUMMY (training dummy),
+## CAR (walk-up to the vehicle), and MAP (next map) buttons.
 
 ## Emitted when the debug VIEW button is tapped.
 signal debug_view_requested
@@ -19,6 +19,8 @@ signal debug_quality_requested
 signal debug_dummy_requested
 ## Emitted when the debug CAR button is tapped.
 signal debug_car_requested
+## Emitted when the debug MAP button is tapped.
+signal debug_map_requested
 
 ## How often the safe area is checked for changes the viewport does not
 ## report (s): a 180° turn between the two landscape orientations moves a
@@ -34,6 +36,8 @@ const SAFE_AREA_CHECK_INTERVAL := 0.25
 var view_name := ""
 ## Active quality profile, shown in the overlay.
 var profile_name := ""
+## Loaded map (MapDefinition.id), shown in the overlay and logs.
+var map_name := ""
 ## The map's vehicles; the overlay and PERF lines show whether each is awake.
 var vehicles: Array[VehicleController] = []
 ## Window size and safe area in window pixels (DisplayServer by default;
@@ -58,6 +62,7 @@ var _safe_area_check_in := SAFE_AREA_CHECK_INTERVAL
 @onready var _debug_quality_button: TouchButton = $SafeArea/Controls/DebugQualityButton
 @onready var _debug_dummy_button: TouchButton = $SafeArea/Controls/DebugDummyButton
 @onready var _debug_car_button: TouchButton = $SafeArea/Controls/DebugCarButton
+@onready var _debug_map_button: TouchButton = $SafeArea/Controls/DebugMapButton
 @onready var _debug_timer: Timer = $DebugTimer
 
 
@@ -70,11 +75,13 @@ func _ready() -> void:
 	_debug_quality_button.visible = debug
 	_debug_dummy_button.visible = debug
 	_debug_car_button.visible = debug
+	_debug_map_button.visible = debug
 	if debug:
 		_debug_view_button.pressed.connect(debug_view_requested.emit)
 		_debug_quality_button.pressed.connect(debug_quality_requested.emit)
 		_debug_dummy_button.pressed.connect(debug_dummy_requested.emit)
 		_debug_car_button.pressed.connect(debug_car_requested.emit)
+		_debug_map_button.pressed.connect(debug_map_requested.emit)
 		_debug_timer.timeout.connect(_update_debug)
 		_debug_timer.start()
 
@@ -171,11 +178,11 @@ func _update_debug() -> void:
 	var stats := perf_stats()
 	_debug_label.text = "FPS %d | %d draw calls | %.2f M prims | %d objects\n%s | vram %.0f MB | mem %.0f MB (peak %.0f)\n%s" % [
 		stats.fps, stats.draw_calls, stats.primitives / 1e6, stats.objects,
-		status_text(), stats.video_mem_mb, stats.static_mem_mb, stats.static_peak_mb, "%s  |  quality %s" % [view_name, profile_name],
+		status_text(), stats.video_mem_mb, stats.static_mem_mb, stats.static_peak_mb, "%s  |  %s  |  quality %s" % [map_name, view_name, profile_name],
 	]
 	_ticks += 1
 	if _ticks % perf_log_every == 0:
-		print("PERF profile=%s view=\"%s\" fps=%d draw_calls=%d primitives=%d objects=%d video_mem_mb=%.0f static_mem_mb=%.0f static_peak_mb=%.0f vehicles=%s" % [
-			profile_name, view_name, stats.fps, stats.draw_calls, stats.primitives, stats.objects,
+		print("PERF map=%s profile=%s view=\"%s\" fps=%d draw_calls=%d primitives=%d objects=%d video_mem_mb=%.0f static_mem_mb=%.0f static_peak_mb=%.0f vehicles=%s" % [
+			map_name, profile_name, view_name, stats.fps, stats.draw_calls, stats.primitives, stats.objects,
 			stats.video_mem_mb, stats.static_mem_mb, stats.static_peak_mb, vehicle_states(),
 		])

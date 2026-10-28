@@ -12,6 +12,7 @@ extends RefCounted
 ## base profile ("none", "high", "low"); empty means the platform default.
 ## `runtime` holds only the RUNTIME_KEYS the experiment sets (applied by
 ## Main.apply_runtime_settings()); every other runtime value stays default.
+## `map` starts the game on another map of the MapRegistry (by id).
 
 const USER_PATH := "user://perf_bench.json"
 ## Runtime experiment keys and their types: physics tick rate, physics
@@ -35,6 +36,8 @@ const VSYNC_MODES := {"disabled": DisplayServer.VSYNC_DISABLED, "enabled": Displ
 
 var experiment := "baseline"
 var profile := ""
+## MapDefinition.id to start on; empty means the registry's default.
+var map := ""
 var settings := {}
 var runtime := {}
 
@@ -71,13 +74,17 @@ static func from_dict(data: Dictionary) -> PerfConfig:
 	last_error = ""
 	var config := PerfConfig.new()
 	for key in data:
-		if key not in RenderSettings.KEYS and key not in ["experiment", "profile", "bench", "runtime", "scenario"]:
+		if key not in RenderSettings.KEYS and key not in ["experiment", "profile", "map", "bench", "runtime", "scenario"]:
 			last_error = "unknown key '%s'" % key
 			return null
 	config.experiment = str(data.get("experiment", config.experiment))
 	config.profile = str(data.get("profile", ""))
 	if not config.profile.is_empty() and config.profile not in QualityProfiles.names():
 		last_error = "unknown profile '%s'" % config.profile
+		return null
+	config.map = str(data.get("map", ""))
+	if not config.map.is_empty() and MapRegistry.load_default().find(config.map) == null:
+		last_error = "unknown map '%s'" % config.map
 		return null
 	var error := _parse_settings(data, config.settings)
 	if error.is_empty():
@@ -210,6 +217,8 @@ static func load_file(path: String, consume := false) -> PerfConfig:
 
 func to_dict() -> Dictionary:
 	var out := {"experiment": experiment, "profile": profile, "settings": settings, "runtime": runtime}
+	if not map.is_empty():
+		out.map = map
 	if not scenario.is_empty():
 		out.scenario = {"name": scenario, "rotate_hold_s": scenario_rotate_hold_s}
 	return out

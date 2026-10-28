@@ -27,7 +27,7 @@ func test_release_hud_has_no_debug_controls() -> void:
 	BuildFeatures.perf_feature_override = 1
 	var hud: UIController = instantiate("res://game/ui/hud.tscn")
 	await process_frames(2)
-	for path in ["SafeArea/DebugLabel", "SafeArea/Controls/DebugViewButton", "SafeArea/Controls/DebugQualityButton", "SafeArea/Controls/DebugDummyButton", "SafeArea/Controls/DebugCarButton"]:
+	for path in ["SafeArea/DebugLabel", "SafeArea/Controls/DebugViewButton", "SafeArea/Controls/DebugQualityButton", "SafeArea/Controls/DebugDummyButton", "SafeArea/Controls/DebugCarButton", "SafeArea/Controls/DebugMapButton"]:
 		check(not hud.get_node(path).visible, "%s hidden in a release perf build" % path)
 	check(hud.input.run_button.visible, "gameplay controls stay")
 

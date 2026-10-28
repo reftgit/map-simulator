@@ -4,6 +4,7 @@
 
 [resource]
 script = ExtResource("1_definition")
+id = "istanbul_halic"
 display_name = "İstanbul • Haliç"
 scene_path = "res://maps/istanbul_halic/istanbul_halic.tscn"
 player_spawn_position = Vector3(-109.0365, 6.5477, 204.2572)
