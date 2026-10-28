@@ -234,11 +234,13 @@ func test_npcs_patrol_the_test_district() -> void:
 		ramp_top = maxf(ramp_top, npcs[1].global_position.y)
 	for i in npcs.size():
 		check(arrivals[i] >= 1, "%s reached at least one point in 15 s (%d)" % [npcs[i].name, arrivals[i]])
-		check(npcs[i].is_on_floor() and npcs[i].global_position.y > -0.1, "%s on a floor (%s)" % [npcs[i].name, npcs[i].global_position])
+		var below := _floor_hit(npcs[i].global_position)
+		check(not below.is_empty() and absf(npcs[i].global_position.y - below.position.y) < 0.1, "%s with its feet on a floor (%s)" % [npcs[i].name, npcs[i].global_position])
 		var p := npcs[i].global_position
 		check(game.map_definition.bounds.has_point(Vector2(p.x, p.z)), "%s inside the bounds" % npcs[i].name)
 	check(ramp_top > 1.9, "the ramp NPC walked up onto the plaza (highest %.2f m)" % ramp_top)
 	check(npcs[0].global_position.y > 1.9, "the plaza NPC stays on the plaza (%s)" % npcs[0].global_position)
+	check(npcs[0].far and npcs[1].far, "the plaza and ramp NPCs, far from the player, walk in the far mode")
 
 
 func test_punching_an_npc_on_the_test_district() -> void:

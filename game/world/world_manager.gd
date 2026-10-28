@@ -64,6 +64,7 @@ func spawn_vehicles(scene: PackedScene) -> Array[VehicleController]:
 func spawn_npcs(scene: PackedScene) -> Array[Npc]:
 	for route in definition.npc_routes:
 		var npc := scene.instantiate() as Npc
+		npc.name = "Npc%d" % (npcs.size() + 1)
 		npc.transform = Npc.start_transform(route)
 		add_child(npc)
 		npc.patrol(route)

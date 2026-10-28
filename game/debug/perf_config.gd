@@ -18,8 +18,8 @@ const USER_PATH := "user://perf_bench.json"
 ## Runtime experiment keys and their types: physics tick rate, physics
 ## interpolation, the player's physics processing, the parked vehicles,
 ## the radius (m) around the player beyond which map colliders are switched
-## off (0 = all), the V-Sync mode, whether parked vehicles may sleep, and the
-## NPCs.
+## off (0 = all), the V-Sync mode, whether parked vehicles may sleep, the
+## NPCs, and whether far NPCs may skip the controller (Npc far mode).
 const RUNTIME_KEYS := {
 	"physics_ticks": TYPE_INT,
 	"physics_interpolation": TYPE_BOOL,
@@ -27,6 +27,7 @@ const RUNTIME_KEYS := {
 	"vehicles": TYPE_BOOL,
 	"vehicle_sleep": TYPE_BOOL,
 	"npcs": TYPE_BOOL,
+	"npc_far_mode": TYPE_BOOL,
 	"collider_radius": TYPE_FLOAT,
 	"vsync_mode": TYPE_STRING,
 }

@@ -181,3 +181,65 @@ func test_npc_and_player_block_each_other() -> void:
 	await physics_frames(90)
 	check(player.global_position.z > npc.global_position.z + 0.6, "the player stops at the NPC instead of passing through (player z %.2f, NPC z %.2f)" % [player.global_position.z, npc.global_position.z])
 	check(absf(npc.global_position.y) < 0.05 and absf(player.global_position.y) < 0.05, "both stay on the floor")
+
+
+func test_far_from_the_player_the_npc_walks_its_route_without_the_controller() -> void:
+	add_static_box()
+	# A 9.5° ramp along the route (rising toward -Z), so the far walk has to
+	# follow the floor; turned before it enters the tree, so the first rays
+	# already meet it turned.
+	var ramp := StaticBody3D.new()
+	var shape := CollisionShape3D.new()
+	shape.shape = BoxShape3D.new()
+	(shape.shape as BoxShape3D).size = Vector3(6, 0.4, 12.2)
+	ramp.add_child(shape)
+	ramp.transform = Transform3D(Basis(Vector3.RIGHT, deg_to_rad(9.46)), Vector3(0, 1.0, -12))
+	add_node(ramp)
+	await physics_frames(1)
+	var npc := _npc(_route([Vector3(0, 0.1, 0), Vector3(0, 2.1, -18)], 0.5))
+	var focus := Node3D.new()
+	add_node(focus)
+	focus.global_position = Vector3(30, 0, 0)
+	npc.focus = focus
+	await physics_frames(2)
+	check(npc.far, "30 m from the player: far mode")
+	await physics_frames(60)
+	check_near(npc.get_horizontal_speed(), npc.walk_speed * npc.patrol_input.move_scale, 0.05, "walks the route at the same speed")
+	check(npc.state_machine.get_state_name() == &"Walk", "reads as walking")
+	var highest := 0.0
+	var arrived := false
+	for i in 600:
+		await tree.physics_frame
+		highest = maxf(highest, npc.global_position.y)
+		if npc.patrol_input.target_index == 0:
+			arrived = true
+			break
+	check(arrived, "reached the top of the ramp in the far mode")
+	check(highest > 1.8 and highest < 2.3, "feet followed the ramp up (highest %.2f m)" % highest)
+	focus.global_position = npc.global_position + Vector3(5, 0, 0)
+	await physics_frames(20)
+	check(not npc.far, "within 8 m of the player: the full controller again")
+	await physics_frames(30)
+	check(npc.is_on_floor(), "standing on the floor under the controller")
+	focus.global_position = npc.global_position + Vector3(9, 0, 0)
+	await physics_frames(20)
+	check(not npc.far, "9 m: stays under the controller (back to far only beyond 10 m)")
+	focus.global_position = npc.global_position + Vector3(11, 0, 0)
+	await physics_frames(20)
+	check(npc.far, "11 m: far mode again")
+
+
+func test_a_hit_reaction_plays_out_under_the_controller() -> void:
+	add_static_box()
+	var npc := _npc(_route([Vector3(0, 0.1, 0), Vector3(0, 0.1, -12)], 0.5))
+	var focus := Node3D.new()
+	add_node(focus)
+	focus.global_position = npc.global_position + Vector3(1, 0, 0)
+	npc.focus = focus
+	await physics_frames(10)
+	npc.hurtbox.receive_hit(focus)
+	focus.global_position = Vector3(40, 0, 0)
+	await physics_frames(20)
+	check(not npc.far and npc.state_machine.get_state_name() == &"HitReaction", "no far mode during the reaction")
+	await physics_frames(30)
+	check(npc.far, "far mode once the reaction is over")

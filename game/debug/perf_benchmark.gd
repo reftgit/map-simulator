@@ -95,6 +95,7 @@ func _sample(seconds: float) -> Dictionary:
 	var video_mem_max := 0
 	var vehicles: Array[VehicleController] = game.world.vehicles
 	var asleep_samples := 0
+	var near_samples := 0
 	var start := Time.get_ticks_usec()
 	var last := start
 	var next_counter := start
@@ -107,6 +108,8 @@ func _sample(seconds: float) -> Dictionary:
 		process_us.append(roundi(Performance.get_monitor(Performance.TIME_PROCESS) * 1e6))
 		for vehicle in vehicles:
 			asleep_samples += int(vehicle.is_asleep())
+		for npc in game.world.npcs:
+			near_samples += int(npc.process_mode != Node.PROCESS_MODE_DISABLED and not npc.far)
 		if now >= next_counter:
 			next_counter = now + 1000000
 			counters.draw_calls += RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME)
@@ -122,8 +125,10 @@ func _sample(seconds: float) -> Dictionary:
 	stats.merge(timing_stats("process", process_us))
 	# Share of frames in which the map's vehicles were asleep (averaged over them).
 	stats["vehicles_asleep"] = snappedf(asleep_samples / float(maxi(frame_us.size() * vehicles.size(), 1)), 0.001)
-	# NPCs in the simulation (a runtime experiment can take them out).
+	# NPCs in the simulation (a runtime experiment can take them out) and how
+	# many of them were under the full controller, not in the far mode.
 	stats["npcs"] = game.world.npcs.filter(func(npc: Npc) -> bool: return npc.process_mode != Node.PROCESS_MODE_DISABLED).size()
+	stats["npcs_near"] = snappedf(near_samples / float(maxi(frame_us.size(), 1)), 0.01)
 	stats["video_mem_mb"] = roundi(video_mem_max / 1048576.0)
 	stats["static_mem_mb"] = roundi(OS.get_static_memory_usage() / 1048576.0)
 	stats["static_peak_mb"] = roundi(OS.get_static_memory_peak_usage() / 1048576.0)

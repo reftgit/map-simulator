@@ -53,9 +53,7 @@ func fill_intent(intent: PlayerIntent, player: PlayerController) -> void:
 	var to_target := Vector3(target.x - player.global_position.x, 0.0, target.z - player.global_position.z)
 	var distance := to_target.length()
 	if distance <= arrive_distance:
-		arrived.emit(target_index)
-		_wait_left = route.wait_seconds
-		_next_point()
+		reach_point()
 		return
 	if player.state_machine.get_state_name() in WALKING_STATES:
 		if distance < _closest - min_progress:
@@ -73,6 +71,25 @@ func fill_intent(intent: PlayerIntent, player: PlayerController) -> void:
 ## True while standing at a point.
 func is_waiting() -> bool:
 	return _wait_left > 0.0
+
+
+## Seconds still to stand at the point.
+func wait_left() -> float:
+	return maxf(_wait_left, 0.0)
+
+
+## The body is at the current point: start the wait and head for the next
+## one afterwards (also called by Npc's far mode, which walks without this
+## input).
+func reach_point() -> void:
+	arrived.emit(target_index)
+	_wait_left = route.wait_seconds
+	_next_point()
+
+
+## Stops waiting (Npc's far mode waits by itself).
+func end_wait() -> void:
+	_wait_left = 0.0
 
 
 func _next_point() -> void:

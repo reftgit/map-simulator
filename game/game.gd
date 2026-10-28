@@ -102,7 +102,8 @@ func _load_map(definition: MapDefinition) -> void:
 			if BuildFeatures.perf_enabled():
 				vehicle.sleep_changed.connect(_log_vehicle_sleep.bind(vehicle))
 	if npc_scene:
-		world.spawn_npcs(npc_scene)
+		for npc in world.spawn_npcs(npc_scene):
+			npc.focus = player
 	_car_index = -1
 	render_settings = RenderSettings.new(world.map_root, camera_rig.camera, get_viewport(), definition.occluders_path)
 	hud.map_name = definition.id
@@ -255,6 +256,9 @@ func apply_runtime_settings(runtime: Dictionary) -> void:
 	if runtime.has("npcs"):
 		for npc in world.npcs:
 			npc.process_mode = PROCESS_MODE_INHERIT if runtime.npcs else PROCESS_MODE_DISABLED
+	if runtime.has("npc_far_mode") and not runtime.npc_far_mode:
+		for npc in world.npcs:
+			npc.far_distance = 0.0
 	if runtime.has("vehicle_sleep"):
 		for vehicle in world.vehicles:
 			# A copy, so the shared definition resource stays unchanged.

@@ -732,8 +732,10 @@ func test_npcs_patrol_the_bridge_beside_the_spawn() -> void:
 	check(arrivals[0] >= 2, "both walked to a point in 15 s (%d arrivals)" % arrivals[0])
 	for npc in npcs:
 		var hit := _floor_hit(npc.global_position)
-		check(npc.is_on_floor() and not hit.is_empty() and str(hit.collider.get_path()).contains("Galata_Bridge"), "%s on the bridge deck (%s)" % [npc.name, npc.global_position])
+		check(not hit.is_empty() and str(hit.collider.get_path()).contains("Galata_Bridge") and absf(npc.global_position.y - hit.position.y) < 0.1, "%s with its feet on the bridge deck (%s)" % [npc.name, npc.global_position])
+		check(npc.far, "%s, more than 10 m from the player, walks in the far mode" % npc.name)
 		var offset := npc.global_position - SPAWN
 		var across := offset.dot(Vector3(-BRIDGE_FORWARD.z, 0.0, BRIDGE_FORWARD.x))
 		check(absf(across) > 10.0, "%s keeps at least 10 m from the walking line of the spawn (%.1f m)" % [npc.name, across])
 	check(player.state_machine.get_state_name() == &"Idle" and _on_bridge_deck(), "the player stands at the spawn as before")
+

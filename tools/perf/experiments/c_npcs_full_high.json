@@ -1,0 +1,1 @@
+{"experiment": "c_npcs_full_high", "profile": "high", "runtime": {"npcs": true, "npc_far_mode": false}, "bench": {"warmup_s": 20, "measure_s": 40}}
