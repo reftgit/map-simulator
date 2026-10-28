@@ -63,7 +63,8 @@ Review of Phase 4d and of Phase 4 as a whole, then the choice between Phase 5 an
 - `ceb840f`: `Platform` module; quality rule, safe area, external folder, display rate, and build features re-wired; fake-platform tests and the scan.
 - `10a82e6`: version name from the project only; `test_export_presets.gd`.
 - `0456e98`: `DeviceScenario`, scenario experiments, `android_rotate_on_cue.sh`, debug-only gravity sensor.
-- Phase 4d results and documentation: the commit after `0456e98` (`git log`).
+- `f742b10`: fix, the rotation cue script no longer swallows log lines or reacts to an earlier run's cues (found on the tablet).
+- `55aa7de`: Phase 4d results and documentation.
 
 ## Repository contents
 
