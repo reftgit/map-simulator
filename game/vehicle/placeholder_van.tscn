@@ -1,7 +1,7 @@
 [gd_scene load_steps=22 format=3]
 
 [ext_resource type="Script" path="res://game/vehicle/vehicle_controller.gd" id="1_controller"]
-[ext_resource type="Resource" path="res://tests/fixtures/test_van_definition.tres" id="2_definition"]
+[ext_resource type="Resource" path="res://game/vehicle/definitions/van.tres" id="2_definition"]
 [ext_resource type="Script" path="res://game/vehicle/visual/placeholder_vehicle_visual.gd" id="3_visual"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_chassis"]
@@ -61,7 +61,7 @@ emission_enabled = true
 emission = Color(1, 1, 1, 1)
 emission_energy_multiplier = 2.0
 
-[node name="TestVan" type="VehicleBody3D" node_paths=PackedStringArray("visual", "seat", "exit_points", "interaction_area")]
+[node name="PlaceholderVan" type="VehicleBody3D" node_paths=PackedStringArray("visual", "seat", "exit_points", "interaction_area")]
 collision_layer = 8
 collision_mask = 9
 script = ExtResource("1_controller")

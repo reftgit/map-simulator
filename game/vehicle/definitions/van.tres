@@ -5,7 +5,7 @@
 
 [resource]
 script = ExtResource("1_definition")
-display_name = "Test van (second vehicle type, tests only)"
+display_name = "Van (placeholder)"
 mass = 2200.0
 center_of_mass = Vector3(0, 0.35, 0)
 linear_damp = 0.0
@@ -26,4 +26,8 @@ safe_exit_speed = 1.0
 flip_angle_degrees = 60.0
 flip_reset_seconds = 2.0
 flip_reset_max_speed = 2.0
+sleep_when_parked = true
+sleep_after_seconds = 1.0
+sleep_linear_speed = 0.1
+sleep_angular_speed = 0.1
 camera_profile = ExtResource("2_camera")

@@ -92,3 +92,18 @@ func test_spawns_vehicles_from_the_definition() -> void:
 	world.unload_map()
 	await process_frames(1)
 	check(world.vehicles.is_empty() and not is_instance_valid(vehicle), "vehicles go with the map")
+
+
+func test_spawns_the_vehicle_type_of_each_spawn() -> void:
+	definition = MapDefinition.new()
+	definition.scene_path = "res://tests/fixtures/flat_map.tscn"
+	definition.vehicle_spawns = [Transform3D(Basis.IDENTITY, Vector3(-4, 0.3, 0)), Transform3D(Basis.IDENTITY, Vector3(4, 0.3, 0)), Transform3D(Basis.IDENTITY, Vector3(12, 0.3, 0))] as Array[Transform3D]
+	definition.vehicle_scenes = [null, load("res://game/vehicle/placeholder_van.tscn")] as Array[PackedScene]
+	world = WorldManager.new()
+	add_node(world)
+	world.load_map(definition)
+	var vehicles := world.spawn_vehicles(load("res://game/vehicle/placeholder_car.tscn"))
+	var types: Array[String] = []
+	for vehicle in vehicles:
+		types.append(vehicle.definition.resource_path.get_file())
+	check(types == (["compact_car.tres", "van.tres", "compact_car.tres"] as Array[String]), "empty and missing entries park the default type (%s)" % [types])

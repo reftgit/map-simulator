@@ -30,6 +30,8 @@ var startup := {}
 var training_dummy: TrainingDummy
 
 var _view_index := 0
+## Debug builds: the vehicle the CAR button walked up to last.
+var _car_index := -1
 var _experiment: PerfConfig
 ## Experiments: map colliders farther than this from the player are off
 ## (negative: the feature is not in use).
@@ -97,6 +99,7 @@ func _load_map(definition: MapDefinition) -> void:
 			vehicle_interaction.register_vehicle(vehicle)
 			if BuildFeatures.perf_enabled():
 				vehicle.sleep_changed.connect(_log_vehicle_sleep.bind(vehicle))
+	_car_index = -1
 	render_settings = RenderSettings.new(world.map_root, camera_rig.camera, get_viewport(), definition.occluders_path)
 	hud.map_name = definition.id
 
@@ -195,15 +198,17 @@ func toggle_training_dummy() -> void:
 	print("DUMMY on")
 
 
-## Debug builds: puts the player next to the driver's door of the first
-## vehicle (which is far from the player spawn), facing the same way.
+## Debug builds: puts the player next to the driver's door of the map's
+## next vehicle (the first on the first press; they are parked away from the
+## player spawn), facing the same way.
 func walk_up_to_vehicle() -> void:
 	if vehicle_interaction.is_driving() or world.vehicles.is_empty():
 		return
-	var vehicle := world.vehicles[0]
+	_car_index = (_car_index + 1) % world.vehicles.size()
+	var vehicle := world.vehicles[_car_index]
 	player.teleport(Transform3D(Basis(Vector3.UP, vehicle.get_follow_yaw()), vehicle.to_global(Vector3(2.4, 0.5, 0.0))))
 	camera_rig.snap_behind_target()
-	print("CAR walk-up")
+	print("CAR walk-up %s" % vehicle.name)
 
 
 ## Moves the player (or, while driving, the vehicle) to measurement viewpoint

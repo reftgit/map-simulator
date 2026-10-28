@@ -18,6 +18,9 @@ extends Resource
 ## spawn, a transform faces its -Z; VehicleController.place_at() turns the
 ## vehicle body, which drives along +Z, to match.
 @export var vehicle_spawns: Array[Transform3D] = []
+## Vehicle type per entry of vehicle_spawns, in the same order; a missing or
+## empty entry parks Main.vehicle_scene there.
+@export var vehicle_scenes: Array[PackedScene] = []
 ## Baked OccluderInstance3D scene (tools/bake_occluders.gd). Without it,
 ## occluders are built from the map's collision at load and a warning is logged.
 @export_file("*.scn", "*.tscn") var occluders_path := ""

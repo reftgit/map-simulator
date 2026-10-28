@@ -35,13 +35,15 @@ func unload_map() -> void:
 	definition = null
 
 
-## Parks an instance of `scene` at each of the map's vehicle spawns; each
-## resets there, and below the map's kill height.
+## Parks a vehicle at each of the map's vehicle spawns: the spawn's type
+## from MapDefinition.vehicle_scenes, else `scene`. Each resets there, and
+## below the map's kill height.
 func spawn_vehicles(scene: PackedScene) -> Array[VehicleController]:
-	for spawn in definition.vehicle_spawns:
-		var vehicle := scene.instantiate() as VehicleController
+	for i in definition.vehicle_spawns.size():
+		var typed := i < definition.vehicle_scenes.size() and definition.vehicle_scenes[i] != null
+		var vehicle := (definition.vehicle_scenes[i] if typed else scene).instantiate() as VehicleController
 		add_child(vehicle)
-		vehicle.place_at(spawn, true)
+		vehicle.place_at(definition.vehicle_spawns[i], true)
 		vehicle.kill_height = definition.kill_height
 		vehicles.append(vehicle)
 	return vehicles

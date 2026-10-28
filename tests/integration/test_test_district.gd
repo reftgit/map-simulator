@@ -136,3 +136,84 @@ func test_map_switch_frees_the_test_district() -> void:
 	check(game.world.map_root.name == &"TestDistrict" and game.world.vehicles.size() == game.map_definition.vehicle_spawns.size(), "test district and its vehicles again")
 	check(_node_count() == before, "node count back to the start (%d, before %d)" % [_node_count(), before])
 	check(Vector2(player.global_position.x - SPAWN.x, player.global_position.z - SPAWN.z).length() < 0.2 and player.is_on_floor(), "player at the spawn")
+
+
+func _tap(button: TouchButton, index: int) -> void:
+	var point := button.get_global_rect().get_center()
+	touch(index, point, true)
+	touch(index, point, false)
+
+
+func _van() -> VehicleController:
+	for vehicle in game.world.vehicles:
+		if vehicle.definition.resource_path == "res://game/vehicle/definitions/van.tres":
+			return vehicle
+	return null
+
+
+func _ticks_until(predicate: Callable, max_ticks: int) -> int:
+	for i in max_ticks:
+		if predicate.call():
+			return i
+		await tree.physics_frame
+	return max_ticks if predicate.call() else -1
+
+
+func test_both_vehicle_types_parked() -> void:
+	await _setup()
+	var vehicles: Array[VehicleController] = game.world.vehicles
+	check(vehicles.size() == 2, "two vehicles from the definition (%d)" % vehicles.size())
+	check(vehicles[0].definition.resource_path.ends_with("compact_car.tres") and _van() == vehicles[1], "the compact car and the van, in spawn order")
+	check(_van().mass == 2200.0 and _van().definition.max_speed == 14.0, "the van's own definition")
+	for i in vehicles.size():
+		var spawn: Transform3D = game.map_definition.vehicle_spawns[i]
+		check(Vector2(vehicles[i].global_position.x - spawn.origin.x, vehicles[i].global_position.z - spawn.origin.z).length() < 0.3, "%s at its spawn" % vehicles[i].name)
+		check((-spawn.basis.z).dot(vehicles[i].global_basis.z) > 0.999, "%s faces north" % vehicles[i].name)
+		var slept := await _ticks_until(vehicles[i].is_asleep, 300)
+		check(slept >= 0 and vehicles[i].wheels.all(func(w: VehicleWheel3D) -> bool: return w.is_in_contact() or vehicles[i].is_asleep()), "%s asleep on its wheels" % vehicles[i].name)
+
+
+func test_car_button_cycles_through_the_vehicles() -> void:
+	await _setup()
+	var button: TouchButton = game.hud.get_node("SafeArea/Controls/DebugCarButton")
+	for vehicle: VehicleController in [game.world.vehicles[0], game.world.vehicles[1], game.world.vehicles[0]]:
+		_tap(button, 1)
+		await physics_frames(20)
+		check(game.vehicle_interaction.nearby_vehicle() == vehicle and input.interact_button.visible, "CAR walks up to %s" % vehicle.name)
+
+
+func test_van_drive_get_out_sleep_and_reset() -> void:
+	await _setup()
+	var van := _van()
+	check(await _ticks_until(van.is_asleep, 300) >= 0, "van asleep before anyone gets in")
+	var car_button: TouchButton = game.hud.get_node("SafeArea/Controls/DebugCarButton")
+	_tap(car_button, 1)
+	_tap(car_button, 1)
+	await physics_frames(20)
+	check(game.vehicle_interaction.nearby_vehicle() == van, "beside the van")
+	_tap(input.interact_button, 1)
+	await physics_frames(3)
+	check(game.vehicle_interaction.vehicle == van and not van.is_asleep(), "in the van, awake")
+	check(game.camera_rig.target == van and game.camera_rig.profile == van.definition.camera_profile, "camera follows the van")
+	var start := van.global_position
+	touch(2, input.throttle_button.get_global_rect().get_center(), true)
+	await physics_frames(180)
+	touch(2, input.throttle_button.get_global_rect().get_center(), false)
+	var travelled := Vector2(van.global_position.x - start.x, van.global_position.z - start.z).length()
+	check(travelled > 8.0 and van.get_forward_speed() > 5.0, "3 s of throttle: %.1f m, %.1f m/s" % [travelled, van.get_forward_speed()])
+	check(van.global_position.z < start.z - 8.0 and absf(van.global_position.x - start.x) < 1.0, "straight north along its lane (%s)" % van.global_position)
+	touch(2, input.handbrake_button.get_global_rect().get_center(), true)
+	await _ticks_until(func() -> bool: return van.linear_velocity.length() < 0.3, 600)
+	touch(2, input.handbrake_button.get_global_rect().get_center(), false)
+	_tap(input.exit_button, 1)
+	await physics_frames(3)
+	check(not game.vehicle_interaction.is_driving() and player.visible and game.camera_rig.target == player, "got out")
+	check(await _ticks_until(van.is_asleep, 240) >= 0, "van asleep again within 4 s after getting out")
+	_tap(input.interact_button, 1)
+	await physics_frames(3)
+	check(game.vehicle_interaction.vehicle == van, "back in the van")
+	van.global_position = Vector3(van.global_position.x, game.map_definition.kill_height - 2.0, van.global_position.z)
+	await physics_frames(3)
+	var spawn: Transform3D = game.map_definition.vehicle_spawns[1]
+	check(Vector2(van.global_position.x - spawn.origin.x, van.global_position.z - spawn.origin.z).length() < 0.5, "below the kill height: van back at its spawn")
+	check(game.vehicle_interaction.is_driving() and player.global_position.distance_to(van.seat.global_position) < 0.05, "with the driver")

@@ -1,6 +1,8 @@
-[gd_resource type="Resource" script_class="MapDefinition" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="MapDefinition" load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://game/world/map_definition.gd" id="1_definition"]
+[ext_resource type="PackedScene" path="res://game/vehicle/placeholder_car.tscn" id="2_car"]
+[ext_resource type="PackedScene" path="res://game/vehicle/placeholder_van.tscn" id="3_van"]
 
 [resource]
 script = ExtResource("1_definition")
@@ -11,7 +13,8 @@ player_spawn_position = Vector3(0, 0.1, 50)
 player_spawn_yaw_degrees = 0.0
 bounds = Rect2(-59.5, -59.5, 119, 119)
 kill_height = -10.0
-vehicle_spawns = Array[Transform3D]([Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.5, 0.3, 30)])
+vehicle_spawns = Array[Transform3D]([Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.5, 0.3, 30), Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 0.3, 30)])
+vehicle_scenes = Array[PackedScene]([ExtResource("2_car"), ExtResource("3_van")])
 occluders_path = "res://maps/test_district/test_district_occluders.tscn"
 debug_viewpoints = Array[Transform3D]([Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 32, 2.1, 42), Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 12, 0.1, 2)])
 debug_viewpoint_names = Array[String](["Plaza, facing north", "Crossing, facing west"])

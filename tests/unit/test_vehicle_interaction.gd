@@ -4,7 +4,7 @@ extends "res://tests/test_case.gd"
 ## exit rules, focus loss, and on-foot actions while driving.
 
 const CAR := "res://game/vehicle/placeholder_car.tscn"
-const VAN := "res://tests/fixtures/test_van.tscn"
+const VAN := "res://game/vehicle/placeholder_van.tscn"
 const TICK := 1.0 / 60.0
 ## Beside the car's driver door (+X), inside its interaction area.
 const NEAR := Vector3(2.2, 0.1, 0.0)
@@ -283,7 +283,7 @@ func test_keyboard_enters_drives_and_exits() -> void:
 func test_second_vehicle_type_enter_and_exit() -> void:
 	await _setup(VAN)
 	await _enter()
-	check(interaction.vehicle == vehicle and vehicle.definition.display_name.begins_with("Test van"), "in the van")
+	check(interaction.vehicle == vehicle and vehicle.definition.display_name.begins_with("Van"), "in the van")
 	check(rig.profile == vehicle.definition.camera_profile, "van's camera profile")
 	_tap(input.exit_button)
 	await physics_frames(3)

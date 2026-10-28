@@ -4,7 +4,7 @@ extends "res://tests/test_case.gd"
 ## points, the visual interface, and a second vehicle type.
 
 const CAR := "res://game/vehicle/placeholder_car.tscn"
-const VAN := "res://tests/fixtures/test_van.tscn"
+const VAN := "res://game/vehicle/placeholder_van.tscn"
 const TICK := 1.0 / 60.0
 
 
@@ -297,7 +297,7 @@ func test_exit_needs_a_floor() -> void:
 
 func test_second_vehicle_type_from_definition_and_scene() -> void:
 	await _setup(VAN)
-	check(vehicle.definition.display_name.begins_with("Test van"), "van definition loaded")
+	check(vehicle.definition.display_name.begins_with("Van"), "van definition loaded")
 	check(vehicle.mass == 2200.0 and vehicle.wheels.size() == 4, "mass and wheels from the van's definition and scene")
 	source.throttle = 1.0
 	await physics_frames(600)
