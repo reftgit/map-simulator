@@ -1,7 +1,8 @@
 class_name PlaceholderCharacterVisual
 extends CharacterVisual
 ## Capsule stand-in until a character model exists: leans with speed, thrusts
-## a fist forward for a punch, tucks and tumbles forward for a roll. Tweens
+## a fist forward for a punch, tucks and tumbles forward for a roll, flinches
+## back when hit. Tweens
 ## run on physics ticks, so physics interpolation smooths them like the
 ## body's own movement.
 
@@ -47,6 +48,12 @@ func play_action(action: StringName, duration: float, impact := -1.0) -> void:
 			_tween.tween_property(_pivot, "position:y", 0.55, duration * 0.2)
 			_tween.tween_property(_pivot, "scale:y", 1.0, duration * 0.2).set_delay(duration * 0.8)
 			_tween.tween_property(_pivot, "position:y", _pivot_rest.y, duration * 0.2).set_delay(duration * 0.8)
+		&"hit":
+			# Flinch: rock back and squash a little, then straighten up.
+			_tween.tween_property(_pivot, "rotation:x", 0.35, duration * 0.25).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+			_tween.parallel().tween_property(_pivot, "scale", Vector3(1.08, 0.9, 1.08), duration * 0.25)
+			_tween.tween_property(_pivot, "rotation:x", 0.0, duration * 0.75)
+			_tween.parallel().tween_property(_pivot, "scale", Vector3.ONE, duration * 0.75)
 	_tween.chain().tween_callback(stop_action)
 
 

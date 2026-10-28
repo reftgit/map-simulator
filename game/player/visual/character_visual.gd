@@ -12,7 +12,7 @@ func set_locomotion(_speed: float, _on_floor: bool) -> void:
 	pass
 
 
-## Starts the one-shot action `action` (&"punch", &"roll") lasting `duration`
+## Starts the one-shot action `action` (&"punch", &"roll", &"hit") lasting `duration`
 ## seconds. `impact` is when it should look like it connects (a punch's
 ## active phase), or a negative value when there is no such moment.
 func play_action(_action: StringName, _duration: float, _impact := -1.0) -> void:

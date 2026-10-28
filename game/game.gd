@@ -7,6 +7,8 @@ extends Node
 @export var maps: MapRegistry
 ## Parked at each of the map's vehicle spawns.
 @export var vehicle_scene: PackedScene
+## Placed on each of the map's NPC routes.
+@export var npc_scene: PackedScene
 
 ## A map finished loading (at start and after switch_map()).
 signal map_changed(definition: MapDefinition)
@@ -87,8 +89,8 @@ func _ready() -> void:
 	map_changed.emit(map_definition)
 
 
-## Loads `definition`, puts the player at its spawn, parks its vehicles, and
-## captures its render defaults for the quality profiles.
+## Loads `definition`, puts the player at its spawn, parks its vehicles,
+## places its NPCs, and captures its render defaults for the quality profiles.
 func _load_map(definition: MapDefinition) -> void:
 	map_definition = definition
 	world.load_map(definition)
@@ -99,13 +101,15 @@ func _load_map(definition: MapDefinition) -> void:
 			vehicle_interaction.register_vehicle(vehicle)
 			if BuildFeatures.perf_enabled():
 				vehicle.sleep_changed.connect(_log_vehicle_sleep.bind(vehicle))
+	if npc_scene:
+		world.spawn_npcs(npc_scene)
 	_car_index = -1
 	render_settings = RenderSettings.new(world.map_root, camera_rig.camera, get_viewport(), definition.occluders_path)
 	hud.map_name = definition.id
 
 
-## Replaces the loaded map with `definition`: the old map, its vehicles, and
-## the training dummy are freed, the player goes to the new spawn, and the
+## Replaces the loaded map with `definition`: the old map, its vehicles and
+## NPCs, and the training dummy are freed, the player goes to the new spawn, and the
 ## quality profile (and experiment) is applied to the new map. Refused while
 ## driving. Returns whether the map was switched.
 func switch_map(definition: MapDefinition) -> bool:
@@ -248,6 +252,9 @@ func apply_runtime_settings(runtime: Dictionary) -> void:
 	if runtime.has("vehicles"):
 		for vehicle in world.vehicles:
 			vehicle.process_mode = PROCESS_MODE_INHERIT if runtime.vehicles else PROCESS_MODE_DISABLED
+	if runtime.has("npcs"):
+		for npc in world.npcs:
+			npc.process_mode = PROCESS_MODE_INHERIT if runtime.npcs else PROCESS_MODE_DISABLED
 	if runtime.has("vehicle_sleep"):
 		for vehicle in world.vehicles:
 			# A copy, so the shared definition resource stays unchanged.
@@ -378,11 +385,11 @@ func _log_startup() -> void:
 		await RenderingServer.frame_post_draw
 	var physics := physics_engine_name(world.get_world_3d().direct_space_state)
 	startup = {"map_ready_ms": map_ready_ms, "first_frame_ms": Time.get_ticks_msec(), "physics_3d": physics,
-			"map": map_definition.id, "vehicles": hud.vehicle_states()}
+			"map": map_definition.id, "vehicles": hud.vehicle_states(), "npcs": world.npcs.size()}
 	startup.merge(build_info())
-	print("STARTUP map_ready_ms=%d first_frame_ms=%d map=%s profile=%s occluders=%s physics_3d=%s (setting %s) vehicles=%s build=%s user_dir=%s" % [map_ready_ms,
+	print("STARTUP map_ready_ms=%d first_frame_ms=%d map=%s profile=%s occluders=%s physics_3d=%s (setting %s) vehicles=%s npcs=%d build=%s user_dir=%s" % [map_ready_ms,
 			startup.first_frame_ms, map_definition.id, quality_profile, JSON.stringify(render_settings.occluder_report), physics,
-			ProjectSettings.get_setting("physics/3d/physics_engine"), startup.vehicles, JSON.stringify(build_info()), OS.get_user_data_dir()])
+			ProjectSettings.get_setting("physics/3d/physics_engine"), startup.vehicles, startup.npcs, JSON.stringify(build_info()), OS.get_user_data_dir()])
 
 
 ## Build kind and the frame and physics settings in effect. Project

@@ -21,6 +21,9 @@ extends Resource
 ## Vehicle type per entry of vehicle_spawns, in the same order; a missing or
 ## empty entry parks Main.vehicle_scene there.
 @export var vehicle_scenes: Array[PackedScene] = []
+## One NPC per route, placed on its first point (WorldManager.spawn_npcs());
+## the number of routes is the number of NPCs on the map.
+@export var npc_routes: Array[PatrolRoute] = []
 ## Baked OccluderInstance3D scene (tools/bake_occluders.gd). Without it,
 ## occluders are built from the map's collision at load and a warning is logged.
 @export_file("*.scn", "*.tscn") var occluders_path := ""

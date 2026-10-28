@@ -122,6 +122,8 @@ func _sample(seconds: float) -> Dictionary:
 	stats.merge(timing_stats("process", process_us))
 	# Share of frames in which the map's vehicles were asleep (averaged over them).
 	stats["vehicles_asleep"] = snappedf(asleep_samples / float(maxi(frame_us.size() * vehicles.size(), 1)), 0.001)
+	# NPCs in the simulation (a runtime experiment can take them out).
+	stats["npcs"] = game.world.npcs.filter(func(npc: Npc) -> bool: return npc.process_mode != Node.PROCESS_MODE_DISABLED).size()
 	stats["video_mem_mb"] = roundi(video_mem_max / 1048576.0)
 	stats["static_mem_mb"] = roundi(OS.get_static_memory_usage() / 1048576.0)
 	stats["static_peak_mb"] = roundi(OS.get_static_memory_peak_usage() / 1048576.0)

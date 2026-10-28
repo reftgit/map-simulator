@@ -592,7 +592,7 @@ func test_runtime_experiment_keys_apply_on_the_map() -> void:
 	await _setup()
 	var bodies: Array[Node] = game.world.map_root.find_children("*", "StaticBody3D", true, false)
 	var config := PerfConfig.from_dict({"experiment": "runtime_keys", "profile": "none",
-			"runtime": {"physics_ticks": 30, "physics_interpolation": false, "player_physics": false, "vehicles": false, "collider_radius": 100},
+			"runtime": {"physics_ticks": 30, "physics_interpolation": false, "player_physics": false, "vehicles": false, "npcs": false, "collider_radius": 100},
 			"bench": {"warmup_s": 0.2, "measure_s": 0.4, "screenshots": false, "quit_when_done": false, "views": ["Spawn"]}})
 	var bench: PerfBenchmark = game.apply_perf_experiment(config)
 	var results: Array = await bench.finished
@@ -600,6 +600,7 @@ func test_runtime_experiment_keys_apply_on_the_map() -> void:
 	check(not tree.physics_interpolation, "interpolation off")
 	check(not player.is_physics_processing(), "player physics paused")
 	check(game.world.vehicles.all(func(v: VehicleController) -> bool: return v.process_mode == Node.PROCESS_MODE_DISABLED), "parked vehicles out of the simulation")
+	check(game.world.npcs.all(func(npc: Npc) -> bool: return npc.process_mode == Node.PROCESS_MODE_DISABLED) and results[0].get("npcs") == 0, "NPCs out of the simulation, and the result says so")
 	var active: int = bodies.filter(func(b: Node) -> bool: return b.process_mode != Node.PROCESS_MODE_DISABLED).size()
 	check(active > 0 and active < bodies.size(), "only colliders within 100 m stay on (%d of %d)" % [active, bodies.size()])
 	var result: Dictionary = results[0]
@@ -674,7 +675,7 @@ func test_map_switch_replaces_the_map_and_frees_the_old_one() -> void:
 	check(game.switch_map(_fixture_map()), "switched to the fixture map")
 	await physics_frames(30)
 	check(not is_instance_valid(old_map) and not is_instance_valid(old_vehicle), "the old map and its vehicle are freed")
-	check(game.world.map_root.name == &"FlatMap" and game.world.vehicles.is_empty(), "fixture map loaded, no vehicles")
+	check(game.world.map_root.name == &"FlatMap" and game.world.vehicles.is_empty() and game.world.npcs.is_empty(), "fixture map loaded, no vehicles or NPCs")
 	check(player.global_position.distance_to(Vector3(2, 0, 3)) < 0.3 and player.is_on_floor(), "player on the new spawn's floor (%s)" % player.global_position)
 	check(rig.target == player and rig.global_position.distance_to(player.global_position) < 4.0, "camera on the player")
 	check(game.quality_profile == "low" and is_equal_approx(rig.camera.far, 400.0) and Engine.max_fps == 30, "the profile applied to the new map")
@@ -683,7 +684,7 @@ func test_map_switch_replaces_the_map_and_frees_the_old_one() -> void:
 	check(game.switch_map(game.maps.find("istanbul_halic")), "switched back")
 	await physics_frames(60)
 	check(changed == (["fixture", "istanbul_halic"] as Array[String]), "map_changed for both switches (%s)" % [changed])
-	check(game.world.vehicles.size() == 1 and _vehicle().is_inside_tree(), "the vehicle parked again")
+	check(game.world.vehicles.size() == 1 and _vehicle().is_inside_tree() and game.world.npcs.size() == 2, "the vehicle parked and the NPCs placed again")
 	check(Vector2(player.global_position.x - SPAWN.x, player.global_position.z - SPAWN.z).length() < 0.2 and _on_bridge_deck(), "back on the bridge spawn")
 	check(game.render_settings.occluder_report.get("source") == "baked", "baked occluders loaded again (%s)" % [game.render_settings.occluder_report])
 	check(_node_count() == before, "node count back to the start after both switches (%d, before %d)" % [_node_count(), before])
@@ -717,3 +718,22 @@ func test_debug_map_button_loads_the_next_map() -> void:
 	check(_node_count() == before, "node count back to the start (%d, before %d)" % [_node_count(), before])
 	await _get_in()
 	check(game.vehicle_interaction.is_driving(), "the vehicle can be driven after both switches")
+
+
+func test_npcs_patrol_the_bridge_beside_the_spawn() -> void:
+	await _setup()
+	var npcs: Array[Npc] = game.world.npcs
+	check(npcs.size() == 2 and game.map_definition.npc_routes.size() == 2, "two NPCs on İstanbul (%d)" % npcs.size())
+	var arrivals := [0]
+	for npc in npcs:
+		npc.patrol_input.arrived.connect(func(_index: int) -> void: arrivals[0] += 1)
+	for tick in 900:
+		await tree.physics_frame
+	check(arrivals[0] >= 2, "both walked to a point in 15 s (%d arrivals)" % arrivals[0])
+	for npc in npcs:
+		var hit := _floor_hit(npc.global_position)
+		check(npc.is_on_floor() and not hit.is_empty() and str(hit.collider.get_path()).contains("Galata_Bridge"), "%s on the bridge deck (%s)" % [npc.name, npc.global_position])
+		var offset := npc.global_position - SPAWN
+		var across := offset.dot(Vector3(-BRIDGE_FORWARD.z, 0.0, BRIDGE_FORWARD.x))
+		check(absf(across) > 10.0, "%s keeps at least 10 m from the walking line of the spawn (%.1f m)" % [npc.name, across])
+	check(player.state_machine.get_state_name() == &"Idle" and _on_bridge_deck(), "the player stands at the spawn as before")

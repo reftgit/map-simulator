@@ -18,13 +18,15 @@ const USER_PATH := "user://perf_bench.json"
 ## Runtime experiment keys and their types: physics tick rate, physics
 ## interpolation, the player's physics processing, the parked vehicles,
 ## the radius (m) around the player beyond which map colliders are switched
-## off (0 = all), the V-Sync mode, and whether parked vehicles may sleep.
+## off (0 = all), the V-Sync mode, whether parked vehicles may sleep, and the
+## NPCs.
 const RUNTIME_KEYS := {
 	"physics_ticks": TYPE_INT,
 	"physics_interpolation": TYPE_BOOL,
 	"player_physics": TYPE_BOOL,
 	"vehicles": TYPE_BOOL,
 	"vehicle_sleep": TYPE_BOOL,
+	"npcs": TYPE_BOOL,
 	"collider_radius": TYPE_FLOAT,
 	"vsync_mode": TYPE_STRING,
 }

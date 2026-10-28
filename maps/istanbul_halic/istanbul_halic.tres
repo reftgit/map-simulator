@@ -1,6 +1,17 @@
-[gd_resource type="Resource" script_class="MapDefinition" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="MapDefinition" load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://game/world/map_definition.gd" id="1_definition"]
+[ext_resource type="Script" path="res://game/npc/patrol_route.gd" id="2_route"]
+
+[sub_resource type="Resource" id="Resource_bridge_inner"]
+script = ExtResource("2_route")
+points = Array[Vector3]([Vector3(-101.98, 4.83, 216.83), Vector3(-88.36, 4.11, 190.1)])
+wait_seconds = 2.0
+
+[sub_resource type="Resource" id="Resource_bridge_outer"]
+script = ExtResource("2_route")
+points = Array[Vector3]([Vector3(-89.03, 4.76, 220.06), Vector3(-77.68, 4.16, 197.79)])
+wait_seconds = 2.0
 
 [resource]
 script = ExtResource("1_definition")
@@ -11,6 +22,7 @@ player_spawn_position = Vector3(-109.0365, 6.5477, 204.2572)
 player_spawn_yaw_degrees = -27.0
 bounds = Rect2(-1931.65, -1558.48, 2687.51, 2671.68)
 kill_height = -5.0
+npc_routes = Array[ExtResource("2_route")]([SubResource("Resource_bridge_inner"), SubResource("Resource_bridge_outer")])
 vehicle_spawns = Array[Transform3D]([Transform3D(0.25881907, 0, 0.9659258, 0, 1, 0, -0.9659258, 0, 0.25881907, -88.96, 14.7, 36.14)])
 occluders_path = "res://maps/istanbul_halic/istanbul_halic_occluders.scn"
 debug_viewpoints = Array[Transform3D]([Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.03, 120), Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -20, 39.49, -250)])

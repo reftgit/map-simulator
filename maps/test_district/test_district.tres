@@ -1,8 +1,24 @@
-[gd_resource type="Resource" script_class="MapDefinition" load_steps=4 format=3]
+[gd_resource type="Resource" script_class="MapDefinition" load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://game/world/map_definition.gd" id="1_definition"]
 [ext_resource type="PackedScene" path="res://game/vehicle/placeholder_car.tscn" id="2_car"]
 [ext_resource type="PackedScene" path="res://game/vehicle/placeholder_van.tscn" id="3_van"]
+[ext_resource type="Script" path="res://game/npc/patrol_route.gd" id="4_route"]
+
+[sub_resource type="Resource" id="Resource_plaza"]
+script = ExtResource("4_route")
+points = Array[Vector3]([Vector3(26, 2.1, 27), Vector3(38, 2.1, 27), Vector3(38, 2.1, 39), Vector3(26, 2.1, 39)])
+wait_seconds = 1.0
+
+[sub_resource type="Resource" id="Resource_ramp"]
+script = ExtResource("4_route")
+points = Array[Vector3]([Vector3(32, 0.1, 5), Vector3(32, 2.1, 24)])
+wait_seconds = 2.0
+
+[sub_resource type="Resource" id="Resource_street"]
+script = ExtResource("4_route")
+points = Array[Vector3]([Vector3(-7, 0.1, 44), Vector3(-7, 0.1, 12)])
+wait_seconds = 2.0
 
 [resource]
 script = ExtResource("1_definition")
@@ -15,6 +31,7 @@ bounds = Rect2(-59.5, -59.5, 119, 119)
 kill_height = -10.0
 vehicle_spawns = Array[Transform3D]([Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.5, 0.3, 30), Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 0.3, 30)])
 vehicle_scenes = Array[PackedScene]([ExtResource("2_car"), ExtResource("3_van")])
+npc_routes = Array[ExtResource("4_route")]([SubResource("Resource_plaza"), SubResource("Resource_ramp"), SubResource("Resource_street")])
 occluders_path = "res://maps/test_district/test_district_occluders.tscn"
 debug_viewpoints = Array[Transform3D]([Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 32, 2.1, 42), Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 12, 0.1, 2)])
 debug_viewpoint_names = Array[String](["Plaza, facing north", "Crossing, facing west"])

@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene load_steps=12 format=3]
 
 [ext_resource type="Script" path="res://game/game.gd" id="1_game"]
 [ext_resource type="Resource" path="res://game/world/maps.tres" id="2_maps"]
@@ -10,11 +10,13 @@
 [ext_resource type="Script" path="res://game/vehicle/touch_vehicle_input.gd" id="8_vehicle_input"]
 [ext_resource type="Script" path="res://game/vehicle/vehicle_interaction.gd" id="9_interaction"]
 [ext_resource type="PackedScene" path="res://game/vehicle/placeholder_car.tscn" id="10_car"]
+[ext_resource type="PackedScene" path="res://game/npc/npc.tscn" id="11_npc"]
 
 [node name="Main" type="Node"]
 script = ExtResource("1_game")
 maps = ExtResource("2_maps")
 vehicle_scene = ExtResource("10_car")
+npc_scene = ExtResource("11_npc")
 
 [node name="WorldManager" type="Node3D" parent="."]
 script = ExtResource("3_world")

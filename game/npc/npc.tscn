@@ -1,0 +1,46 @@
+[gd_scene load_steps=10 format=3]
+
+[ext_resource type="PackedScene" path="res://game/player/player.tscn" id="1_player"]
+[ext_resource type="Script" path="res://game/npc/npc.gd" id="2_npc"]
+[ext_resource type="Script" path="res://game/combat/hurtbox.gd" id="3_hurtbox"]
+[ext_resource type="Script" path="res://game/player/state_machine/hit_reaction_state.gd" id="4_reaction"]
+[ext_resource type="Script" path="res://game/npc/ai_patrol_input.gd" id="5_patrol"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_npc"]
+albedo_color = Color(0.22, 0.55, 0.6, 1)
+roughness = 0.8
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_npc"]
+material = SubResource("StandardMaterial3D_npc")
+radius = 0.35
+height = 1.8
+radial_segments = 16
+rings = 4
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_hurtbox"]
+height = 1.8
+radius = 0.4
+
+[node name="Npc" instance=ExtResource("1_player")]
+collision_layer = 16
+collision_mask = 27
+script = ExtResource("2_npc")
+
+[node name="Body" parent="Visual/Pivot" index="0"]
+mesh = SubResource("CapsuleMesh_npc")
+
+[node name="Hurtbox" type="Area3D" parent="."]
+collision_layer = 4
+collision_mask = 0
+monitoring = false
+script = ExtResource("3_hurtbox")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Hurtbox"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+shape = SubResource("CylinderShape3D_hurtbox")
+
+[node name="HitReaction" type="Node" parent="StateMachine"]
+script = ExtResource("4_reaction")
+
+[node name="AiPatrolInput" type="Node" parent="."]
+script = ExtResource("5_patrol")

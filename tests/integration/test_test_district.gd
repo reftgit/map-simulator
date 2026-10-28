@@ -130,10 +130,10 @@ func test_map_switch_frees_the_test_district() -> void:
 	fixture.player_spawn_position = Vector3(2, 0.1, 3)
 	check(game.switch_map(fixture), "switched to the fixture map")
 	await physics_frames(10)
-	check(not is_instance_valid(old_map) and game.world.vehicles.is_empty(), "test district and its vehicles freed")
+	check(not is_instance_valid(old_map) and game.world.vehicles.is_empty() and game.world.npcs.is_empty(), "test district, its vehicles, and its NPCs freed")
 	check(game.switch_map(game.maps.find("test_district")), "switched back")
 	await physics_frames(30)
-	check(game.world.map_root.name == &"TestDistrict" and game.world.vehicles.size() == game.map_definition.vehicle_spawns.size(), "test district and its vehicles again")
+	check(game.world.map_root.name == &"TestDistrict" and game.world.vehicles.size() == game.map_definition.vehicle_spawns.size() and game.world.npcs.size() == 3, "test district, its vehicles, and its NPCs again")
 	check(_node_count() == before, "node count back to the start (%d, before %d)" % [_node_count(), before])
 	check(Vector2(player.global_position.x - SPAWN.x, player.global_position.z - SPAWN.z).length() < 0.2 and player.is_on_floor(), "player at the spawn")
 
@@ -217,3 +217,57 @@ func test_van_drive_get_out_sleep_and_reset() -> void:
 	var spawn: Transform3D = game.map_definition.vehicle_spawns[1]
 	check(Vector2(van.global_position.x - spawn.origin.x, van.global_position.z - spawn.origin.z).length() < 0.5, "below the kill height: van back at its spawn")
 	check(game.vehicle_interaction.is_driving() and player.global_position.distance_to(van.seat.global_position) < 0.05, "with the driver")
+
+
+func test_npcs_patrol_the_test_district() -> void:
+	await _setup()
+	var npcs: Array[Npc] = game.world.npcs
+	var routes: Array[PatrolRoute] = game.map_definition.npc_routes
+	check(npcs.size() == 3 and routes.size() == 3, "three NPCs, one per route (%d)" % npcs.size())
+	var arrivals := {}
+	for i in npcs.size():
+		arrivals[i] = 0
+		npcs[i].patrol_input.arrived.connect(func(_index: int) -> void: arrivals[i] += 1)
+	var ramp_top := 0.0
+	for tick in 900:
+		await tree.physics_frame
+		ramp_top = maxf(ramp_top, npcs[1].global_position.y)
+	for i in npcs.size():
+		check(arrivals[i] >= 1, "%s reached at least one point in 15 s (%d)" % [npcs[i].name, arrivals[i]])
+		check(npcs[i].is_on_floor() and npcs[i].global_position.y > -0.1, "%s on a floor (%s)" % [npcs[i].name, npcs[i].global_position])
+		var p := npcs[i].global_position
+		check(game.map_definition.bounds.has_point(Vector2(p.x, p.z)), "%s inside the bounds" % npcs[i].name)
+	check(ramp_top > 1.9, "the ramp NPC walked up onto the plaza (highest %.2f m)" % ramp_top)
+	check(npcs[0].global_position.y > 1.9, "the plaza NPC stays on the plaza (%s)" % npcs[0].global_position)
+
+
+func test_punching_an_npc_on_the_test_district() -> void:
+	await _setup()
+	var npc: Npc = game.world.npcs[2]
+	# Wait until the street NPC walks north, then stand in its way, facing it.
+	await _ticks_until(func() -> bool: return npc.state_machine.get_state_name() == &"Walk" and npc.patrol_input.target_index == 1, 600)
+	await physics_frames(30)
+	var ahead := npc.global_position + Vector3(0, 0, -1.6)
+	player.teleport(Transform3D(Basis(Vector3.UP, PI), Vector3(ahead.x, 0.1, ahead.z)))
+	var close := await _ticks_until(func() -> bool: return player.global_position.distance_to(npc.global_position) < 1.2, 60)
+	check(close >= 0, "the NPC walked up to the player")
+	_tap(input.punch_button, 1)
+	var hit := await _ticks_until(func() -> bool: return npc.hits > 0, 30)
+	check(hit >= 0 and npc.state_machine.get_state_name() == &"HitReaction", "the punch button's punch starts the NPC's reaction")
+	await physics_frames(40)
+	check(npc.hits == 1, "one hit for the one punch (%d)" % npc.hits)
+	check(npc.state_machine.get_state_name() != &"HitReaction", "the reaction is over")
+	# The player stands in the way, so the NPC gives the point up and walks on.
+	var moved_on := await _ticks_until(func() -> bool: return npc.patrol_input.target_index != 1, 300)
+	check(moved_on >= 0, "the NPC walks on (blocked by the player: it gives the point up)")
+
+
+func test_npc_respawns_at_its_start_below_the_kill_height() -> void:
+	await _setup()
+	var npc: Npc = game.world.npcs[2]
+	var start: Vector3 = game.map_definition.npc_routes[2].points[0]
+	await physics_frames(60)
+	npc.teleport(Transform3D(Basis.IDENTITY, Vector3(npc.global_position.x, -12.0, npc.global_position.z)))
+	await physics_frames(3)
+	check(Vector2(npc.global_position.x - start.x, npc.global_position.z - start.z).length() < 0.3, "back at its own start (%s)" % npc.global_position)
+	check(Vector2(player.global_position.x - SPAWN.x, player.global_position.z - SPAWN.z).length() < 0.2, "the player was not moved")
