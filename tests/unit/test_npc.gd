@@ -227,6 +227,9 @@ func test_far_from_the_player_the_npc_walks_its_route_without_the_controller() -
 	focus.global_position = npc.global_position + Vector3(11, 0, 0)
 	await physics_frames(20)
 	check(npc.far, "11 m: far mode again")
+	npc.far_distance = 0.0
+	await physics_frames(20)
+	check(not npc.far, "far mode switched off (\"npc_far_mode\": false): back under the controller")
 
 
 func test_a_hit_reaction_plays_out_under_the_controller() -> void:

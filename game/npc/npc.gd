@@ -86,15 +86,18 @@ func _physics_process(delta: float) -> void:
 
 
 ## Leaves the controller only from Idle or Walk, so a hit reaction plays out
-## under it.
+## under it. Without a focus or with far_distance 0 it returns to the
+## controller.
 func _update_far() -> void:
-	var distance := INF
-	if focus and far_distance > 0.0:
-		var offset := focus.global_position - global_position
-		distance = Vector2(offset.x, offset.z).length()
+	if focus == null or far_distance <= 0.0:
+		if far:
+			_leave_far()
+		return
+	var offset := focus.global_position - global_position
+	var distance := Vector2(offset.x, offset.z).length()
 	if far and distance < near_distance:
 		_leave_far()
-	elif not far and distance > far_distance and distance < INF and state_machine.get_state_name() in [&"Idle", &"Walk"] and patrol_input.route:
+	elif not far and distance > far_distance and state_machine.get_state_name() in [&"Idle", &"Walk"] and patrol_input.route:
 		far = true
 		velocity = Vector3.ZERO
 		_far_after_wait(patrol_input.wait_left())
