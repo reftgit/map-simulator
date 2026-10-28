@@ -1,0 +1,4 @@
+{"experiment": "profile_default", "device": "android", "battery_c_start": 34.5, "battery_c_end": 35.0,
+ "thermal_status_start": "0", "thermal_status_end": "0",
+ "pss_peak_kb": 0, "wall_s": 288, "started": "2026-10-28 11:34:04",
+ "cool_wait_s": 0, "cool_target_c": "35.0"}

@@ -9,14 +9,15 @@ Engine: Godot 4.7.2, GDScript with static typing. 1 unit = 1 m; forward is -Z.
 ```text
 game/
   main.tscn, game.gd        Composition root (main scene)
-  world/                    WorldManager, MapDefinition
+  world/                    WorldManager, MapDefinition, MapRegistry, maps.tres (the loadable maps)
   player/                   PlayerController, PlayerIntent, ActionBuffer, input sources, player.tscn
-    state_machine/          PlayerStateMachine, PlayerState, Idle/Walk/Run/Punch/Roll states
+    state_machine/          PlayerStateMachine, PlayerState, Idle/Walk/Run/Punch/Roll states, HitReactionState
     visual/                 CharacterVisual (interface), PlaceholderCharacterVisual (capsule tweens)
   combat/                   Hitbox, Hurtbox (hit detection only; no damage)
+  npc/                      Npc, AiPatrolInput, PatrolRoute, npc.tscn (inherits player.tscn) (Phase 5)
   vehicle/                  VehicleController, VehicleIntent, VehicleInputSource, TouchVehicleInput, VehicleDefinition,
-                            VehicleInteraction (get in / out), placeholder_car.tscn
-    definitions/            compact_car.tres (VehicleDefinition of the placeholder car)
+                            VehicleInteraction (get in / out), placeholder_car.tscn, placeholder_van.tscn
+    definitions/            compact_car.tres, van.tres (VehicleDefinitions)
     visual/                 VehicleVisual (interface), PlaceholderVehicleVisual (box body, cylinder wheels, lights)
   camera/                   ThirdPersonCamera, CameraProfile, on-foot and vehicle profiles
   input/                    MobileInputController, TouchControl, TouchLookArea, TouchButton
@@ -24,11 +25,12 @@ game/
   quality/                  RenderSettings (applies render settings), QualityProfile, QualityProfiles, profiles/high.tres, low.tres
   debug/                    PerfConfig (experiments), PerfBenchmark, DeviceScenario, TrainingDummy, BuildFeatures
   platform/                 Platform: the only code that asks the OS which platform this is (Phase 4d)
-maps/<map_name>/            One folder per map: scene, MapDefinition (.tres), map script, baked occluders (.scn)
+maps/<map_name>/            One folder per map: scene, MapDefinition (.tres), map script, occluders
+                            (istanbul_halic: the GLB map; test_district: Godot primitives, Phase 5)
 assets/                     Map model and metadata (the 502 MB GLB is not in Git)
 scripts/, main.tscn         Original explorer demo from the map package (desktop only, not used by the game)
-tests/                      Headless test runner, unit and integration suites, fixtures (flat map, a second vehicle type)
-tools/                      Development tools (screenshot capture, iOS debug build, occluder bake, perf scripts)
+tests/                      Headless test runner, unit and integration suites, fixtures (flat map, fake platform)
+tools/                      Development tools (screenshot capture, iOS debug build, occluder bake, test district generator, perf scripts)
 docs/                       This file, map documentation
 build/                      Export output, ignored by Git except build/.gdignore (keeps Godot from importing it)
 export_presets.cfg          Six presets: Android/iOS debug, Android compatibility, three Release Perf (see "Export presets")
@@ -37,11 +39,12 @@ export_presets.cfg          Six presets: Android/iOS debug, Android compatibilit
 ## Runtime structure
 
 ```text
-Main (game.gd) ─ wires everything once in _ready()
+Main (game.gd) ─ wires everything in _ready(); switch_map() rebuilds the map part
 ├── WorldManager          loads maps/<map>/<map>.tscn from a MapDefinition; respawn and bounds
-│   ├── IstanbulHalic     map scene: GLB, sky/ambient, sun, water shader, vertex-color fix
+│   ├── IstanbulHalic     map scene (or TestDistrict): GLB, sky/ambient, sun, water shader, vertex-color fix
 │   │   └── Occluders     baked occluders, added when the profile enables occlusion
-│   ├── PlaceholderCar    VehicleController (VehicleBody3D, layer 4) per MapDefinition.vehicle_spawns
+│   ├── Npc1, Npc2, …     Npc (CharacterBody3D, layer 5) per MapDefinition.npc_routes (Phase 5)
+│   ├── PlaceholderCar    VehicleController (VehicleBody3D, layer 4) per MapDefinition.vehicle_spawns (type per spawn)
 │   │   ├── Chassis, Cabin       collision boxes
 │   │   ├── Wheel*        VehicleWheel3D ×4 (front steer, rear drive)
 │   │   ├── Seat, ExitLeft, ExitRight  markers (driver's side is +X: the body drives along +Z)
@@ -72,7 +75,8 @@ Main (game.gd) ─ wires everything once in _ready()
         ├── DebugViewButton     TouchButton "VIEW", debug builds only (extra_controls)
         ├── DebugQualityButton  TouchButton "Q", cycles quality profiles, debug builds only
         ├── DebugDummyButton    TouchButton "DUMMY", toggles the training dummy, debug builds only
-        └── DebugCarButton      TouchButton "CAR", walks the player up to the vehicle, debug builds only
+        ├── DebugCarButton      TouchButton "CAR", walks the player up to the next vehicle, debug builds only
+        └── DebugMapButton      TouchButton "MAP", loads the next map of the registry, debug builds only
 ```
 
 `game.gd` also owns a `RenderSettings` object (created after the map loads) that applies the quality profile.
@@ -85,11 +89,12 @@ Systems do not search for each other. `game.gd` is the only place that connects 
 2. **Camera (`_process`).** `ThirdPersonCamera` consumes the look delta (radians), clamps pitch, follows the target's interpolated transform, and lets the `SpringArm3D` (sphere, world layer) pull the camera in front of walls.
 3. **Player (`_physics_process`).** `PlayerController` clears its `PlayerIntent` and asks its `input_source` to fill it. `TouchPlayerInput` rotates the stick by the camera yaw (`camera_relative`) and copies the pending punch/roll presses into the intent's one-shot fields. The controller puts those presses into its `ActionBuffer`. The active `PlayerState` starts a buffered action or picks the target speed and transitions; `apply_locomotion()` accelerates, turns the body, and applies gravity. Then the buffer ages, `move_and_slide()` runs, and `CharacterVisual.set_locomotion()` gets the horizontal speed.
 4. **Vehicle (`_physics_process`).** The driven `VehicleController` asks its `input_source` (`TouchVehicleInput`) for a `VehicleIntent`, turns it into steering, engine force, and per-wheel brakes (`drive_command()`, `steer_angle()`, `approach_steer()`), checks its reset conditions, and passes speed, steering, lights, and wheel poses to its `VehicleVisual`. An intent `exit` press asks `VehicleInteraction` to let the player out. Parked vehicles have no input source and hold the handbrake; once at rest they fall asleep and skip all of this until woken (see "Parked vehicles sleep").
-5. **World (`_physics_process`).** `WorldManager` respawns tracked bodies below `kill_height` and clamps them to `bounds` (the player is untracked while driving; vehicles reset themselves).
+5. **NPCs (`_physics_process`).** Near the player an `Npc` runs the controller of step 3 with `AiPatrolInput` as its input source; farther away a Tween moves it along its route (see "NPCs").
+6. **World (`_physics_process`).** `WorldManager` respawns tracked bodies below `kill_height` (NPCs at their own start, the player at the map's spawn) and clamps them to `bounds` (the player is untracked while driving; vehicles reset themselves).
 
 ## Module map
 
-The specification suggested these modules. Status as of Phase 4b:
+The specification suggested these modules. Status as of Phase 5:
 
 | Module | Implementation | Status |
 |---|---|---|
@@ -97,21 +102,23 @@ The specification suggested these modules. Status as of Phase 4b:
 | PlayerStateMachine | `game/player/state_machine/` | Phase 1: Idle, Walk, Run; Phase 2: Punch, Roll |
 | ThirdPersonCamera | `game/camera/third_person_camera.gd` + `CameraProfile` | Phase 1 |
 | MobileInputController | `game/input/mobile_input_controller.gd` + touch controls | Phase 1 |
-| WorldManager | `game/world/world_manager.gd` + `MapDefinition` | Phase 1 |
+| WorldManager | `game/world/world_manager.gd` + `MapDefinition`, `MapRegistry` | Phase 1; Phase 5: map registry and switch, a vehicle type per spawn, NPCs |
 | UIController | `game/ui/ui_controller.gd` | Phase 1: safe area, debug overlay |
 | Quality profiles | `game/quality/` (`RenderSettings`, `QualityProfile`) | High (iOS) and Low (Android) |
 | PlayerCombat | `PunchState`, `RollState`, `ActionBuffer`, `game/combat/` (`Hitbox`, `Hurtbox`) | Phase 2: punch, roll; no damage system |
 | PlayerAnimation | `game/player/visual/` (`CharacterVisual` interface, `PlaceholderCharacterVisual`) | Phase 2: placeholder tweens; no model or animations yet |
 | VehicleController | `game/vehicle/vehicle_controller.gd` + `VehicleDefinition`, `VehicleIntent`, `VehicleInputSource`, `VehicleVisual` | Phase 3: placeholder car on GodotPhysics3D `VehicleBody3D`; Phase 4b: parked vehicles sleep |
 | VehicleInteraction | `game/vehicle/vehicle_interaction.gd` | Phase 3: get in / out, HUD and camera handover |
+| NPCs (AI) | `game/npc/` (`Npc`, `AiPatrolInput`, `PatrolRoute`), `HitReactionState` | Phase 5: patrol, hit reaction, far mode; no damage |
 
 ## Extension points
 
-- **New map:** add `maps/<name>/<name>.tscn` and a `MapDefinition` resource (scene path, spawn position and yaw, bounds, kill height), then point `Main.map_definition` at it. Player, camera, and input code stay unchanged.
+- **New map:** add `maps/<name>/<name>.tscn`, a `MapDefinition` resource, and an entry in `game/world/maps.tres`; see "Adding a map". Player, vehicle, NPC, camera, and input code stay unchanged.
 - **New player action:** add a `PlayerState` child under `Player/StateMachine` and a one-shot field on `PlayerIntent`; buffer its press in `PlayerController._physics_process()` and start it from `PlayerState.start_buffered_action()`. States switch with `machine.transition_to(&"Name")`. Punch and roll are the worked examples (see "Character actions").
 - **Character model and animations:** replace the `Visual` node of `player.tscn` with a `CharacterVisual` subclass (see "CharacterVisual extension point"). `PlayerController` and the states stay unchanged.
-- **Hit targets (NPCs, props):** give the target a `Hurtbox` (physics layer 3) and react to `hit_received(attacker)`. Damage and reactions belong to the target.
-- **Other drivers (AI, bots, replays):** subclass `PlayerInputSource` and implement `fill_intent()`. The controller does not know where intents come from.
+- **Hit targets (NPCs, props):** give the target a `Hurtbox` (physics layer 3) and react to `hit_received(attacker)`. Damage and reactions belong to the target (`Npc` starts its `HitReactionState`).
+- **Other drivers (AI, bots, replays):** subclass `PlayerInputSource` and implement `fill_intent()` (`AiPatrolInput` is the worked example). The controller does not know where intents come from.
+- **New NPC:** see "Adding an NPC".
 - **New vehicle type:** see "Vehicles (Phase 3)", "Adding a vehicle type". A scene plus a `VehicleDefinition`; no code.
 - **Other vehicle drivers (AI, replays):** subclass `VehicleInputSource` and set it as the vehicle's `input_source`.
 - **New touch control:** subclass `TouchControl`, add it under `HUD/SafeArea/Controls`, and register it in `MobileInputController`'s priority list.
@@ -124,6 +131,7 @@ The specification suggested these modules. Status as of Phase 4b:
 | 2 | player | Player body. |
 | 3 | hurtbox | `Hurtbox` areas (training dummy). Mask of the punch `Hitbox`, which is on no layer. |
 | 4 | vehicle | Vehicle bodies. Mask: world and vehicle. The player and the camera spring arm mask layers 1 and 4 (value 9), so the player cannot walk through a car and the camera stays out of it. A vehicle's `InteractionArea` masks layer 2 (player). |
+| 5 | npc | NPC bodies (Phase 5). Mask: world, player, vehicle, npc (27). The player masks 1, 4, and 5 (25), so the player and NPCs block each other; the camera spring arm keeps 9 and ignores NPCs; vehicles do not mask characters, so a moving car passes through them, as through the player. |
 
 The map has collision on `Ground_*` terrain (streets included), `Buildings_*`, `Mosque_*`, `TreeTrunks_*`, landmarks, and the two bridge decks. Roads, pavements, railings, lamps, decor, and water have no collision of their own. The debug training dummy's body is on layer 1, so the player and the camera spring arm collide with it.
 
@@ -163,8 +171,8 @@ States ask for visual feedback only through `CharacterVisual` (`game/player/visu
 | Method | Called by | When |
 |---|---|---|
 | `set_locomotion(speed, on_floor)` | `PlayerController` | every physics tick, after `move_and_slide()` |
-| `play_action(action, duration, impact)` | `PunchState.enter()` (`&"punch"`, 0.45 s, impact 0.1 s = start of active), `RollState.enter()` (`&"roll"`, 0.6 s, no impact) | action starts |
-| `stop_action()` | `PunchState.exit()`, `RollState.exit()` | action ends, is cancelled, interrupted, or the player teleports |
+| `play_action(action, duration, impact)` | `PunchState.enter()` (`&"punch"`, 0.45 s, impact 0.1 s = start of active), `RollState.enter()` (`&"roll"`, 0.6 s, no impact), `HitReactionState` (`&"hit"`, 0.5 s, NPCs; Phase 5) | action starts |
+| `stop_action()` | `PunchState.exit()`, `RollState.exit()`, `HitReactionState.exit()` | action ends, is cancelled, interrupted, or the player teleports |
 
 `PlaceholderCharacterVisual` implements it with tweens on the capsule (lean with speed; the fist thrusts forward on the punch; tuck and one forward turn on the roll). Its tweens run on physics ticks (`Tween.TWEEN_PROCESS_PHYSICS`), so physics interpolation smooths them like the body.
 
@@ -227,17 +235,60 @@ A `VehicleBody3D` at rest is never put to sleep by GodotPhysics3D: the engine's 
 
 1. Create a scene with a `VehicleBody3D` root using `vehicle_controller.gd`: collision shapes, four (or more) `VehicleWheel3D` children (`use_as_steering` / `use_as_traction`, suspension and friction), a `Seat` marker, exit markers in the order to try (driver's side first), an `InteractionArea` (Area3D, mask layer 2) around it, and a `VehicleVisual` subclass with its meshes. Forward is +Z; the driver's side is +X. Set `collision_layer` 8 (vehicle) and `collision_mask` 9.
 2. Create a `VehicleDefinition` resource with its mass, engine, brakes, steering, exit speed, reset rule, and camera profile, and assign it to the root's `definition`.
-3. Put the scene in `Main.vehicle_scene` (or spawn it yourself and call `VehicleInteraction.register_vehicle()`).
+3. Park it on a map with `MapDefinition.vehicle_scenes` (the type for the spawn at the same index), or make it the default with `Main.vehicle_scene` (or spawn it yourself and call `VehicleInteraction.register_vehicle()`).
 
-`tests/fixtures/test_van.tscn` + `test_van_definition.tres` are a second type made this way (heavier, 14 m/s top speed, other wheelbase and exit points); `test_second_vehicle_type_from_definition_and_scene` and `test_second_vehicle_type_enter_and_exit` drive it and get in and out without any code change.
+`game/vehicle/placeholder_van.tscn` + `definitions/van.tres` are a second type made this way (heavier, 14 m/s top speed, other wheelbase and exit points; the Phase 3 test fixture, moved into the game in Phase 5) and park on the test district; `test_second_vehicle_type_from_definition_and_scene`, `test_second_vehicle_type_enter_and_exit`, and `test_van_drive_get_out_sleep_and_reset` drive it, get in and out, and reset it without any code change.
+
+## Maps and the map registry (Phase 5)
+
+- **Registry:** `game/world/maps.tres` (`MapRegistry`) lists the loadable `MapDefinition`s; `Main.maps` points at it. The first entry (İstanbul • Haliç) is the default, and the only map a normal release build loads. Debug and Release Perf builds start on another map with an experiment's `"map"` key or `--map=<id>` (in that order; an unknown id falls back to the first map with a warning, an unknown experiment map is rejected by `PerfConfig`); debug builds load the next map with the overlay's MAP button. Tests set `Main.requested_map` before the scene enters the tree.
+- **Switching:** `Main.switch_map(definition)` is refused while driving. Otherwise it removes the training dummy, puts the old map's `RenderSettings` back to the scene defaults (so the new map captures those, not the profile's values), releases every finger, and calls `_load_map()`: `WorldManager.load_map()` frees the old map with its vehicles and NPCs, the player goes to the new spawn, the camera snaps behind it, the vehicles and NPCs are placed and registered, and a new `RenderSettings` is created; then the experiment's runtime keys and the quality profile are applied again. It logs `MAP <id> loaded in <ms> ms` and emits `map_changed`. The node count after a round trip equals the count before it (tests on both maps, the device scenario on both devices).
+- **Per-map data** (`MapDefinition`): `id`, `display_name`, `scene_path`, player spawn and yaw, `bounds`, `kill_height`, `vehicle_spawns` with an optional `vehicle_scenes` entry per spawn (`Main.vehicle_scene` where empty), `npc_routes` (`PatrolRoute`: points and a wait; one NPC per route), `occluders_path`, debug viewpoints and names.
+
+### Adding a map (the steps followed for the test district)
+
+1. Make the map scene, `maps/<id>/<id>.tscn`: any Node3D scene with walkable static bodies on layer 1 (world). Name meshes with the `RenderSettings.CATEGORIES` prefixes (`Ground_`, `Road_`, `Buildings_`, `Trees_`, …) so the quality profiles' visibility ranges apply, and give it a `WorldEnvironment` and a `DirectionalLight3D` named `Sun` as direct children if the profiles should change fog and shadows. The test district is generated from Godot primitives by `tools/build_test_district.gd` (box shapes and one convex ramp instead of trimesh colliders).
+2. Occluders (optional): a scene of `OccluderInstance3D` nodes with `ArrayOccluder3D` occluders, referenced by `occluders_path`. `tools/bake_occluders.gd -- --map=res://maps/<id>/<id>.tres` builds them from trimesh collision (İstanbul); the test district's generator writes one box per building. Without the file, a profile with occlusion builds occluders from trimesh collision at load and logs a warning (none for box colliders).
+3. Write `maps/<id>/<id>.tres` (`MapDefinition`): a unique `id`, the scene path, spawn and yaw, bounds (a ground-plane `Rect2`: x is world X, y is world Z), kill height, vehicle spawns (transforms face −Z) and their types, NPC routes (points on the floor, at least 10 m from where tests walk), the occluder path, and viewpoints. Exported arrays must be typed arrays, not packed arrays (T16).
+4. Add it to `game/world/maps.tres` (`definitions`). Nothing in the player, vehicle, NPC, camera, or input code changes.
+5. Test it: `tests/integration/test_test_district.gd` is the model (spawn, colliders, bounds and kill height, viewpoints on the floor, profiles and occluders, a switch round trip, vehicles, NPCs); measure a viewpoint with an experiment that names the map (`profile_default_test_district.json`).
+
+### Adding a vehicle type (the steps followed for the van)
+
+1. A scene with a `VehicleBody3D` root using `vehicle_controller.gd` (see "Vehicles (Phase 3)", "Adding a vehicle type"): `game/vehicle/placeholder_van.tscn` is the test fixture van moved into the game.
+2. A `VehicleDefinition` (`game/vehicle/definitions/van.tres`).
+3. Park it on a map: add a spawn to `vehicle_spawns` and the scene at the same index of `vehicle_scenes`. Getting in and out, sleeping, resets, the camera profile, and the debug CAR button (it walks up to each vehicle in turn) work without code changes.
+
+### Adding an NPC (the steps followed for the patrol NPCs)
+
+1. The NPC scene: `game/npc/npc.tscn` inherits `game/player/player.tscn` (controller, states, placeholder visual, collision capsule) and changes only data: the root script `Npc` (it wires the input source and the hurtbox), physics layer 5 "npc" (mask world, player, vehicle, npc), the body's colour, plus a `Hurtbox`, a `HitReaction` state, and an `AiPatrolInput` node. A new kind of NPC is another `PlayerInputSource` (a different behaviour) or another inherited scene (a different look or tuning); `PlayerController` and the existing states stay unchanged.
+2. Routes: add `PatrolRoute` entries to the map's `npc_routes`; `WorldManager.spawn_npcs(Main.npc_scene)` places one NPC per route, tracks it (respawn at its own start, bounds), and frees it with the map.
+3. Reactions belong to the NPC (`Npc._on_hit_received()` starts `HitReactionState`); damage, health, or pursuit would be added there or in another input source.
+
+## NPCs (Phase 5)
+
+| Part | What it does | Tunables (default) |
+|---|---|---|
+| `Npc` (`extends PlayerController`) | Sets `AiPatrolInput` as its input source, counts hits (`hits`, `hit` signal), starts the hit reaction; `patrol(route)` places it on the route's first point facing the second; switches the far mode by the distance to `focus` (the player, set by `Main`) every 0.25 s | `far_distance` 10 m, `near_distance` 8 m |
+| `AiPatrolInput` (`PlayerInputSource`) | Walks toward the current point (stick tilt `move_scale` → half the walk speed), waits `wait_seconds` there, loops; gives a point up after `stuck_seconds` of walking without getting `min_progress` closer (signals `arrived`, `gave_up`) | 0.5, arrive 0.6 m, 2 s, 0.25 m |
+| `HitReactionState` (`PlayerState`) | Pushed away from the attacker at `push_speed`, slows to a stop, keeps its facing for `duration`; a second hit restarts it; then a buffered action or the locomotion state | 0.5 s, 2 m/s |
+| `PatrolRoute` (`Resource`, in `MapDefinition.npc_routes`) | Points (x, z steer; y is the placement height) and the wait at each | 1.5 s |
+| `PlaceholderCharacterVisual` | `play_action(&"hit", …)`: rocks back and squashes, then straightens | — |
+
+- The one-hit-per-punch rule is the `Hitbox`'s (T21) and holds for NPCs: a punch that stays in reach hits once.
+- Physics: NPCs and the player block each other (the player's mask now includes layer 5); the camera's spring arm ignores NPCs; vehicles do not collide with NPCs (as with the player, T24: a vehicle passes through a standing character, the character cannot walk through a vehicle). An NPC walking into a parked car wakes it (the `PlayerController` rule).
+- Placement: an NPC gets its start transform before it enters the tree (`Npc.start_transform()`): GodotPhysics3D moves a character body that is already in the space to a new transform only in the next physics step, so a body spawned at the origin and then teleported would, for that one step, push whatever stands at the origin (found in a unit test: an NPC ended up on the player's head and rode along).
+- **Far mode (physics level of detail):** farther than `far_distance` from the player (back within `near_distance`) an NPC leaves the controller: its `_physics_process` only checks the distance, and a Tween (physics process mode, so physics interpolation smooths it) moves it to the patrol input's current point at the speed the controller would walk, through floor heights sampled with one ray every 2 m when the segment starts; at the point it calls `AiPatrolInput.reach_point()`, waits the route's wait, and walks on. Near the player it is the controller again, from where it stands, toward the same point. Measured on the Galaxy Tab A7 (`PROJECT_STATE.md`, "Phase 5"): two walking NPCs under the controller added 2.3–2.7 ms to every physics step (three-run A/B; on the Mac a character costs about the same on boxes as on trimesh, so this is mostly script and transform work); a far walk scripted every tick still cost about 0.6–0.75 ms per NPC; the Tween walk adds 0.55–0.64 ms for the two. Far NPCs pass through walls, cars, and each other, so routes must be clear; a hit reaction always plays out under the controller.
+- Measurement: the `"npcs"` runtime key (false) takes the NPCs out of the simulation and `"npc_far_mode"` (false) keeps them under the controller at any distance; results record `npcs` (NPCs simulated) and `npcs_near` (average number under the controller); `tools/perf/npc_cost.gd` measures the physics step headless with the NPCs off, as in the game, and all under the controller.
 
 ## Debug measurement tools (debug builds only; STARTUP also in Release Perf builds)
 
 - Overlay (top left): FPS, draw calls, primitives, objects, video memory, engine static memory (current and peak), player state and speed on foot or the driven vehicle's forward speed (`Driving 12.3 m/s`), each vehicle's physics state (`car asleep`), current viewpoint, quality profile.
-- Log lines: `PERF profile=… view="…" fps=… draw_calls=… … vehicles=asleep` every 2 s; `QUALITY profile=… experiment=… occluders={…} effective={…}` whenever settings are applied; `STARTUP map_ready_ms=… first_frame_ms=… profile=… occluders={…} physics_3d=<engine> (setting <value>) vehicles=… build={…}` once; `VEHICLE <name> asleep|awake` on each sleep change; `VIEW <name>` on each switch.
+- Log lines: `PERF map=… profile=… view="…" fps=… draw_calls=… … vehicles=asleep` every 2 s; `QUALITY profile=… experiment=… occluders={…} effective={…}` whenever settings are applied; `STARTUP map_ready_ms=… first_frame_ms=… map=… profile=… occluders={…} physics_3d=<engine> (setting <value>) vehicles=… npcs=<n> build={…}` once; `VEHICLE <name> asleep|awake` on each sleep change; `VIEW <name>` on each switch.
 - Q button: cycles quality profiles none → high → low (the debug experiment, if any, stays on top).
 - VIEW button: cycles Spawn → the map's `debug_viewpoints` (`MapDefinition`, names in `debug_viewpoint_names`). While driving it moves the vehicle there.
-- CAR button: puts the player beside the driver's door of the map's first vehicle (it is parked far from the player spawn); logs `CAR walk-up`.
+- CAR button: puts the player beside the driver's door of the map's next vehicle (the first on the first press, then each in turn; they are parked away from the player spawn); logs `CAR walk-up <vehicle>`.
+- MAP button: loads the next map of the registry (`Main.cycle_map()`; refused while driving); logs `MAP <id> loaded in <ms> ms`. The overlay's third line names the map.
 - DUMMY button: places a training dummy 1.3 m in front of the spawn (0.35 m to the right, so the camera sees it) or removes it. It shows `HITS <n>` above itself and logs `DUMMY hits=<n>` per hit; off by default, so benchmarks and tests run without it.
 - Reading the logs: Android `adb logcat -s godot`; iOS: Godot output goes to the unified log, not to `devicectl --console`; record it with `xcrun xctrace record --template Logging --device <udid> --all-processes` and export the `os-log` table. Screenshots: `adb exec-out screencap -p`, `xcrun devicectl device capture screenshot`. iOS memory and thermal state: Instruments "Activity Monitor" template (`memory-physical-footprint`, `device-thermal-state-intervals`).
 
@@ -297,7 +348,9 @@ godot --headless --path . --script res://tests/map/validate_scene.gd # original 
 - Exit code: `0` no failures and no skips; `1` any failure, an error logged outside a test, or nothing passed; `2` no failures but some tests skipped.
 - Other engine settings for a one-off run (measurement only): put a temporary `override.cfg` in the project root and delete it afterwards, e.g. `[physics]` `3d/physics_engine="Jolt Physics"` or `common/physics_ticks_per_second=30`. Results of 2026-10-26: `docs/perf/phase4a/headless/`. Many timing tests count 60 Hz ticks, so a 30 Hz run fails them without a gameplay change; see `PROJECT_STATE.md`.
 - Collider census (types, triangles, bodies near each viewpoint): `godot --headless --path . --script res://tools/perf/collider_census.gd`.
-- `tests/unit/` runs without the map. `tests/integration/` loads the real map; when `assets/istanbul_halic.glb` is missing its tests are reported as `SKIP` (via the file's `skip_reason()`), and the full run exits 2.
+- `tests/unit/` runs without the map. `tests/integration/test_game_on_map.gd` loads the real map; when `assets/istanbul_halic.glb` is missing its tests are reported as `SKIP` (via the file's `skip_reason()`), and the full run exits 2. `tests/integration/test_test_district.gd` starts the game on the test district (`Main.requested_map`) and runs without the GLB.
+- NPC physics cost headless: `godot --headless --path . --script res://tools/perf/npc_cost.gd [-- --map=test_district]`.
+- Test district: `godot --headless --path . --script res://tools/build_test_district.gd` regenerates its scene and occluders (then `--import`).
 - Tests send touches through `Input.parse_input_event`, the same pipeline device touches use, with positions converted from canvas units to window pixels.
 - Visual check without a device (opens a window):
 
@@ -335,8 +388,8 @@ Permanent render settings per device class, applied in every build.
 
 Temporary settings layered on top of a profile for measurements. They run in debug builds and in release builds exported with the `perf_bench` custom feature (see "Build features"); normal release builds ignore them. With no experiment and the "none" profile the game runs with scene defaults (`test_no_perf_experiment_by_default`).
 
-- **Flags:** `PerfConfig` (`game/debug/perf_config.gd`) holds one experiment, parsed from JSON; unknown keys, categories, or profiles are rejected. Keys: `experiment`, `profile` (`none`/`high`/`low`; omitted = platform default), the `RenderSettings` keys `hide` (categories), `visibility_end` ({category: metres}), `camera_far` + `fog`, `shadows` (`default`/`off`/`single`), `render_scale` + `scaling_mode` (`bilinear`/`metalfx`; FSR is Forward+ only in Godot 4.7.2), `max_fps`, `occlusion`, `lod_threshold`, a `runtime` section (below), and an optional `bench` section (`warmup_s` 30, `measure_s` 60, `views`, `session_minutes`, `session_view`, `screenshots`, `quit_when_done`, `in_vehicle`), or a `scenario` section (debug builds; see "Device scenario"). Experiments from the 2026-10-24 diagnosis pin `"profile": "none"`, the condition they were measured under; Phase 4 experiments (`c_*`, `pacing_*`, `jolt_*`, `session_pacing_*`) name the device profile (`low` tablet, `high` iPhone).
-- **Runtime keys** (`PerfConfig.RUNTIME_KEYS`, applied by `Main.apply_runtime_settings()`, measurement only): `physics_ticks` (Engine physics rate), `physics_interpolation`, `player_physics` (false pauses the player's `_physics_process`, so no `move_and_slide`), `vehicles` (false takes the parked vehicles out of the simulation), `collider_radius` (map static bodies whose ground-plane bounds are farther than this from the player are disabled and leave the physics space; re-evaluated at each viewpoint; 0 = all off, which needs `player_physics: false`), `vsync_mode` (`disabled`/`enabled`/`adaptive`/`mailbox`), `vehicle_sleep` (false keeps parked vehicles awake, Phase 4b A/B; applied to a copy of each vehicle's definition). Keys an experiment leaves out keep their defaults; the result's `config.runtime` records them.
+- **Flags:** `PerfConfig` (`game/debug/perf_config.gd`) holds one experiment, parsed from JSON; unknown keys, categories, or profiles are rejected. Keys: `experiment`, `profile` (`none`/`high`/`low`; omitted = platform default), `map` (a registry id; omitted = the first map; Phase 5), the `RenderSettings` keys `hide` (categories), `visibility_end` ({category: metres}), `camera_far` + `fog`, `shadows` (`default`/`off`/`single`), `render_scale` + `scaling_mode` (`bilinear`/`metalfx`; FSR is Forward+ only in Godot 4.7.2), `max_fps`, `occlusion`, `lod_threshold`, a `runtime` section (below), and an optional `bench` section (`warmup_s` 30, `measure_s` 60, `views`, `session_minutes`, `session_view`, `screenshots`, `quit_when_done`, `in_vehicle`), or a `scenario` section (debug builds; see "Device scenario"). Experiments from the 2026-10-24 diagnosis pin `"profile": "none"`, the condition they were measured under; Phase 4 experiments (`c_*`, `pacing_*`, `jolt_*`, `session_pacing_*`) name the device profile (`low` tablet, `high` iPhone).
+- **Runtime keys** (`PerfConfig.RUNTIME_KEYS`, applied by `Main.apply_runtime_settings()`, measurement only): `physics_ticks` (Engine physics rate), `physics_interpolation`, `player_physics` (false pauses the player's `_physics_process`, so no `move_and_slide`), `vehicles` (false takes the parked vehicles out of the simulation), `collider_radius` (map static bodies whose ground-plane bounds are farther than this from the player are disabled and leave the physics space; re-evaluated at each viewpoint; 0 = all off, which needs `player_physics: false`), `vsync_mode` (`disabled`/`enabled`/`adaptive`/`mailbox`), `vehicle_sleep` (false keeps parked vehicles awake, Phase 4b A/B; applied to a copy of each vehicle's definition), `npcs` (false takes the NPCs out of the simulation), `npc_far_mode` (false keeps every NPC under the controller; Phase 5 A/B). Keys an experiment leaves out keep their defaults; the result's `config.runtime` records them.
 - **Applying:** `game.apply_perf_experiment()` merges the experiment over its profile and applies it through the same `RenderSettings`; there is no separate experiment code path.
 - **Categories** (by node-name prefix, checked in this order; every one of the 3,055 map meshes matches one, enforced by `test_perf_categories_cover_every_map_mesh`; defined in `RenderSettings.CATEGORIES`):
 
@@ -351,15 +404,16 @@ Temporary settings layered on top of a profile for measurements. They run in deb
   | water | `Water` | 1 | 2 |
 
 - **Loading:** `game.gd` reads `--perf-config=<path>` from the command line (desktop) or a one-shot `perf_bench.json` (devices; deleted when read) from `user://`, or on Android from the app-specific external folder `OS.get_system_dir(SYSTEM_DIR_DOCUMENTS, false)` (`/sdcard/Android/data/<package>/files/Documents`): a release APK is not debuggable, so `run-as` cannot reach `user://`, but adb reaches that folder directly. Experiment definitions live in `tools/perf/experiments/*.json`.
-- **Benchmark:** `PerfBenchmark` visits each viewpoint, waits `warmup_s`, then records every frame time for `measure_s`: average FPS (frames / time), 1 % low (FPS at the 99th-percentile frame time), minimum FPS (longest frame), frame-time percentiles (`frame_p50_ms`, `frame_p90_ms`, `frame_p99_ms`), a 1 ms histogram (`frame_hist_ms`, 0–99 ms plus one bin for longer frames), `long_frames` (over 1.25 × the median, i.e. at least one display refresh late), the physics step and process times (`physics_ms`/`physics_p99_ms`, `process_ms`/`process_p99_ms`: `Performance.TIME_PHYSICS_PROCESS` and `TIME_PROCESS` sampled every frame), and per-second averages of draw calls, primitives, and objects, plus peak video memory and engine static memory, and `vehicles_asleep` (share of frames in which the map's vehicles slept). Each result records the active profile and `in_vehicle`; the results file also has `startup` with the build kind and frame/physics settings (`debug_build`, `perf_feature`, `physics_ticks`, `physics_interpolation`, `max_fps`, `vsync_mode`, `screen_refresh_rate` (panel maximum), `display_refresh_rate` (the rate frames are paced to), `ios_allow_high_refresh_rate`, `android_frame_pacing`) and the vehicles' sleep state at the first frame (`vehicles`). It logs `BENCH {json}` lines, writes `user://bench_results.json` (with the profile, the occluder source and load time, and the startup times), saves 640 px JPEG screenshots to `user://bench/`, then quits (Android) or hides the map and drops to 5 FPS until the host terminates it (iOS ignores `quit()`).
+- **Benchmark:** `PerfBenchmark` visits each viewpoint, waits `warmup_s`, then records every frame time for `measure_s`: average FPS (frames / time), 1 % low (FPS at the 99th-percentile frame time), minimum FPS (longest frame), frame-time percentiles (`frame_p50_ms`, `frame_p90_ms`, `frame_p99_ms`), a 1 ms histogram (`frame_hist_ms`, 0–99 ms plus one bin for longer frames), `long_frames` (over 1.25 × the median, i.e. at least one display refresh late), the physics step and process times (`physics_ms`/`physics_p99_ms`, `process_ms`/`process_p99_ms`: `Performance.TIME_PHYSICS_PROCESS` and `TIME_PROCESS` sampled every frame), and per-second averages of draw calls, primitives, and objects, plus peak video memory and engine static memory, and `vehicles_asleep` (share of frames in which the map's vehicles slept). Each result records the active profile and `in_vehicle`; the results file also has `startup` with the build kind and frame/physics settings (`debug_build`, `perf_feature`, `physics_ticks`, `physics_interpolation`, `max_fps`, `vsync_mode`, `screen_refresh_rate` (panel maximum), `display_refresh_rate` (the rate frames are paced to), `ios_allow_high_refresh_rate`, `android_frame_pacing`) and the vehicles' sleep state at the first frame (`vehicles`), the map (`map`), and the number of NPCs (`npcs`); each result also records `npcs` (NPCs simulated) and `npcs_near` (average number under the controller rather than in the far mode). It logs `BENCH {json}` lines, writes `user://bench_results.json` (with the profile, the occluder source and load time, and the startup times), saves 640 px JPEG screenshots to `user://bench/`, then quits (Android) or hides the map and drops to 5 FPS until the host terminates it (iOS ignores `quit()`).
 
 ### Device scenario (Phase 4d)
 
-An experiment with a `scenario` section (`name`: `vehicle_sleep` or `orientation`; `rotate_hold_s`; `quit_when_done`) makes a debug build play `DeviceScenario` instead of a benchmark: synthetic touches through `Input.parse_input_event` (the path real touches take) on the debug CAR and VIEW buttons, the joystick, and the interact, throttle, handbrake, and exit buttons, with one `SCENARIO step=<name> result=<PASS|FAIL|INFO> t=<s> <details>` log line per step. Results go to the benchmark's results file, so the host scripts collect them.
+An experiment with a `scenario` section (`name`: `vehicle_sleep`, `orientation`, or `extensibility`; `rotate_hold_s`; `quit_when_done`) makes a debug build play `DeviceScenario` instead of a benchmark: synthetic touches through `Input.parse_input_event` (the path real touches take) on the debug CAR and VIEW buttons, the joystick, and the interact, throttle, handbrake, and exit buttons, with one `SCENARIO step=<name> result=<PASS|FAIL|INFO> t=<s> <details>` log line per step. Results go to the benchmark's results file, so the host scripts collect them.
 
 - `vehicle_sleep`: parked car asleep → CAR → walk into the car (wakes) → let go (asleep within 4 s, and asleep for 3 s more while the player stands against it) → get in (wakes) → throttle above 5 m/s → handbrake, get out → asleep; then the same on the sloped Galata street (VIEW while driving). With `rotate_hold_s` > 0 it continues with `orientation`.
+- `extensibility` (Phase 5): MAP to the test district (`map_switch`: spawn, two vehicles, three NPCs, node count) → CAR until beside the van, get in, throttle above 5 m/s, handbrake, get out, asleep again (`van_*`) → the nearest NPC on the player's level patrols (`npc_patrols`), the stick walks the player up to it and the punch button hits it (`npc_hit_reaction`, `npc_one_hit_per_punch`), it walks on (`npc_patrol_resumes`) → MAP back to the first map (`map_back`: spawn, its vehicles and NPCs, the node count equal to the count before the switches) → the `vehicle_sleep` steps.
 - `orientation`: holds the joystick for `rotate_hold_s` while the device is turned, logging the gravity vector (the gravity sensor is enabled for debug builds only: `input_devices/sensors/enable_gravity.debug=true`), the applied safe area, and the stick once a second; then releases and checks that the stick reads zero and the player stops.
-- Experiments: `scenario_vehicle_sleep.json`, `scenario_vehicle_sleep_rotate.json` (12 s hold), `scenario_orientation.json` (30 s). Headless: `test_device_scenario_on_the_map`.
+- Experiments: `scenario_vehicle_sleep.json`, `scenario_vehicle_sleep_rotate.json` (12 s hold), `scenario_orientation.json` (30 s), `scenario_extensibility.json`. Headless: `test_device_scenario_on_the_map`, `test_device_scenario_extensibility`.
 
 ```bash
 # Android (debug APK installed, device unlocked); the cue script turns the device during the hold

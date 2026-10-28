@@ -1,0 +1,14 @@
+engine 4.7.2-stable (official), map istanbul_halic, 2 NPCs, 900 ticks per mode and round
+| Mode | Round | Physics step mean ms | Median ms | NPCs in the far mode |
+|---|---|---|---|---|
+| NPCs off | 1 | 0.4516 | 0.3750 | 2 far |
+| NPCs game | 1 | 0.6507 | 0.6040 | 2 far |
+| NPCs full | 1 | 1.6446 | 1.1490 | 0 far |
+| NPCs off | 2 | 0.4010 | 0.3560 | 0 far |
+| NPCs game | 2 | 1.6792 | 0.6540 | 2 far |
+| NPCs full | 2 | 1.0735 | 1.0280 | 0 far |
+| NPCs off | 3 | 0.4596 | 0.3880 | 0 far |
+| NPCs game | 3 | 0.7151 | 0.6200 | 2 far |
+| NPCs full | 3 | 1.0888 | 0.9500 | 0 far |
+median of round means: game 0.7151 ms, off 0.4516 ms, difference 0.2635 ms, per NPC 0.1317 ms
+median of round means: full 1.0888 ms, off 0.4516 ms, difference 0.6372 ms, per NPC 0.3186 ms

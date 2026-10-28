@@ -1,0 +1,43 @@
+{
+ "experiment": "c_npcs_full_high",
+ "device": "ios",
+ "wall_s": 206,
+ "cooldown_s": 0,
+ "app_args": "",
+ "thermal_start": "Nominal",
+ "thermal_end": "Nominal",
+ "thermal_max": "Nominal",
+ "footprint_peak_mib": 980,
+ "probes": [
+  {
+   "t": 0,
+   "thermal": "Nominal",
+   "footprint_mib": null
+  },
+  {
+   "t": 41,
+   "thermal": "Nominal",
+   "footprint_mib": 979
+  },
+  {
+   "t": 92,
+   "thermal": "Nominal",
+   "footprint_mib": 979
+  },
+  {
+   "t": 143,
+   "thermal": "Nominal",
+   "footprint_mib": 980
+  },
+  {
+   "t": 195,
+   "thermal": "Nominal",
+   "footprint_mib": 976
+  },
+  {
+   "t": 206,
+   "thermal": "Nominal",
+   "footprint_mib": null
+  }
+ ]
+}

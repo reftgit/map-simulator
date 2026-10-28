@@ -1,0 +1,14 @@
+engine 4.7.2-stable (official), map test_district, 3 NPCs, 900 ticks per mode and round
+| Mode | Round | Physics step mean ms | Median ms | NPCs in the far mode |
+|---|---|---|---|---|
+| NPCs off | 1 | 0.3249 | 0.3200 | 3 far |
+| NPCs game | 1 | 0.6577 | 0.6240 | 3 far |
+| NPCs full | 1 | 1.2811 | 1.0910 | 0 far |
+| NPCs off | 2 | 0.4097 | 0.3210 | 0 far |
+| NPCs game | 2 | 0.7309 | 0.7370 | 3 far |
+| NPCs full | 2 | 1.3336 | 1.1460 | 0 far |
+| NPCs off | 3 | 0.6013 | 0.2780 | 0 far |
+| NPCs game | 3 | 0.7568 | 0.6660 | 3 far |
+| NPCs full | 3 | 1.0792 | 1.0180 | 0 far |
+median of round means: game 0.7309 ms, off 0.4097 ms, difference 0.3212 ms, per NPC 0.1071 ms
+median of round means: full 1.2811 ms, off 0.4097 ms, difference 0.8714 ms, per NPC 0.2905 ms

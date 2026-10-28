@@ -2,7 +2,7 @@
 
 Planning context and decision rationale. This file does not describe implemented functionality; see `PROJECT_STATE.md` for that.
 
-Last updated: 2026-10-28 (Phase 4d, Claude Code)
+Last updated: 2026-10-28 (Phase 5, Claude Code)
 
 ## Product vision and goals
 
@@ -78,6 +78,8 @@ Detailed task of 2026-10-25 (user): first identify and log the active 3D physics
 ### Phase 5 — Extensibility
 
 Validate the infrastructure for adding a new map, a new vehicle, and NPCs.
+
+Detailed task of 2026-10-28 (user): a map registry with the active map chosen from it (İstanbul • Haliç by default, also in release; `--map=<id>` and a debug overlay switch) and a clean rebuild of player, vehicles, NPCs, camera, and occluders on a switch (checked by node counts); a small second map from Godot primitives with its own spawn, bounds, kill height, vehicle spawns, NPC routes, and viewpoints; the second vehicle type in the game; an NPC that patrols 2–3 points and plays a short hit reaction when punched, preferably on the player's controller with an AI input source, tracked by `WorldManager` (kill height, bounds, respawn at its own start), 2 on İstanbul and 3 on the test map; no damage, health, death, attack, or pursuit; every change to the core systems listed as an extensibility finding; the device scenario extended to the new content on both devices; three-run release measurements with the NPCs (iPhone high: average ≥ 59.5 and long frames < 1 % at three viewpoints; Tab A7 low: average ≥ 29.9 and 1 % low at most 1 FPS below the Phase 4b medians), the physics cost per NPC, and one viewpoint on the test map; the iPhone two-orientation check. Implementation and results: `PROJECT_STATE.md`, "Phase 5".
 
 ### Suggested modules (from the specification)
 
@@ -194,6 +196,11 @@ PlayerController, PlayerStateMachine, PlayerCombat, PlayerAnimation, ThirdPerson
 - **Decision:** P1: every iOS build runs the display at 60 Hz (`display/window/ios/allow_high_refresh_rate = false` in `project.godot`); the high profile keeps its 60 FPS cap. P2: a vehicle with no driver that is at rest is put to sleep (or frozen) and wakes when needed. P3–P8 are not applied: the physics engine (GodotPhysics3D), the 60 Hz physics tick, physics interpolation, and the tablet's frame cap stay as they are; the map, the map pipeline, and the quality profile values do not change.
 - **Implementation (Phase 4b):** P1 as above; the measurement-only "iOS Release Perf 60Hz" preset and its `perf_60hz` override were removed because they would now build the same app. P2 uses `RigidBody3D.sleeping` rather than `freeze` (measured: same cost reduction, but a sleeping body is woken by the engine on contact while a frozen one is an immovable wall); rules in `docs/ARCHITECTURE.md`, "Parked vehicles sleep". Results: `PROJECT_STATE.md`, "Phase 4b".
 - **P2 criterion accepted (2026-10-27, user via reviewer):** the tablet's physics step fell by 0.75 / 0.86 / 0.79 ms against the ≥ 0.8 ms criterion; this is within the measurement noise, and P2 counts as accepted.
+
+### D21 — Phase 5 scope (2026-10-28, user decision)
+
+- **Decision:** the second map is a small test map built only from Godot primitives and existing materials (no external assets); the NPC patrols 2–3 points and plays a short hit reaction when punched, with no damage, health, death, attack, or pursuit; the test fixture van may become the game's second vehicle type with a placeholder visual; 2 NPCs on İstanbul, 3 on the test map. İstanbul • Haliç (GLB and scene), the quality profile values, the physics settings, and Phase 1–4 behaviour do not change. Device items count only with a log, a results file, or a screenshot.
+- **Implementation:** T34–T38; results in `PROJECT_STATE.md`, "Phase 5".
 
 ## Application technical decisions
 
@@ -363,6 +370,33 @@ Decisions made by the implementing agent (Claude Code, 2026-10-24). None was spe
 - **Decision:** checks that can be scripted run as a `DeviceScenario` in a debug build (synthetic touches, `SCENARIO` log lines, a results file); the host turns Android devices with adb (`android_rotate_on_cue.sh`, which restores the rotation settings). Only steps that need a hand (turning an iPhone) are asked of the user, and they count only with evidence (gravity sensor values, screenshots, logs). The gravity sensor is enabled in debug builds only, for that evidence.
 - **Rationale:** in Phases 4b–4c several user answers were not borne out by logs or screenshots; scripted checks give evidence without depending on that.
 
+### T34 — Map registry and runtime map switch (Phase 5)
+
+- **Decision:** the loadable maps are a `MapRegistry` resource (`game/world/maps.tres`) of `MapDefinition`s with an `id`; the first is the default and the only map a normal release build loads. Debug and Release Perf builds pick another with an experiment's `"map"` key or `--map=<id>`; debug builds cycle with a MAP overlay button. `Main.switch_map()` frees the old map with its vehicles, NPCs, and the training dummy, restores the render defaults before the new map's `RenderSettings` captures them, and re-applies the profile; it is refused while driving.
+- **Rationale:** the task asked for selection from a registry, a command-line override, an overlay switch, and an unchanged release default. Refusing the switch while driving avoids a forced exit path in `VehicleInteraction` (no core change); a map switch is a debug tool for now.
+
+### T35 — NPCs on the player's controller (Phase 5)
+
+- **Decision:** an NPC is `game/npc/npc.tscn`, a scene inherited from `player.tscn`, with the root script `Npc extends PlayerController` (wiring only), an `AiPatrolInput`, a `Hurtbox`, a new `HitReactionState`, its own colour, and physics layer 5 "npc". `PlayerController` and the existing states are unchanged. One NPC per `PatrolRoute` in `MapDefinition.npc_routes`; `WorldManager` places, tracks (own respawn point), and frees them.
+- **User decisions applied (task of 2026-10-28):** patrol between 2–3 points, a short hit reaction, then the patrol continues; no damage, health, death, attack, or pursuit; 2 NPCs on İstanbul and 3 on the test district.
+- **Physics:** the player and NPCs block each other (the player's mask now includes layer 5); the camera ignores NPCs; vehicles still pass through characters (as with the player, T24).
+- **Level of detail ("far mode"):** farther than 10 m from the player (back within 8 m) an NPC leaves the controller and a Tween moves it along its route, with floor rays once per segment. Measured on the Galaxy Tab A7 (`PROJECT_STATE.md`, "Phase 5"): two walking NPCs under the controller added 2.3–2.9 ms to the physics step (1.1–1.4 ms each in the three-run A/B) and lowered the 1 % low by about 2 FPS, which failed the task's criterion in a probe; on the Mac a character's cost is about the same on boxes and on trimesh, so it is mostly script and transform work, not collision. A far walk scripted every tick still cost about 0.6–0.75 ms per NPC; the Tween walk costs 0.27–0.32 ms per NPC (three-run A/B), and with it the measurement criteria were met. Far NPCs ignore collisions, so routes must be clear.
+- **Rationale:** reusing the controller is what the specification's T3 promised and what the task asked first; the far mode keeps that promise where it matters (near the player, where NPCs can be touched or punched) while keeping the tablet's frame budget.
+
+### T36 — AI input source (Phase 5)
+
+- **Decision:** `AiPatrolInput` (`PlayerInputSource`) walks at half walking speed toward the current point, waits the route's `wait_seconds`, loops, and gives a point up after 2 s of walking without getting 0.25 m closer. It reads only its own body; it never runs, punches, or rolls.
+- **Rationale:** the intent pattern (T3) needed no change; the stuck rule covers walls, cars, other NPCs, and the player standing in the way (the task's "takılma kurtarma").
+
+### T37 — Test district (Phase 5)
+
+- **Decision:** a 120 m square map of Godot primitives (box buildings, two streets, a 9.5° ramp to a raised plaza, walls, İstanbul's sky and sun), generated by `tools/build_test_district.gd`, with box and convex colliders and one box occluder per building. Its tests need no GLB.
+- **Rationale:** the user chose a small primitive test map; generating it keeps the layout reproducible. Headless on the Mac an NPC costs about the same on its boxes as on İstanbul's trimesh bridge (0.29 vs 0.32 ms per step).
+
+### T38 — Second vehicle type in the game (Phase 5)
+
+- **Decision:** the test fixture van became game content (`placeholder_van.tscn`, `definitions/van.tres`); `MapDefinition.vehicle_scenes` gives a vehicle type per spawn (`Main.vehicle_scene` where empty); the test district parks the compact car and the van. The debug CAR button walks up to each vehicle in turn.
+
 ## Performance findings and proposed measures
 
 Status: **measured on 2026-10-24, nothing applied.** Full tables and protocol: `PROJECT_STATE.md`, "Performance diagnosis pass". Raw data and screenshots: `docs/perf/`.
@@ -433,9 +467,19 @@ Written in Phase 4d (2026-10-28). The measurement and debug presets are not rele
 6. **Store assets and metadata:** final app name and icon (open question 5), all icon sizes the stores need, a launch screen, screenshots per device class, age rating, export compliance (the iOS build already declares `ITSAppUsesNonExemptEncryption` = false).
 7. **Release builds:** the quality profiles and the game are not debug-only, but `BuildFeatures` hides the debug overlay and experiments only when neither debug nor `perf_bench`: a release preset must carry no `perf_bench` (pinned by `test_build_features.gd`).
 
+## After the specification (options; nothing started)
+
+Phases 0–5 of the specification are implemented (`PROJECT_STATE.md`, "Specification status"). The three candidate directions, each needing a user decision:
+
+| Option | Prerequisites | Expected effect (from measurements where there are any) | Risk |
+|---|---|---|---|
+| Map-level facades and simple colliders | The user's approval to change the map pipeline and the map generation scripts in the repository (open questions 20, 21, 30) | Facade detail is 64.2 % of the 7.07 M triangles: lighter facades in smaller cells would let the tablet's low profile drop fog, the 0.6 render scale, or the blank nearby facades (D12). Simple colliders instead of 827 trimesh bodies: the player's physics tick costs ~1 ms per step on the tablet (Phase 4a), but Phase 5 found a character's cost to be mostly script and transform work (on the Mac an NPC costs 0.29 ms per step on boxes and 0.32 ms on trimesh), so the physics gain of simple colliders is likely small; not measured on the tablet | High: regenerates the map, occluders, colliders, and every measurement baseline |
+| Real character and vehicle models | A character model with idle, walk, run, punch, roll, and hit animations and a car model with four separate wheels, with sources and licences (open questions 1, 2) | Plug-in points exist and are tested: `CharacterVisual` (`play_action` punch / roll / hit for an AnimationTree), `VehicleVisual` (wheel order). Costs to measure: skinned meshes and animation per character (CPU on the tablet, where a character already costs ~1.1–1.4 ms per step, question 34) and draw calls | Medium: art-dependent; performance unknown until measured |
+| Store preparation | The new Apple Developer account and Team ID, the final bundle ID registered there, a release keystore, app name and icon (open question 5), privacy labels; the checklist in "Before a store release" | Release presets without `perf_bench`, an Android App Bundle through the Gradle template (target API 36 already), an iOS archive; decide whether the test district ships (question 36) | Low technically; depends on external accounts and assets |
+
 ## Planned features
 
-Everything listed under "Requirements by phase" from Phase 2 onward, plus the remaining Phase 4 and 5 work.
+Everything listed under "Requirements by phase" is implemented (Phase 5 completed 2026-10-28); what follows is in "After the specification".
 
 ## Agreed but unimplemented functionality
 
@@ -476,8 +520,8 @@ See "Requirements by phase". `PROJECT_STATE.md` records which parts exist.
 19. A user-facing graphics settings menu to pick the profile?
 20. Bringing the map generation scripts (`<SOURCE_PACKAGE>/Istanbul_Halic/source/`) into the repository so map-level work is reproducible.
 21. The map-level facade detail work (lighter facades, LODs, smaller cells): awaiting the user's decision and approval to change the map pipeline.
-22. Damage system: punches only signal hits (T21). Health, damage values, and hit reactions are undefined.
-23. NPCs: none yet. What should they do when hit, and should they use `PlayerController` with an AI `PlayerInputSource` (T3)?
+22. Damage system: punches only signal hits (T21). Since Phase 5 an NPC plays a short hit reaction (user decision for Phase 5); health, damage values, death, and knockback are still undefined.
+23. NPCs: *(answered for Phase 5, 2026-10-28, user: patrol between 2–3 points, a short hit reaction, no damage, attack, or pursuit; implemented on `PlayerController` with an AI input source, T35–T36.)* Still open: what NPCs should do beyond this (reacting to the player, crowds, traffic), and how many there should be (see question 34).
 24. Roll damage immunity (invulnerability frames): none for now (D14). Revisit once damage exists.
 25. *(Closed 2026-10-25 by D15: punch timings and stop-while-punching approved.)*
 26. *(Closed 2026-10-25 by D15: the startup stays uncancellable.)*
@@ -487,7 +531,11 @@ See "Requirements by phase". `PROJECT_STATE.md` records which parts exist.
 30. Map colliders: all 827 are trimesh bodies (`ConcavePolygonShape3D`, 438,012 triangles; Phase 4a census). Should they be replaced by simple shapes (boxes or convex hulls per building, simplified ground) for cheaper physics? Phase 4a found the player and the parked car spending ~1 ms each per step against these trimesh bodies on the Galaxy Tab A7, with ~1.3 ms shared. This changes the map's collision, so it belongs to the same map-pipeline decision as the facade work (open questions 20–21): generate simple colliders in the map generation scripts rather than editing the imported GLB, and decide both together.
 31. Further test devices: only the iPhone 13 Pro and the Galaxy Tab A7 exist; there is no Android phone (user, 2026-10-27). Phone screens other than the iPhone are checked only in the headless layout matrix with assumed insets (T29). Which devices should be added (a 20:9 Android phone with a punch-hole, a smaller or older iPhone, an iPad)? Since Phase 4d the device scenario (T33) can check any added device automatically.
 32. Button sizes per device class: the smallest gameplay touch target is 18.3–21.6 mm on tablets (Tab A7, iPad) and 9.6–10.8 mm on phones (T29 matrix). Should tablets get smaller controls (closer to the thumbs, less of the picture covered) or small phones larger ones? Nothing changed for now.
-33. The iPhone's two-orientation check (holding the joystick through a 180° turn) is still NOT RUN: in Phase 4d the gravity sensor showed the phone lying flat for the whole 90 s window. It needs the user to hold the phone upright and turn it once while `scenario_orientation` runs.
+33. The iPhone's two-orientation check (holding the joystick through a 180° turn) is still NOT RUN: in Phase 4d the gravity sensor showed the phone lying flat for the whole 90 s window; in Phase 5 the user answered that they could not do it ("Yapamam", not asked again). It needs the user to hold the phone upright and turn it once while `scenario_orientation` runs. The tablet passed the same check automatically (Phase 4d).
+34. Character cost on the tablet: a walking character under `PlayerController` costs about 1.1–1.4 ms per physics step on the Galaxy Tab A7 (two physics steps per frame at its 30 FPS cap; three-run A/B in Phase 5); on the Mac it costs about the same on boxes as on trimesh, so most of it is script and transform work, not collision. NPCs far from the player are cheap (far mode, T35: 0.27–0.32 ms each), but two NPCs near the player at once cost 2.3–2.7 ms per step and about 2 FPS of the tablet's 1 % low. More NPCs near the player need a cheaper character (fewer script calls per tick, a C++/GDExtension controller, or near NPCs updated at a lower rate). Which NPC density is wanted, and on which devices?
+35. Collisions between vehicles and characters: a moving vehicle passes through the player and the NPCs (vehicles do not mask the character layers, unchanged since Phase 3), and NPCs in the far mode pass through walls, cars, and each other. Should cars stop at, push, or hit characters (tied to question 22)?
+36. The test district is packaged in every build (about 19 KB of scenes and data): debug and Release Perf builds can load it, normal release builds only load İstanbul. Keep it in release packages as a test map, or exclude `maps/test_district/` from release presets later?
+37. Map switching blocks the game while the new map loads: back to İstanbul took 6.8 s on the tablet and 1.8 s on the iPhone (device scenario), with a frozen frame. A user-facing map choice would need a loading screen or threaded loading (`ResourceLoader.load_threaded_request`).
 
 ## Constraints and priorities
 
@@ -495,4 +543,4 @@ See "Requirements by phase". `PROJECT_STATE.md` records which parts exist.
 - The map original in the source package must not be modified or deleted.
 - Physical device results are reported as NOT RUN until actually performed.
 - No store, TestFlight, or Play Console uploads; no release signing without explicit approval.
-- Current priority: review of Phase 4d and of Phase 4 as a whole (`PROJECT_STATE.md`, "Phase 4 status"); then Phase 5 (extensibility validation) or the map-level work on facades and simple colliders (user decision; open questions 20, 21, 30; comparison in `PROJECT_STATE.md`, "Recommended next task").
+- Current priority: review of Phase 5 and of the specification as a whole (`PROJECT_STATE.md`, "Specification status"); then one of the options in "After the specification" (user decision).

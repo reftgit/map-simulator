@@ -12,8 +12,9 @@ extends PlayerController
 ## route by a Tween (the "far" mode: no script and no collision tests per
 ## tick; rays sample the floor once per segment); closer than near_distance
 ## the controller takes over again where it is. On the Galaxy Tab A7 a walking
-## NPC under the controller cost about 1.7 ms per physics step, most of it
-## script time, and a per-tick scripted far walk still about 0.7 ms (Phase 5).
+## NPC under the controller costs about 1.1-1.4 ms per physics step, mostly
+## script and transform work, a far walk scripted every tick still cost about
+## 0.7 ms, and the Tween walk about 0.3 ms (Phase 5).
 ## Far NPCs pass through walls and cars, so routes must be clear.
 
 ## A punch landed: `count` since the NPC was placed (one per punch, by the

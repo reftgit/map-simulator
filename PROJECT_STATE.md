@@ -2,11 +2,13 @@
 
 What actually exists in the repository and how it was verified. Plans and decisions belong in `PROJECT_CONTEXT.md`; code structure, build, and test commands are in `docs/ARCHITECTURE.md`.
 
-Last updated: 2026-10-28 (Phase 4d, Claude Code)
+Last updated: 2026-10-28 (Phase 5, Claude Code)
 
 ## Current phase
 
-**Phase 4d (export configuration, platform isolation, automatic device checks) done; Phase 4 is complete for its engineering items.** A `Platform` module is the only code that asks the OS about the platform (device logs unchanged); the export configuration is reviewed and pinned by a test (one version source, no permissions, minSdk 24 / targetSdk 36, iOS 15.0, all six presets exported); a debug-build `DeviceScenario` replays the vehicle checks with synthetic touches and passed every step on the Galaxy Tab A7 and the iPhone 13 Pro, and the tablet was turned between both landscape orientations by adb with the joystick held (PASS, settings restored). Open: the iPhone rotation check (the phone stayed flat; NOT RUN) and the map-level work. Details: "Phase 4d" below.
+**Phase 5 (extensibility: second map, second vehicle type, NPCs) done; the specification's phases 0–5 are implemented.** A map registry picks the map (İstanbul • Haliç by default and always in normal release builds; `--map`, an experiment key, and a debug MAP button otherwise) and a switch rebuilds player, vehicles, NPCs, camera, and occluders with the node count back where it was; a second map built from Godot primitives (the test district) runs without the GLB; the van is the second vehicle type in the game; NPCs patrol on the player's own controller with an AI input source and play a hit reaction when punched. Of the eight core systems the task names, only `WorldManager` needed code (three additive changes). The device scenario passed all 25 steps on both devices; release measurements with the two İstanbul NPCs met both devices' criteria after the NPCs got a level of detail (two walking NPCs under the controller cost the tablet 2.3–2.9 ms per physics step and 1.6–2.6 FPS of its 1 % low). The iPhone orientation check is NOT RUN again (the user could not do it). Details: "Phase 5" below; status of every phase: "Specification status".
+
+Before Phase 5: **Phase 4d (export configuration, platform isolation, automatic device checks) done; Phase 4 is complete for its engineering items.** A `Platform` module is the only code that asks the OS about the platform (device logs unchanged); the export configuration is reviewed and pinned by a test (one version source, no permissions, minSdk 24 / targetSdk 36, iOS 15.0, all six presets exported); a debug-build `DeviceScenario` replays the vehicle checks with synthetic touches and passed every step on the Galaxy Tab A7 and the iPhone 13 Pro, and the tablet was turned between both landscape orientations by adb with the joystick held (PASS, settings restored). Open: the iPhone rotation check (the phone stayed flat; NOT RUN) and the map-level work. Details: "Phase 4d" below.
 
 Before Phase 4d: **Phase 4c (on-device check of Phase 4b, screen layouts and safe areas) done; the user parts are partly NOT RUN.** The HUD takes its safe area from an injectable source and re-applies it when it moves without a resize (180° turn); a headless matrix of nine screens passed on foot and in the vehicle without any layout change (gameplay touch targets 9.6–21.6 mm). The Phase 4b check on the iPhone confirmed the parked car's sleep, wake on getting in, wake on a bump, and driving, and found one defect (the car stayed awake while the player stood against it on a slope), fixed in `5d6c8a7`. The Phase 4b check on the tablet and the two-orientation checks on both devices are NOT RUN: the user's answers were not borne out by logs or screenshots. P2's tablet criterion is accepted (D20). Details: "Phase 4c" below.
 
@@ -16,7 +18,7 @@ Before Phase 4b: **Phase 4a (release baseline and diagnosis, measurement only) d
 
 ## Current objective
 
-Review of Phase 4d and of Phase 4 as a whole, then the choice between Phase 5 and the map-level work. See "Recommended next task".
+Review of Phase 5 and of the specification as a whole, then the user's choice among the options after the specification. See "Recommended next task".
 
 ## Git
 
@@ -65,17 +67,30 @@ Review of Phase 4d and of Phase 4 as a whole, then the choice between Phase 5 an
 - `0456e98`: `DeviceScenario`, scenario experiments, `android_rotate_on_cue.sh`, debug-only gravity sensor.
 - `f742b10`: fix, the rotation cue script no longer swallows log lines or reacts to an earlier run's cues (found on the tablet).
 - `55aa7de`: Phase 4d results and documentation.
+- `793f722`: this commit list completed with `f742b10`.
+- `167835d`: map registry (`game/world/maps.tres`), map choice at startup (`--map`, experiment key), `switch_map()`, debug MAP button.
+- `4e62602`: test district (`tools/build_test_district.gd`, `maps/test_district/`) in the registry; its tests run without the GLB.
+- `b7a5c6f`: the van's files moved from `tests/fixtures/` into the game. By a staging mistake this commit holds only the moves (its tests would fail on the old paths); `5aaefe7` completes it.
+- `5aaefe7`: the van's game paths and names, `MapDefinition.vehicle_scenes`, the van parked on the test district, CAR walks up to each vehicle in turn.
+- `a89274b`: NPCs (`game/npc/`, `HitReactionState`, NPC routes on both maps, layer 5, `"npcs"` runtime key, `tools/perf/npc_cost.gd`).
+- `eb7726f`: NPC far mode (Tween walk beyond 10 m from the player), `"npc_far_mode"` runtime key, `npcs_near` in results, NPC names.
+- `21196a3`: `DeviceScenario` "extensibility".
+- `32f7bb5`: fix, a far NPC returns to the controller when the far mode is switched off (found by `tools/perf/npc_cost.gd`).
+- Phase 5 results and documentation: the commit after `32f7bb5` (`git log`).
 
 ## Repository contents
 
 | Path | Notes |
 |---|---|
 | `game/` | Game code: composition root, world, player (with Punch/Roll states and `CharacterVisual`), combat areas, vehicle (controller, definition, interaction, visual), camera, input, HUD with on-foot and vehicle control groups and a debug overlay. See `docs/ARCHITECTURE.md`. |
-| `maps/istanbul_halic/` | Game map scene (GLB + sky/ambient + sun + water shader + vertex-color fix) and its `MapDefinition` (with two debug viewpoints). |
+| `maps/istanbul_halic/` | Game map scene (GLB + sky/ambient + sun + water shader + vertex-color fix) and its `MapDefinition` (two debug viewpoints, two NPC routes). |
+| `maps/test_district/` | Second map (Phase 5): scene and box occluders generated from Godot primitives by `tools/build_test_district.gd`, `MapDefinition` (both vehicle types, three NPC routes, two viewpoints). |
+| `game/world/maps.tres` | The map registry: İstanbul • Haliç (default), the test district. |
+| `game/npc/` | `Npc`, `AiPatrolInput`, `PatrolRoute`, `npc.tscn` (inherits the player scene). |
 | `project.godot` | Main scene `res://game/main.tscn`; Mobile renderer; sensor landscape; `expand` aspect; physics interpolation; input actions; mouse emulates touch; ETC2/ASTC import (required for Android export); placeholder icon. |
 | `export_presets.cfg` | "Android Debug" (arm64 APK, `com.mirongi.mapsimulator`), "Android Debug Compatibility" (same, with `--rendering-method gl_compatibility`), "iOS Debug" (`com.mirongi.mapsimulator.dev`, team `8N7RYA42S6`, project-only export), and the measurement-only "Android Release Perf", "Android Release Perf Jolt", "iOS Release Perf" (`perf_bench`; release templates). No passwords or keystore paths. |
 | `icon.svg` | Placeholder app icon (capsule character over water). |
-| `tests/` | Headless runner, 169 unit tests, 29 integration tests, fixtures (flat map, second vehicle type `test_van`), original map validation. |
+| `tests/` | Headless runner, 185 unit tests, 47 integration tests (34 need the GLB, 13 run on the test district without it), fixtures (flat map, fake platform), original map validation. The test van moved into the game in Phase 5. |
 | `tools/capture_screenshot.gd` | Windowed render to PNG with render stats. |
 | `tools/build_ios_debug.sh` | iOS debug build without contacting the Apple Developer portal; optional `devicectl` install. |
 | `tools/build_android_perf.sh`, `tools/build_ios_perf.sh` | Release Perf builds for measurements only (debug keystore via environment variables, read from the editor settings: macOS path by default, `GODOT_EDITOR_SETTINGS` elsewhere; Xcode Release without `-allowProvisioningUpdates`). |
@@ -83,9 +98,11 @@ Review of Phase 4d and of Phase 4 as a whole, then the choice between Phase 5 an
 | `game/debug/` | Debug-only: `PerfConfig` (experiment flags from JSON, layered on a profile), `PerfBenchmark` (automatic measurement). |
 | `maps/istanbul_halic/istanbul_halic_occluders.scn` | Baked occluders, 2,300,873 bytes (643 occluders, 317,518 triangles), referenced by the `MapDefinition`. |
 | `tools/bake_occluders.gd` | Headless occluder bake. |
-| `tools/perf/` | Experiment definitions (`experiments/*.json`), device orchestration (`android_bench.sh`, `ios_bench.sh`, `run_batch.sh`), `parse_xctrace.py`, `summarize.py`, `median.py`, `collider_census.gd`, `vehicle_sleep_cost.gd`. |
+| `tools/perf/` | Experiment definitions (`experiments/*.json`), device orchestration (`android_bench.sh`, `ios_bench.sh`, `run_batch.sh`, `android_rotate_on_cue.sh`), `parse_xctrace.py`, `summarize.py`, `median.py`, `collider_census.gd`, `vehicle_sleep_cost.gd`, `npc_cost.gd`. |
+| `tools/build_test_district.gd` | Generates the test district's scene and occluders (Phase 5). |
 | `docs/perf/` | Diagnosis pass: raw results and conditions (`results/`), 480 px screenshots (`android/`, `ios/`). Profile validation: `profiles/`. Phase 2 regression and HUD screenshots: `phase2/`. Phase 3 three-run results and screenshots: `phase3/`. Phase 4a release, diagnosis, and pacing results plus headless Jolt / 30 Hz / collider census: `phase4a/`. Phase 4b results, the sleep-vs-freeze measurement, overlay screenshots, a tablet log excerpt, and the iPhone frames of the Phase 4b check (`phase4b/device_check/`): `phase4b/`. 4.3 MB in total. |
 | `docs/perf/phase4d/` | Export check (aapt, Info.plist, privacy manifest), tablet and iPhone scenario logs and results, rotation logs, frames. 0.2 MB. |
+| `docs/perf/phase5/` | Three-run release results of both devices (`results/`), the tablet's NPC cost probes (`probes/`, with a README), headless NPC costs (`headless/`), scenario logs, results, and frames (`tablet/`, `iphone/`), benchmark frames of both maps (`shots/`). 0.7 MB. |
 | `docs/ui/` | Reference HUD shots for the layout matrix (16 shots, on foot and in the vehicle, insets shaded), device before/after shots, device log excerpts of Phase 4c. 0.9 MB. |
 | `build/.gdignore` | Keeps Godot from scanning or packing build output. Everything else in `build/` is ignored by Git. |
 | `main.tscn`, `scripts/` | Original explorer demo, unchanged. Desktop only. |
@@ -94,6 +111,7 @@ Review of Phase 4d and of Phase 4 as a whole, then the choice between Phase 5 an
 
 ## Implemented features
 
+- **Phase 5 (all builds):** map registry (`game/world/maps.tres`) with İstanbul • Haliç first; NPCs on both maps (patrol, hit reaction, far mode beyond 10 m from the player); the van parked on the test district; `WorldManager` places a vehicle type per spawn and the NPCs, and respawns NPCs at their own start. Debug and Release Perf builds: the start map from `--map=<id>` or an experiment's `"map"` key, the `"npcs"` / `"npc_far_mode"` runtime keys, `map` and `npcs` in `STARTUP` / `PERF` / results. Debug builds: MAP overlay button (`switch_map()`), CAR cycles through the map's vehicles, `DeviceScenario` "extensibility". The test district is packaged in every build but normal release builds never load it.
 - **Phase 4d:** `Platform` module (all builds); debug builds: `DeviceScenario` (`vehicle_sleep`, `orientation`) from a `scenario` experiment, gravity sensor on for evidence; host script `tools/perf/android_rotate_on_cue.sh`.
 - **Phase 4c (all builds):** the HUD's safe area comes from `SafeAreaSource` (DisplayServer on devices, unchanged), is re-applied when it changes without a resize (checked every 0.25 s), and such a change releases every finger; `SAFE_AREA` log lines in debug and Release Perf builds. The player wakes a parked car only while pushing into it.
 - **Phase 4b (all builds):** iOS runs the display at 60 Hz (`display/window/ios/allow_high_refresh_rate = false`; P1). Parked vehicles fall asleep after 1 s at rest and wake for a driver, a move or reset, a hit, the player walking into them, or lost ground (P2; `docs/ARCHITECTURE.md`, "Parked vehicles sleep"). Debug overlay: the driven vehicle's speed while driving and `car asleep|awake`; `VEHICLE … asleep|awake` log lines and `vehicles_asleep` in benchmark results (debug and Release Perf builds).
@@ -110,6 +128,120 @@ Review of Phase 4d and of Phase 4 as a whole, then the choice between Phase 5 an
 - **Quality profiles (all builds):** high (60 FPS cap, occlusion, 200 m visibility range for trees/lamps/decor/facade detail) and low (occlusion, 400 m far plane + depth fog, 100 m ranges, 0.6 render scale, shadows off, LOD threshold 4, 30 FPS cap). Default: iOS → high, Android → low, desktop → none. `--quality=<name>` overrides; debug builds can cycle profiles with the Q button.
 - **Baked occluders** loaded from `maps/istanbul_halic/istanbul_halic_occluders.scn` when a profile enables occlusion; runtime building from collision remains as a fallback with a warning.
 - Debug builds only: performance experiment flags (`PerfConfig`) layered on top of the profile (experiment > profile > defaults), and an automatic benchmark (`PerfBenchmark`) driven by host scripts in `tools/perf/`. Off unless an experiment file or `--perf-config` is given.
+
+## Phase 5 — extensibility: second map, second vehicle type, NPCs (2026-10-28)
+
+User decisions in the task: a small test map from Godot primitives; NPCs that patrol 2–3 points and play a short hit reaction (no damage, health, death, attack, or pursuit); the test van moved into the game; 2 NPCs on İstanbul, 3 on the test map; a device item counts only with a log, a results file, or a screenshot. Decisions and rationale: `PROJECT_CONTEXT.md`, T34–T38. Code and guides: `docs/ARCHITECTURE.md`, "Maps and the map registry (Phase 5)" and "NPCs (Phase 5)".
+
+### What exists now
+
+- **Map registry and switch:** `game/world/maps.tres` lists İstanbul • Haliç (default; the only map normal release builds load) and the test district. Debug and Release Perf builds start on another map with an experiment's `"map"` key or `--map=<id>`; the debug MAP button loads the next map. `switch_map()` frees the old map with its vehicles, NPCs, and the training dummy, puts the player at the new spawn, and re-applies the profile (refused while driving). After İstanbul → test district → İstanbul the node count equals the count before (headless on both maps; 5,473 on both devices, see the scenario).
+- **Test district** (`maps/test_district/`, generated by `tools/build_test_district.gd`): a 124 m ground slab, two crossing streets, seven box buildings, a 9.5° ramp up to a 2 m plaza, 3 m walls, İstanbul's sky and sun; 14 box/convex colliders; 7 box occluders (84 triangles); spawn (0, 0, 50) facing north, bounds ±59.5 m, kill height −10 m, the compact car and the van side by side, three NPC routes, two viewpoints. The quality profiles apply (fog, shadows, occlusion with its own occluders).
+- **Second vehicle type in the game:** the van (`game/vehicle/placeholder_van.tscn`, `definitions/van.tres`), parked on the test district through `MapDefinition.vehicle_scenes`. Getting in and out, sleeping, the reset below the kill height, the camera profile, and driving work without code changes; the debug CAR button walks up to each vehicle in turn.
+- **NPCs:** `game/npc/npc.tscn` inherits the player scene (controller, states, placeholder visual in teal) with an `AiPatrolInput` (half walking speed, waits at each point, gives a point up after 2 s without progress), a `Hurtbox`, and the new `HitReactionState` (0.5 s stagger, pushed 2 m/s away from the attacker, restarts on a second hit). Two NPCs walk the Galata Bridge deck 12 m and 25 m east of the spawn's walking line; three walk the test district (around the plaza, up and down the ramp, along a street). `WorldManager` respawns them at their own start below the kill height and keeps them in the bounds. Player and NPCs block each other (physics layer 5).
+- **Far mode:** an NPC more than 10 m from the player (back within 8 m) is moved along its route by a Tween instead of the controller; see "Performance".
+
+### Extensibility finding (changes to the core systems)
+
+| Core system | Change | Why |
+|---|---|---|
+| PlayerController | none (code) | NPCs use it unchanged (`Npc` only sets its input source and starts the reaction). Data: `player.tscn`'s collision mask 9 → 25 (adds layer 5), so the player cannot walk through NPCs. |
+| Player states | none changed; `HitReactionState` added as a new state | The state machine takes new states as child nodes (T3); the NPC scene adds it. |
+| VehicleController | none | The van is a scene plus a definition (T24). |
+| VehicleInteraction | none | A map switch is refused while driving, so no forced exit was needed. |
+| WorldManager | (1) `spawn_vehicles()` takes the vehicle type per spawn from `MapDefinition.vehicle_scenes` (2 lines); (2) `spawn_npcs()`, the `npcs` list, and freeing them with the map (additive); (3) `track(body, spawn)` stores a respawn point per body and `respawn()` uses it | (1) a map could park only `Main.vehicle_scene`; (2) NPCs are placed and freed with the map like vehicles; (3) every tracked body respawned at the player's spawn, the task wants NPCs at their own start. Existing behaviour unchanged (all earlier tests pass). |
+| ThirdPersonCamera | none | Switching maps calls `snap_behind_target()`, which existed. |
+| MobileInputController | none (code) | Data: the MAP button is a new entry in `hud.tscn`'s `extra_controls`. |
+| RenderSettings | none | A switch calls the existing `apply({})` to restore the scene defaults before the new map's `RenderSettings` captures them. |
+
+Other files changed outside the listed core: `game.gd` (composition root: registry, `switch_map()`, NPC wiring, CAR cycling, runtime keys, STARTUP fields), `MapDefinition` (new fields `id`, `vehicle_scenes`, `npc_routes`), `UIController` (MAP signal, map name in the overlay and `PERF`), `PlaceholderCharacterVisual` (the `&"hit"` action), `PerfConfig` / `PerfBenchmark` / `DeviceScenario` (debug and measurement tools), `project.godot` (layer 5 name).
+
+Findings beyond the code: (a) GodotPhysics3D moves a character body that is already in the space to a newly set transform only during the next physics step, so a body spawned at the origin and then teleported pushes what stands at the origin for that one step (a unit test caught an NPC landing on the player's head and riding along); NPCs therefore get their transform before entering the tree. (b) A character under the controller is expensive on the tablet, mostly script time (see "Performance"), so NPCs need a level of detail. (c) Headless on the Mac an NPC under the controller costs about the same on the test district's boxes as on İstanbul's trimesh bridge (0.29 vs 0.32 ms per step; far mode 0.11 vs 0.13 ms; `docs/perf/phase5/headless/`), so the collision shapes are not what makes characters expensive. (An earlier single comparison of 0.12 vs 0.38 ms, made before the far mode with a noisier method, is superseded.)
+
+### Tests and mutation checks
+
+- `run_tests.gd`: 232 passed (185 unit, 47 integration), exit 0; without the GLB 198 passed and 34 skipped (exit 2): the 13 test district tests run without it. New: `test_map_registry.gd` (5), `test_npc.gd` (9), `test_test_district.gd` (13: registry load, primitives and simple colliders, ramp slope 9.46° and walking up it, bounds and kill height, viewpoints, profiles and baked box occluders, a switch round trip with the node count, both vehicle types, CAR cycling, the van's drive / exit / sleep / reset, three NPCs patrolling for 15 s, punching an NPC with the punch button, an NPC's respawn at its own start); in `test_game_on_map.gd`: the switch İstanbul → fixture → İstanbul (node count, occluders, NPCs, the car drivable), the switch refused while driving, MAP İstanbul → test district → İstanbul (node count), the bridge NPCs, `test_device_scenario_extensibility`; in `test_world_manager.gd`: a vehicle type per spawn, NPCs spawned, tracked, respawned at their own start, held in the bounds, freed.
+- Mutation checks (rule broken, suite run, code restored): no hit reaction on a hit → 3 tests fail (`test_hit_reaction_then_patrol_resumes`, `test_second_hit_restarts_the_reaction`, `test_player_punch_hits_once_and_the_npc_reacts`); a blocked point never given up → 1 fails (`test_gives_up_a_blocked_point`); NPCs respawned at the player spawn → 1 fails (`test_spawns_tracks_and_frees_npcs`); no far mode → 2 fail. The one-hit-per-punch rule is the Phase 2 `Hitbox` rule with its own mutation-checked tests; for NPCs it is checked in the unit test, the test district test, and the scenario.
+
+### Device scenario "extensibility" (debug builds of `21196a3`)
+
+Both devices, 25 of 25 steps PASS, the same values on both (physics at a fixed 60 Hz). Tablet: logcat 11:08:37–11:09:26 (`docs/perf/phase5/tablet/scenario_extensibility_log.txt`, results file `scenario_extensibility.json`); iPhone: the results file from the device (`docs/perf/phase5/iphone/scenario_extensibility.json`) and `devicectl` screenshots.
+
+| Step | Galaxy Tab A7 | iPhone 13 Pro |
+|---|---|---|
+| MAP → test district | loaded in 1.5 s | 0.6 s |
+| map_switch: player at the spawn, 2 vehicles, 3 NPCs | PASS (0.00 m; 218 nodes, İstanbul 5,473) | PASS (same) |
+| van_parked (asleep), van_walk_up (CAR twice), van_get_in (awake, camera on the van) | PASS | PASS |
+| van_throttle above 5 m/s | PASS (5.0 m/s) | PASS (5.0 m/s) |
+| van_get_out (handbrake first), asleep again | PASS (0.06 m/s; asleep) | PASS |
+| npc_patrols (nearest NPC on the player's level) | PASS (Npc3 moved 6.8 m in 3 s) | PASS |
+| npc_hit_reaction (stick walk-up, punch button) | PASS (first punch; HitReaction) | PASS |
+| npc_one_hit_per_punch | PASS (1 hit) | PASS |
+| npc_patrol_resumes | PASS (Npc3 headed for its next point) | PASS |
+| MAP → İstanbul | loaded in 6.8 s | 1.8 s |
+| map_back: spawn, 1 vehicle, 2 NPCs, node count as before | PASS (5,473 = 5,473) | PASS (5,473 = 5,473) |
+| the 13 `vehicle_sleep` steps on İstanbul afterwards | PASS (throttle 5.0 m/s, slope 12.6°) | PASS (same) |
+
+Frames: `docs/perf/phase5/tablet/scenario_110843_van_driving.jpg`, `scenario_110855_npc_after_punch.jpg`, `docs/perf/phase5/iphone/scenario_110844_van.jpg`, `scenario_110849_npc_after_punch.jpg`.
+
+### Performance (Release Perf builds of `21196a3`, three runs, medians)
+
+Protocol of Phase 4b (D17): 30 s warm-up + 60 s per viewpoint for `profile_default` (now with the two İstanbul NPCs walking, in the far mode at every viewpoint: `npcs_near` 0.0), 20 + 40 s for the NPC A/B (`c_npcs_off_*`: NPCs out of the simulation; `c_npcs_far_*`: as in the game; `c_npcs_full_*`: both under the controller, the case of the player near both), order alternated per run; one viewpoint (Spawn) on the test district (`profile_default_test_district`). Tablet without PSS sampling, battery 33.5–35.5 °C; iPhone thermal Nominal at every probe, footprint 979–1,001 MiB on İstanbul, 277 MiB on the test district. Every result `debug_build: false`, `perf_feature: true`. Raw data: `docs/perf/phase5/results/`.
+
+| Criterion | Result | Evidence |
+|---|---|---|
+| iPhone, high, 3 viewpoints with 2 NPCs: average ≥ 59.5, long frames < 1 % | **PASS** | 60.00 / 60.00 / 60.00 FPS; long frames 0 / 0 / 0 (of 3,600 per run and viewpoint) |
+| Tab A7, low, 3 viewpoints with 2 NPCs: average ≥ 29.9 | **PASS** | 30.00 / 30.00 / 30.00 |
+| Tab A7: 1 % low at most 1 FPS below the Phase 4b medians | **PASS** | 25.55 / 26.17 / 25.07 against 26.25 / 26.06 / 25.21 (−0.70 / +0.11 / −0.14) |
+
+| Device, viewpoint | Avg FPS | 1 % low [runs] | Physics ms (Phase 4b) | Draw calls |
+|---|---|---|---|---|
+| iPhone, Spawn | 60.00 | 57.94 [57.94 / 57.83 / 58.02] | 1.145 (0.867) | 248 |
+| iPhone, Karaköy | 60.00 | 56.90 [56.90 / 56.37 / 57.07] | 1.312 (1.115) | 141 |
+| iPhone, Galata | 60.00 | 56.15 [55.90 / 56.22 / 56.15] | 1.350 (1.219) | 72 |
+| Tab A7, Spawn | 30.00 | 25.55 [25.91 / 25.37 / 25.55] | 4.735 (4.035) | 82 |
+| Tab A7, Karaköy | 30.00 | 26.17 [26.26 / 26.11 / 26.17] | 4.283 (3.834) | 72 |
+| Tab A7, Galata | 30.00 | 25.07 [25.07 / 25.11 / 24.76] | 5.337 (4.798) | 35 |
+
+**Physics cost per NPC** (A/B medians, ms per physics step; per NPC = difference ÷ 2):
+
+| Device, viewpoint | NPCs off | Far mode (as in the game) | All under the controller | Per NPC, far | Per NPC, controller |
+|---|---|---|---|---|---|
+| Tab A7, Spawn | 4.026 | 4.636 | 6.727 | 0.31 | 1.35 |
+| Tab A7, Karaköy | 3.916 | 4.551 | 6.485 | 0.32 | 1.28 |
+| Tab A7, Galata | 4.947 | 5.494 | 7.207 | 0.27 | 1.13 |
+| iPhone, Spawn | 0.899 | 1.089 | 1.710 | 0.10 | 0.41 |
+| iPhone, Karaköy | 1.169 | 1.305 | 1.709 | 0.07 | 0.27 |
+| iPhone, Galata | 1.245 | 1.374 | 2.196 | 0.06 | 0.48 |
+
+- 1 % low in the A/B (40 s windows): tablet off 26.13 / 25.95 / 25.15, far 23.78 / 23.95 / 22.56, all under the controller 24.45 / 24.85 / 23.62; iPhone off 58.30 / 57.12 / 56.29, far 57.84 / 56.92 / 56.00, controller 57.00 / 57.15 / 54.45 (no long frames on the iPhone in any of them). The tablet's far-mode windows were good in run 1 (25.70 / 26.04 / 25.09, better than that run's off) and worse in runs 2–3 (20–107 long frames per window), while the standard 60 s `profile_default` runs with the same far NPCs had 1–12 long frames and met the criterion; the difference is not explained (one far-mode segment start, with its floor rays, takes 65–90 µs on the Mac).
+- On the Mac (headless, `docs/perf/phase5/headless/`): per NPC 0.32 ms under the controller and 0.13 ms in the far mode on İstanbul, 0.29 and 0.11 ms on the test district.
+- **Test district, one viewpoint (Spawn, 3 NPCs in the far mode, both vehicles asleep):** iPhone 60.00 FPS, 1 % low 56.57 [56.40 / 56.74 / 56.57], long frames 0, 96 draw calls, physics 1.232 ms; tablet 30.00 FPS, 1 % low 25.15 [25.13 / 25.20 / 25.15], long frames 3 [3 / 6 / 0], 56 draw calls, physics 5.208 ms. Map ready (median of three launches): tablet 1,318 ms (İstanbul 6,592 ms), iPhone 308 ms (İstanbul 1,353 ms).
+- How the far mode came about (single-run probes on the tablet, `docs/perf/phase5/probes/README.md`): with the NPCs always under the controller (`a89274b`) the tablet failed the 1 % low criterion (24.4 / 24.6 / 23.6, physics +2.3–2.9 ms); a far mode that moved the NPCs with script every tick still cost 1.2–1.5 ms per step for the two; the Tween walk (`eb7726f`) brought the probe to +0.04–0.55 ms.
+
+### iPhone two-orientation check (open question 33)
+
+NOT RUN. Asked once as the task requires ("telefonu dik tutup scenario_orientation sırasında bir kez 180° çevirin"); the user answered "Yapamam". Not asked again.
+
+### Incidents and findings on the way
+
+- The first tablet probe sat on the lock screen (PIN; the scripts cannot unlock it) and was stopped; the user unlocked the tablet and the probe was repeated.
+- `b7a5c6f` holds only the van's file moves because the `git add` in its command failed on a path that had already been moved and the commit ran anyway; `5aaefe7` completes it. History was not rewritten.
+- A unit test found the GodotPhysics3D behaviour of character bodies teleported right after entering the tree (see the extensibility finding).
+- `tools/perf/npc_cost.gd` found that switching the far mode off left already-far NPCs in it (`32f7bb5`); the device A/B was not affected (the key is set before any NPC goes far; `npcs_near` 2.0 in those results).
+
+### Specification status (Phases 0–5)
+
+| Phase (specification, `PROJECT_CONTEXT.md`) | Status | Where |
+|---|---|---|
+| 0 — Project audit and base architecture | Done | Map audit `docs/maps/istanbul_halic/README.md`, D5–D7 in `PROJECT_CONTEXT.md`, `docs/ARCHITECTURE.md` |
+| 1 — Mobile character control | Done; on both devices | Joystick, camera, walk and run, collision ("Device results (2026-10-24, debug builds)") |
+| 2 — Character actions | Done; on both devices | Punch, roll, buffer, hit areas ("Phase 2 — character actions") |
+| 3 — Vehicle system | Done; on both devices | Get in and out, drive, reset, vehicle HUD and camera ("Phase 3 — vehicle system") |
+| 4 — Mobile optimization and platform validation | Done for the engineering items | Renderer, profiles, P1/P2, safe areas, export review, platform module ("Phase 4 status" under Phase 4d); open: the map-level facade and collider work (user decision) and the iPhone orientation check |
+| 5 — Extensibility | Done | A second map, a second vehicle type, NPCs, all through data and new classes; one core system changed (`WorldManager`, additive); device scenario on both devices; criteria met with the NPCs' far mode |
+
+Remaining outside the phases: the user checks that were NOT RUN (iPhone orientation, the feel of the controls in the user's own words), real models, the map-level work, store preparation (`PROJECT_CONTEXT.md`, "After the specification").
 
 ## Phase 4d — export configuration, platform isolation, automatic device checks (2026-10-28)
 
@@ -789,7 +921,8 @@ Thermal state: Nominal at all 13 probes (0–601 s). App footprint 1,022–1,044
 | Behavior | Evidence |
 |---|---|
 | Project imports cleanly. | `godot --headless --path . --import`: exit 0, no errors or warnings (after adding `build/.gdignore`). |
-| Automated tests pass. | `run_tests.gd` → `RESULT 198 passed, 0 failed, 0 skipped`, exit 0; unit only → 169 passed, exit 0; without the GLB → `RESULT 169 passed, 0 failed, 29 skipped`, exit 2 (2026-10-28, Phase 4d; GLB SHA-256 re-verified afterwards). Phase 4c: 185; Phase 4b: 174; Phase 4a: 161. With Jolt (temporary `override.cfg`): 160 passed, 1 failed (the GodotPhysics3D pin). At 30 Hz physics: 148 passed, 13 failed (see "Phase 4a"). `tests/map/validate_scene.gd` → `VALIDATION PASS`. |
+| Automated tests pass. | `run_tests.gd` → `RESULT 232 passed, 0 failed, 0 skipped`, exit 0; unit only → 185 passed, exit 0; without the GLB → `RESULT 198 passed, 0 failed, 34 skipped`, exit 2 (the 13 test district tests run without it) (2026-10-28, Phase 5; GLB SHA-256 re-verified afterwards). Phase 4d: 198; Phase 4c: 185; Phase 4b: 174; Phase 4a: 161. With Jolt (temporary `override.cfg`): 160 passed, 1 failed (the GodotPhysics3D pin). At 30 Hz physics: 148 passed, 13 failed (see "Phase 4a"). `tests/map/validate_scene.gd` → `VALIDATION PASS`. |
+| Phase 5 maps, van, NPCs, far mode, scenario. | See "Phase 5", including the mutation checks. |
 | Phase 4b sleep, wake, overlay, iOS 60 Hz. | See "Phase 4b", including the mutation checks. |
 | Phase 4a gating and flags. | `test_build_features.gd` (feature logic, release HUD without debug controls, presets: `perf_bench` only in Release Perf presets, `perf_jolt` only in its preset and no `perf_60hz` preset left, keystore fields empty, no personal paths), `test_release_perf_build_runs_benchmarks_without_debug_ui`, `test_normal_release_ignores_experiments`, `test_runtime_experiment_keys_apply_on_the_map`, `test_runtime_keys_parse_and_reject_typos`, `test_frame_time_distribution`, `test_measurement_overrides_do_not_touch_defaults`. |
 | Phase 3 vehicle. | See "Phase 3 — vehicle system", including the mutation checks. |
@@ -806,7 +939,8 @@ Thermal state: Nominal at all 13 probes (0–601 s). App footprint 1,022–1,044
 
 ## Unverified behaviors
 
-- iPhone: both landscape orientations with the joystick held through a turn (NOT RUN in Phases 4c and 4d; open question 33); the stutter while turning the camera and driving in the user's own words (only a prepared answer so far). The Phase 4b steps and the fix `5d6c8a7` are now verified on both devices by the device scenario (Phase 4d).
+- Phase 5: two NPCs near the player at once were measured only as the A/B "all under the controller" (`c_npcs_full_*`), not by playing among them; more than two NPCs near the player were not measured. The far mode's behaviour where a route is blocked (it walks through) is by design and not tested. NPC behaviour on Jolt Physics: not tried. The 1 % low gap of the tablet's 40 s far-mode A/B windows in runs 2–3 (below) is unexplained.
+- iPhone: both landscape orientations with the joystick held through a turn (NOT RUN in Phases 4c, 4d, and 5; in Phase 5 the user answered that they could not do it; open question 33); the stutter while turning the camera and driving in the user's own words (only a prepared answer so far). The Phase 4b steps and the fix `5d6c8a7` are now verified on both devices by the device scenario (Phase 4d).
 - iPhone `QUALITY` line from the device: not captured (the unified log had no Godot lines in Phase 4d); the profile name and the startup values come from the app's results file.
 - Screens other than the iPhone 13 Pro and the Galaxy Tab A7 (Android phones, iPads, other iPhones): headless layout matrix only, with assumed insets and ppi.
 - Why the tablet's paired A/B gain from sleeping (0.35–0.81 ms) is smaller than Phase 4a's "car removed" figure (≈ 1.0 ms), and why the A/B sleep-on runs had more 50 ms frames at Galata.
@@ -845,6 +979,8 @@ Thermal state: Nominal at all 13 probes (0–601 s). App footprint 1,022–1,044
 
 ## Known bugs and limitations
 
+- NPCs (Phase 5): far NPCs (more than 10 m from the player) pass through walls, cars, and each other, so routes must be clear; moving vehicles pass through NPCs as through the player; getting out of a vehicle does not check for NPCs at the exit point (the player is pushed out of an NPC standing there); no damage, health, or reactions beyond the stagger; placeholder capsules.
+- Map switching (debug builds) blocks while the new map loads (back to İstanbul: 6.8 s on the tablet, 1.8 s on the iPhone) and is refused while driving.
 - Placeholder car (boxes and cylinders); no engine sound, damage, or traffic. Brake lights also light while parked (handbrake held).
 - Cars drive through railings, lamp posts, and kerbs (no collision) and can leave bridge decks and quays into the water; they reset to the spawn below the kill height (open question 12).
 - Exit markers are fixed points beside the doors; on a narrow street with both sides blocked the player cannot get out until the car is moved.
@@ -868,6 +1004,7 @@ Thermal state: Nominal at all 13 probes (0–601 s). App footprint 1,022–1,044
 
 ## Technical risks
 
+- **Characters on the tablet (Phase 5):** a walking character under `PlayerController` costs about 1.1–1.4 ms per physics step on the Galaxy Tab A7 (three-run A/B; two steps per frame), mostly script and transform work; two NPCs near the player at once lower its 1 % low by about 2 FPS. The far mode keeps distant NPCs cheap; denser NPCs near the player need a cheaper character (open question 34).
 - **Tablet physics margin:** with the parked car asleep the physics step on foot is 3.8–4.8 ms (two per frame at 30 FPS); the player's `move_and_slide` (≈ 1 ms) and the trimesh map colliders remain (open question 30).
 - **Performance:** the profiles meet the iPhone criterion and the tablet's average; the tablet's 1 % low is marginal and its visual quality is low. Facade detail (64 % of triangles) remains the main geometry cost; the map-level work in `PROJECT_CONTEXT.md` is not started.
 - Devices are assigned by platform only: a weak iPhone would get high, a strong Android phone low (open question 18 in `PROJECT_CONTEXT.md`).
@@ -881,30 +1018,29 @@ Thermal state: Nominal at all 13 probes (0–601 s). App footprint 1,022–1,044
 
 ## Required manual actions
 
-- **iPhone: set Auto-Lock back to its previous value**, if it is still on "Never". Debug builds of `0456e98` are installed on both devices.
+- **iPhone: set Auto-Lock back to its previous value**, if it is still on "Never". The Release Perf builds of `21196a3` are installed on both devices (the debug builds of the same commit ran the scenario).
 - **iPhone rotation check** (open question 33): start `scenario_orientation` (commands in `docs/ARCHITECTURE.md`, "Device scenario"), hold the phone upright in landscape, and turn it 180° once during the 30 s; the gravity readings in the results file are the evidence.
 - The stutter while turning the camera and driving on the iPhone, in your own words.
-- Decide between Phase 5 and the map-level work (below); for the map work: approval to change the map pipeline and the generation scripts (open questions 20, 21, 30).
-- Open questions 2 (car model source), 12 (barriers), 22–24 (damage, NPCs, roll immunity), 28–29 (camera distance, steering modes), 31–32 (test devices, button sizes) remain.
+- Choose the next direction after the specification (below; `PROJECT_CONTEXT.md`, "After the specification"); for the map work: approval to change the map pipeline and the generation scripts (open questions 20, 21, 30).
+- Open questions 2 (car model source), 12 (barriers), 22–24 (damage, NPC behaviour beyond Phase 5, roll immunity), 28–29 (camera distance, steering modes), 31–32 (test devices, button sizes), 33 (iPhone orientation), 34–37 (character cost, vehicle–character collisions, the test district in release packages, blocking map loads) remain.
 - Later, before any store release: the checklist in `PROJECT_CONTEXT.md`, "Before a store release" (new Apple account and Team ID, final bundle ID, release keystore, AAB build, store metadata; none created).
 - Provide or choose character and car models; decide the app name and icon.
 
 ## Current priorities
 
-1. Review of Phase 4d and of Phase 4 as a whole ("Phase 4 status").
-2. Phase 5 (extensibility validation) or the map-level work (facades and simple colliders): user decision.
+1. Review of Phase 5 and of the specification as a whole ("Specification status" under "Phase 5").
+2. The user's choice of the next direction (below).
 
 ## Recommended next task
 
-Phase 4 is complete for its engineering items (see "Phase 4 status"); open are one user check on the iPhone and the map-level work. The two candidates for the next phase:
+The specification's phases 0–5 are implemented; open are user checks (iPhone orientation, feel in the user's own words) and the directions in `PROJECT_CONTEXT.md`, "After the specification":
 
-| | Phase 5: extensibility validation | Map-level work: facades and simple colliders |
-|---|---|---|
-| What it delivers | A second (small) map through `MapDefinition`, a second vehicle type in the game (the test van exists only in tests), and an NPC that runs on `PlayerController` with an AI `PlayerInputSource` and a `Hurtbox` (T3, T21), each without changes to the existing systems | Lighter facade geometry in smaller cells and LODs (facade detail is 64.2 % of the 7.07 M triangles; hiding it gave the tablet 1.6–1.8× FPS before the profiles existed), and simple colliders instead of 827 trimesh bodies |
-| Measured basis | The architecture already passes the tests for a second vehicle type and a replaceable character visual; the device scenario can check new content on both devices | With the low profile the tablet draws only 35–101 draw calls and ~0.05 M primitives and is held back by CPU and physics (physics step 3.8–4.8 ms, two per frame; ~1 ms of it the player against trimesh terrain, ~1.3 ms shared): facades would mainly improve the tablet's picture (relax fog, render scale, shadows), simple colliders the physics time (gain estimated, not measured) |
-| Prerequisites | None blocking; NPC behaviour on being hit is undefined (open question 23) and can stay a placeholder | The user's approval to change the map pipeline and the map generation scripts in the repository (open questions 20, 21, 30); without them nothing can start |
-| Risk | Low: new content behind existing interfaces | High: regenerates the map, the baked occluders, the colliders, and every measurement baseline |
+| | Map-level facades and simple colliders | Real character and vehicle models | Store preparation |
+|---|---|---|---|
+| Prerequisites | User approval to change the map pipeline; the map generation scripts in the repository (open questions 20, 21, 30) | Models and animations with sources and licences (open questions 1, 2) | New Apple account and Team ID, final bundle ID, release keystore, app name and icon (open question 5) |
+| Expected value | The tablet's picture (low profile: fog, 0.6 scale, blank nearby facades) and some physics time; facade detail is 64.2 % of the triangles. Phase 5 showed that characters are expensive mostly in script, not in trimesh collision (Mac: 0.32 ms per NPC on trimesh, 0.29 ms on boxes), so simple colliders alone are not the fix for character cost | The game stops looking like a prototype; the plug-in points are tested (`CharacterVisual` with punch / roll / hit, `VehicleVisual`); the cost of skinned characters on the tablet, where a character already costs 1.1–1.4 ms per step, has to be measured | A release build path (AAB, archive, release presets without `perf_bench`); nothing for gameplay |
+| Risk | High: regenerates map, occluders, colliders, all baselines | Medium | Low technically; blocked on external accounts |
 
-**Recommendation: Phase 5 next**, because it has no blocking prerequisite and turns the specification's last phase into tested evidence; start the map-level work as soon as the user approves the pipeline change and provides the generation scripts, measuring before and after with the existing three-run protocol and the device scenario.
+**Recommendation:** real character (and car) models first if the user can provide or choose them, because they turn the validated architecture into visible progress without touching the map pipeline, and their cost on the tablet is the next unknown (open question 34). Measure them with the existing protocol and the device scenario (it already plays the punch, the hit reaction, and driving; the roll is covered by tests). The map-level work stays the bigger visual win for the tablet but waits for the user's pipeline decision; store preparation waits for the accounts.
 
-Suggested acceptance for Phase 5: a second map (a small test map is enough) loaded through `MapDefinition` with spawn, bounds, kill height, and a vehicle spawn, without code changes; a second vehicle type in the game from a scene and a `VehicleDefinition`; an NPC driven by an AI input source that walks, can be punched (hit signal), and does not break the player's or the vehicles' tests; the device scenario extended to the new content and run on both devices; Phase 1–4 tests unchanged and passing.
+Suggested acceptance for a model task: a `CharacterVisual` subclass with an AnimationTree mapping locomotion, punch (contact at `impact`), roll, and hit, used by the player and the NPCs without controller or state changes; a `VehicleVisual` with the four wheels in the controller's order; all Phase 1–5 tests unchanged and passing; the device scenario on both devices; three-run measurements meeting the Phase 5 criteria (iPhone 60 FPS, < 1 % long frames; Tab A7 30 FPS, 1 % low within 1 FPS of Phase 4b) with the models.

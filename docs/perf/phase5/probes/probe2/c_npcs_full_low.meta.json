@@ -1,0 +1,4 @@
+{"experiment": "c_npcs_full_low", "device": "android", "battery_c_start": 33.0, "battery_c_end": 33.0,
+ "thermal_status_start": "0", "thermal_status_end": "0",
+ "pss_peak_kb": 0, "wall_s": 197, "started": "2026-10-28 10:09:41",
+ "cool_wait_s": 0, "cool_target_c": ""}

@@ -1,0 +1,52 @@
+10-28 11:08:30.994 26040 26070 I godot   : SAFE_AREA window=(2000, 1200) safe=[P: (0, 0), S: (2000, 1200)] canvas=[P: (0.0, 0.0), S: (1500.0, 900.0)] viewport=(1500.0, 900.0)
+10-28 11:08:37.866 26040 26070 I godot   : QUALITY profile=low experiment=scenario_extensibility occluders={"ms":88,"occluders":643,"source":"baked","triangles":317518} effective={"camera_far":400.0,"fog":true,"hide":[],"lod_threshold":4.0,"max_fps":30,"occlusion":true,"render_scale":0.6,"scaling_mode":"bilinear","shadows":"off","visibility_end":{"decor":100.0,"facade_detail":100.0,"lamps":100.0,"
+10-28 11:08:37.926 26040 26070 I godot   : SCENARIO step=start result=INFO t=0.0 scenario=extensibility rotate_hold_s=0
+10-28 11:08:38.403 26040 26070 I godot   : STARTUP map_ready_ms=9328 first_frame_ms=9863 map=istanbul_halic profile=low occluders={"ms":88,"occluders":643,"source":"baked","triangles":317518} physics_3d=GodotPhysics3D (setting DEFAULT) vehicles=awake npcs=2 build={"android_frame_pacing":true,"debug_build":true,"display_refresh_rate":60.0000038146973,"ios_allow_high_refresh_rate":false,"max_fps":30
+10-28 11:08:39.752 26040 26070 I godot   : QUALITY profile=low experiment=scenario_extensibility occluders={"ms":3,"occluders":7,"source":"baked","triangles":84} effective={"camera_far":400.0,"fog":true,"hide":[],"lod_threshold":4.0,"max_fps":30,"occlusion":true,"render_scale":0.6,"scaling_mode":"bilinear","shadows":"off","visibility_end":{"decor":100.0,"facade_detail":100.0,"lamps":100.0,"trees":
+10-28 11:08:39.752 26040 26070 I godot   : MAP test_district loaded in 787 ms
+10-28 11:08:40.455 26040 26070 I godot   : SCENARIO step=map_test_district result=INFO t=2.5 loaded after 1.5 s
+10-28 11:08:41.472 26040 26070 I godot   : SCENARIO step=map_switch result=PASS t=3.5 map test_district, player 0.00 m from its spawn, vehicles 2, NPCs 3, nodes 218 (on istanbul_halic: 5473)
+10-28 11:08:42.499 26040 26070 I godot   : VEHICLE @VehicleBody3D@3 asleep
+10-28 11:08:42.775 26040 26070 I godot   : VEHICLE PlaceholderVan asleep
+10-28 11:08:42.777 26040 26070 I godot   : SCENARIO step=van_parked result=PASS t=4.9 PlaceholderVan (Van (placeholder)), asleep
+10-28 11:08:42.800 26040 26070 I godot   : CAR walk-up @VehicleBody3D@3
+10-28 11:08:43.335 26040 26070 I godot   : CAR walk-up PlaceholderVan
+10-28 11:08:43.810 26040 26070 I godot   : SCENARIO step=van_walk_up result=PASS t=5.9 beside PlaceholderVan, interact button true
+10-28 11:08:43.845 26040 26070 I godot   : VEHICLE PlaceholderVan awake
+10-28 11:08:44.323 26040 26070 I godot   : SCENARIO step=van_get_in result=PASS t=6.4 driving PlaceholderVan, awake, camera on it true
+10-28 11:08:46.289 26040 26070 I godot   : SCENARIO step=van_throttle result=PASS t=8.4 forward speed 5.0 m/s (max 14)
+10-28 11:08:47.811 26040 26070 I godot   : SCENARIO step=van_get_out result=PASS t=9.9 speed when stopped 0.06 m/s
+10-28 11:08:48.302 26040 26070 I godot   : VEHICLE PlaceholderVan asleep
+10-28 11:08:48.305 26040 26070 I godot   : SCENARIO step=van_asleep_after_getting_out result=PASS t=10.4 PlaceholderVan asleep
+10-28 11:08:51.310 26040 26070 I godot   : SCENARIO step=npc_patrols result=PASS t=13.4 Npc3 moved 6.8 m in 3 s, 0 arrivals, state Walk
+10-28 11:08:54.101 26040 26070 I godot   : SCENARIO step=npc_hit_reaction result=PASS t=16.2 Npc3 hit after 1 punch(es), state HitReaction
+10-28 11:08:55.106 26040 26070 I godot   : SCENARIO step=npc_one_hit_per_punch result=PASS t=17.2 1 hit(s) for the punch that landed
+10-28 11:08:58.506 26040 26070 I godot   : SCENARIO step=npc_patrol_resumes result=PASS t=20.6 Npc3 state Idle, moved 0.6 m, heading for point 1 (was 0)
+10-28 11:09:04.701 26040 26070 I godot   : QUALITY profile=low experiment=scenario_extensibility occluders={"ms":92,"occluders":643,"source":"baked","triangles":317518} effective={"camera_far":400.0,"fog":true,"hide":[],"lod_threshold":4.0,"max_fps":30,"occlusion":true,"render_scale":0.6,"scaling_mode":"bilinear","shadows":"off","visibility_end":{"decor":100.0,"facade_detail":100.0,"lamps":100.0,"
+10-28 11:09:04.701 26040 26070 I godot   : MAP istanbul_halic loaded in 6167 ms
+10-28 11:09:05.312 26040 26070 I godot   : SCENARIO step=map_istanbul_halic result=INFO t=27.4 loaded after 6.8 s
+10-28 11:09:06.337 26040 26070 I godot   : SCENARIO step=map_back result=PASS t=28.4 map istanbul_halic, player 0.00 m from its spawn, vehicles 1, NPCs 2, nodes 5473 (before the switches 5473)
+10-28 11:09:07.600 26040 26070 I godot   : VEHICLE PlaceholderCar asleep
+10-28 11:09:07.603 26040 26070 I godot   : SCENARIO step=parked_car_asleep result=PASS t=29.7 car asleep
+10-28 11:09:07.634 26040 26070 I godot   : CAR walk-up PlaceholderCar
+10-28 11:09:08.624 26040 26070 I godot   : SCENARIO step=car_button result=PASS t=30.7 distance 2.5 m, car asleep, interact button true
+10-28 11:09:09.017 26040 26070 I godot   : VEHICLE PlaceholderCar awake
+10-28 11:09:09.019 26040 26070 I godot   : SCENARIO step=walk_into_car_wakes_it result=PASS t=31.1 player on a wall true, car awake
+10-28 11:09:10.323 26040 26070 I godot   : VEHICLE PlaceholderCar asleep
+10-28 11:09:10.352 26040 26070 I godot   : SCENARIO step=asleep_after_stopping result=PASS t=32.4 after 1.3 s
+10-28 11:09:13.352 26040 26070 I godot   : SCENARIO step=stays_asleep_beside_it result=PASS t=35.4 player touched the car true, distance 1.36 m
+10-28 11:09:13.387 26040 26070 I godot   : VEHICLE PlaceholderCar awake
+10-28 11:09:13.871 26040 26070 I godot   : SCENARIO step=get_in_wakes_it result=PASS t=35.9 driving true, car awake
+10-28 11:09:15.067 26040 26070 I godot   : SCENARIO step=throttle result=PASS t=37.1 forward speed 5.0 m/s
+10-28 11:09:16.444 26040 26070 I godot   : SCENARIO step=get_out result=PASS t=38.5 speed when stopped 0.08 m/s
+10-28 11:09:16.935 26040 26070 I godot   : VEHICLE PlaceholderCar asleep
+10-28 11:09:16.937 26040 26070 I godot   : SCENARIO step=asleep_after_getting_out result=PASS t=39.0 car asleep
+10-28 11:09:16.969 26040 26070 I godot   : VEHICLE PlaceholderCar awake
+10-28 11:09:21.003 26040 26070 I godot   : SCENARIO step=slope_setup result=PASS t=43.1 view Galata street, facing south, ground slope under the car 12.6°
+10-28 11:09:21.502 26040 26070 I godot   : VEHICLE PlaceholderCar asleep
+10-28 11:09:21.735 26040 26070 I godot   : VEHICLE PlaceholderCar awake
+10-28 11:09:21.766 26040 26070 I godot   : SCENARIO step=slope_walk_into_car_wakes_it result=PASS t=43.8 player on a wall true, car awake
+10-28 11:09:23.567 26040 26070 I godot   : VEHICLE PlaceholderCar asleep
+10-28 11:09:23.569 26040 26070 I godot   : SCENARIO step=slope_asleep_after_stopping result=PASS t=45.6 after 1.8 s
+10-28 11:09:26.570 26040 26070 I godot   : SCENARIO step=slope_stays_asleep_beside_it result=PASS t=48.6 player touched the car true, distance 1.26 m
+10-28 11:09:26.576 26040 26070 I godot   : SCENARIO step=done result=PASS t=48.6 passed=25 failed=0
