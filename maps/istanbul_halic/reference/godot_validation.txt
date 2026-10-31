@@ -1,0 +1,9 @@
+Godot Engine v4.4.1.stable.official.49a5bc7b6 - https://godotengine.org
+
+VEGETATION trees=5477.0 shrubs=1119.0
+MOSQUES 125 | MOTOR_VEHICLES 0
+STREETS { "zebra_stripes": 800.0, "crosswalks": 160.0, "traffic_signal_heads": 223.0, "stop_lines": 254.0, "edge_line_segments": 24191.0, "direction_arrows": 482.0, "lane_dashes": 4225.0, "street_lamps": 4008.0, "lamp_mesh_triangles_estimate": 240480.0 }
+SPAWN_FLOOR (-109.0365, 4.547554, 204.2572)
+METRO_WALKWAY (-701.5794, 13.8, 18.71846)
+STATIC_COLLIDERS 827
+VALIDATION PASS | failures=0

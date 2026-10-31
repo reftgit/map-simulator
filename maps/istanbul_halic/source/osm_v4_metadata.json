@@ -1,0 +1,20 @@
+{
+  "bbox": [
+    28.952,
+    41.013,
+    28.984,
+    41.037
+  ],
+  "retrieved": "2026-09-26",
+  "urls": [
+    "https://api.openstreetmap.org/api/0.6/map?bbox=28.952,41.013,28.968,41.025",
+    "https://api.openstreetmap.org/api/0.6/map?bbox=28.952,41.025,28.968,41.037",
+    "https://api.openstreetmap.org/api/0.6/map?bbox=28.968,41.013,28.984,41.025",
+    "https://api.openstreetmap.org/api/0.6/map?bbox=28.968,41.025,28.984,41.037"
+  ],
+  "counts": {
+    "node": 64629,
+    "way": 12670,
+    "relation": 527
+  }
+}

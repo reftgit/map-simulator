@@ -1,0 +1,51 @@
+{
+  "provider": "Mapzen/Tilezen Terrain Tiles",
+  "format": "Terrarium",
+  "zoom": 14,
+  "tiles": [
+    [
+      9509,
+      6140
+    ],
+    [
+      9509,
+      6141
+    ],
+    [
+      9509,
+      6142
+    ],
+    [
+      9510,
+      6140
+    ],
+    [
+      9510,
+      6141
+    ],
+    [
+      9510,
+      6142
+    ],
+    [
+      9511,
+      6140
+    ],
+    [
+      9511,
+      6141
+    ],
+    [
+      9511,
+      6142
+    ]
+  ],
+  "bbox": [
+    28.952,
+    41.013,
+    28.984,
+    41.037
+  ],
+  "url_template": "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
+  "retrieved": "2026-09-26"
+}

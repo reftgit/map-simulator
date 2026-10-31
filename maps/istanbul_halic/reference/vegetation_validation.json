@@ -1,0 +1,7 @@
+{
+  "result": "PASS",
+  "grass_mesh_groups": 178,
+  "grass_projected_area_m2": 353198.62,
+  "target_green_area_m2": 353199,
+  "method": "The lawn polygons are clipped to the original terrain triangles and placed 0.10 m above their planes."
+}

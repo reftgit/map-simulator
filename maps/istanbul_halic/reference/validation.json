@@ -1,0 +1,94 @@
+{
+  "engine": "Godot 4.4.1 stable",
+  "mode": "headless",
+  "date": "2026-09-26",
+  "checks": [
+    "GLB import and scene/GDScript load",
+    "125 inventoried worship structures have geometry",
+    "no car or tram meshes",
+    "expanded map dimensions and DEM relief",
+    "tree, shrub and trunk collision imports",
+    "street lamps, traffic signals and road paint import",
+    "consecutive camera presets",
+    "Galata Bridge spawn raycast and player settling",
+    "Haliç Metro Bridge lower promenade raycast and player settling",
+    "grass surface coverage on terrain triangle planes"
+  ],
+  "result": "PASS",
+  "static_collision_bodies": 827,
+  "visual_review": "Blender renders of exported GLB",
+  "fps_benchmark": false,
+  "model_statistics": {
+    "triangles": 7070457,
+    "vertices": 14810669,
+    "mesh_nodes": 3055,
+    "street_details": {
+      "zebra_stripes": 800,
+      "crosswalks": 160,
+      "traffic_signal_heads": 223,
+      "stop_lines": 254,
+      "edge_line_segments": 24191,
+      "direction_arrows": 482,
+      "lane_dashes": 4225,
+      "street_lamps": 4008,
+      "lamp_mesh_triangles_estimate": 240480
+    },
+    "bridge_main_span_m": 180,
+    "vegetation": {
+      "trees": 5477,
+      "shrubs": 1119,
+      "green_area_m2": 353199,
+      "tree_types": {
+        "cypress": 1630,
+        "broadleaf": 2803,
+        "small": 1044
+      },
+      "tree_sources": {
+        "OSM tree": 70,
+        "mapped cemetery": 769,
+        "mapped park": 3041,
+        "mapped woodland": 282,
+        "mapped lawn": 891,
+        "mapped garden_edge": 42,
+        "authored waterfront": 242,
+        "authored street verge": 140
+      },
+      "minimum_building_clearance_m": 4.005,
+      "minimum_road_path_clearance_m": 2.001,
+      "all_tree_centres_on_land": true,
+      "trees_in_paved_mosque_courts": 0
+    },
+    "buildings": 9001,
+    "estimated_building_heights": 8648,
+    "road_ways": 2713,
+    "trees": 5477,
+    "dimensions_m": [
+      2688,
+      2672
+    ],
+    "land_area_km2": 5.283,
+    "origin": [
+      28.975,
+      41.023
+    ],
+    "bbox": [
+      28.952,
+      41.013,
+      28.984,
+      41.037
+    ],
+    "mosques": 125,
+    "cars": 0,
+    "trams": 0,
+    "elevation_min_m": 1.5,
+    "elevation_max_m": 88.33171844482422,
+    "elevation_source": "Mapzen/Tilezen Terrain Tiles"
+  },
+  "grass_surface_validation": {
+    "result": "PASS",
+    "grass_mesh_groups": 178,
+    "grass_projected_area_m2": 353198.62,
+    "target_green_area_m2": 353199,
+    "method": "The lawn polygons are clipped to the original terrain triangles and placed 0.10 m above their planes."
+  }
+}
