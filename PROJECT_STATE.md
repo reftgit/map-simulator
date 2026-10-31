@@ -2,11 +2,13 @@
 
 What actually exists in the repository and how it was verified. Plans and decisions belong in `PROJECT_CONTEXT.md`; code structure, build, and test commands are in `docs/ARCHITECTURE.md`.
 
-Last updated: 2026-10-28 (Phase 5, Claude Code)
+Last updated: 2026-11-01 (map generator in the repository, Claude Code)
 
 ## Current phase
 
-**Phase 5 (extensibility: second map, second vehicle type, NPCs) done; the specification's phases 0–5 are implemented.** A map registry picks the map (İstanbul • Haliç by default and always in normal release builds; `--map`, an experiment key, and a debug MAP button otherwise) and a switch rebuilds player, vehicles, NPCs, camera, and occluders with the node count back where it was; a second map built from Godot primitives (the test district) runs without the GLB; the van is the second vehicle type in the game; NPCs patrol on the player's own controller with an AI input source and play a hit reaction when punched. Of the eight core systems the task names, only `WorldManager` needed code (three additive changes). The device scenario passed all 25 steps on both devices; release measurements with the two İstanbul NPCs met both devices' criteria after the NPCs got a level of detail (two walking NPCs under the controller cost the tablet 2.3–2.9 ms per physics step and 1.6–2.6 FPS of its 1 % low). The iPhone orientation check is NOT RUN again (the user could not do it). Details: "Phase 5" below; status of every phase: "Specification status".
+**After Phase 5: the İstanbul • Haliç generator is in the repository and reproduces the current map (2026-11-01); the map, the game, the profiles, and the baselines are unchanged.** The package's Python scripts, their inputs, and the records of the shipped GLB were committed unchanged, then given `--source` / `--out` paths (output to the ignored `build/maps/istanbul_halic/`) and a pinned environment (Python 3.12, shapely 2.1.2). Two runs are byte-identical (157 s, 3.4–3.6 GiB peak resident each). The regenerated GLB is not byte-identical with the shipped one: 2,550 of 3,055 meshes match byte for byte, buildings, facades, trees, lamps, mosques, bridges, and terrain match (or differ in float noise), and the differences are the GEOS triangulation of roads, pavements, and quays (+1,148 triangles, +0.02 % area) and 6 of 223 traffic signal heads placed elsewhere. In Godot both import to 827 static bodies with the same 438,012 collision triangles. The shipped GLB has flat per-face normals on every mesh. Safranbolu is deferred. Details: "Map generator in the repository" below.
+
+Before it: **Phase 5 (extensibility: second map, second vehicle type, NPCs) done; the specification's phases 0–5 are implemented.** A map registry picks the map (İstanbul • Haliç by default and always in normal release builds; `--map`, an experiment key, and a debug MAP button otherwise) and a switch rebuilds player, vehicles, NPCs, camera, and occluders with the node count back where it was; a second map built from Godot primitives (the test district) runs without the GLB; the van is the second vehicle type in the game; NPCs patrol on the player's own controller with an AI input source and play a hit reaction when punched. Of the eight core systems the task names, only `WorldManager` needed code (three additive changes). The device scenario passed all 25 steps on both devices; release measurements with the two İstanbul NPCs met both devices' criteria after the NPCs got a level of detail (two walking NPCs under the controller cost the tablet 2.3–2.9 ms per physics step and 1.6–2.6 FPS of its 1 % low). The iPhone orientation check is NOT RUN again (the user could not do it). Details: "Phase 5" below; status of every phase: "Specification status".
 
 Before Phase 5: **Phase 4d (export configuration, platform isolation, automatic device checks) done; Phase 4 is complete for its engineering items.** A `Platform` module is the only code that asks the OS about the platform (device logs unchanged); the export configuration is reviewed and pinned by a test (one version source, no permissions, minSdk 24 / targetSdk 36, iOS 15.0, all six presets exported); a debug-build `DeviceScenario` replays the vehicle checks with synthetic touches and passed every step on the Galaxy Tab A7 and the iPhone 13 Pro, and the tablet was turned between both landscape orientations by adb with the joystick held (PASS, settings restored). Open: the iPhone rotation check (the phone stayed flat; NOT RUN) and the map-level work. Details: "Phase 4d" below.
 
@@ -18,7 +20,7 @@ Before Phase 4b: **Phase 4a (release baseline and diagnosis, measurement only) d
 
 ## Current objective
 
-Review of Phase 5 and of the specification as a whole, then the user's choice among the options after the specification. See "Recommended next task".
+Review of the generator import; then the first source-level improvement of the İstanbul • Haliç map, after the user decides open questions 39 (replace or separate id) and 40 (storing large outputs) in `PROJECT_CONTEXT.md`. See "Recommended next task".
 
 ## Git
 
@@ -76,7 +78,11 @@ Review of Phase 5 and of the specification as a whole, then the user's choice am
 - `eb7726f`: NPC far mode (Tween walk beyond 10 m from the player), `"npc_far_mode"` runtime key, `npcs_near` in results, NPC names.
 - `21196a3`: `DeviceScenario` "extensibility".
 - `32f7bb5`: fix, a far NPC returns to the controller when the far mode is switched off (found by `tools/perf/npc_cost.gd`).
-- Phase 5 results and documentation: the commit after `32f7bb5` (`git log`).
+- `0d4bcbc`: Phase 5 results and documentation.
+- `3d4bb1a`: İstanbul • Haliç generator scripts, inputs, and reference records imported byte-identical from the source package.
+- `87dee5e`: generator paths (`--source`, `--out`), pinned Python environment, `.gitignore` for `build/maps/` and `__pycache__/`.
+- `94c6e21`: `tools/maps/istanbul_halic/compare_outputs.py`.
+- Generator import results and documentation (D22, T39, Safranbolu deferred): the commit after `94c6e21` (`git log`).
 
 ## Repository contents
 
@@ -100,11 +106,14 @@ Review of Phase 5 and of the specification as a whole, then the user's choice am
 | `tools/bake_occluders.gd` | Headless occluder bake. |
 | `tools/perf/` | Experiment definitions (`experiments/*.json`), device orchestration (`android_bench.sh`, `ios_bench.sh`, `run_batch.sh`, `android_rotate_on_cue.sh`), `parse_xctrace.py`, `summarize.py`, `median.py`, `collider_census.gd`, `vehicle_sleep_cost.gd`, `npc_cost.gd`. |
 | `tools/build_test_district.gd` | Generates the test district's scene and occluders (Phase 5). |
+| `tools/maps/istanbul_halic/` | İstanbul • Haliç generator (Python 3.12): `build_map.py` and its modules, `render_map.py` (Blender previews, not run), `compare_outputs.py`, `requirements.txt` (pinned), `.python-version`. Output goes to `build/maps/istanbul_halic/` (ignored). |
+| `maps/istanbul_halic/source/` | Generator inputs (20.1 MB): OSM extract (19.4 MB), Terrarium tiles, building height overrides, OSM request metadata. `.gdignore`. |
+| `maps/istanbul_halic/reference/` | The records the package's run wrote for the shipped GLB and its validation records (3.0 MB), for comparison. `.gdignore`. |
 | `docs/perf/` | Diagnosis pass: raw results and conditions (`results/`), 480 px screenshots (`android/`, `ios/`). Profile validation: `profiles/`. Phase 2 regression and HUD screenshots: `phase2/`. Phase 3 three-run results and screenshots: `phase3/`. Phase 4a release, diagnosis, and pacing results plus headless Jolt / 30 Hz / collider census: `phase4a/`. Phase 4b results, the sleep-vs-freeze measurement, overlay screenshots, a tablet log excerpt, and the iPhone frames of the Phase 4b check (`phase4b/device_check/`): `phase4b/`. 4.3 MB in total. |
 | `docs/perf/phase4d/` | Export check (aapt, Info.plist, privacy manifest), tablet and iPhone scenario logs and results, rotation logs, frames. 0.2 MB. |
 | `docs/perf/phase5/` | Three-run release results of both devices (`results/`), the tablet's NPC cost probes (`probes/`, with a README), headless NPC costs (`headless/`), scenario logs, results, and frames (`tablet/`, `iphone/`), benchmark frames of both maps (`shots/`). 0.7 MB. |
 | `docs/ui/` | Reference HUD shots for the layout matrix (16 shots, on foot and in the vehicle, insets shaded), device before/after shots, device log excerpts of Phase 4c. 0.9 MB. |
-| `build/.gdignore` | Keeps Godot from scanning or packing build output. Everything else in `build/` is ignored by Git. |
+| `build/.gdignore` | Keeps Godot from scanning or packing build output (exports and `build/maps/`, the generator's output). Everything else in `build/` is ignored by Git. |
 | `main.tscn`, `scripts/` | Original explorer demo, unchanged. Desktop only. |
 | `assets/istanbul_halic.glb` | 502 MB, **not tracked**. Restore: `docs/maps/istanbul_halic/README.md`. |
 | `.vscode/settings.json` | The user's editor colors. Untracked, intentionally not committed. |
@@ -128,6 +137,79 @@ Review of Phase 5 and of the specification as a whole, then the user's choice am
 - **Quality profiles (all builds):** high (60 FPS cap, occlusion, 200 m visibility range for trees/lamps/decor/facade detail) and low (occlusion, 400 m far plane + depth fog, 100 m ranges, 0.6 render scale, shadows off, LOD threshold 4, 30 FPS cap). Default: iOS → high, Android → low, desktop → none. `--quality=<name>` overrides; debug builds can cycle profiles with the Q button.
 - **Baked occluders** loaded from `maps/istanbul_halic/istanbul_halic_occluders.scn` when a profile enables occlusion; runtime building from collision remains as a fallback with a warning.
 - Debug builds only: performance experiment flags (`PerfConfig`) layered on top of the profile (experiment > profile > defaults), and an automatic benchmark (`PerfBenchmark`) driven by host scripts in `tools/perf/`. Off unless an experiment file or `--perf-config` is given.
+
+## Map generator in the repository (2026-11-01)
+
+Task of 2026-11-01 (user): bring the İstanbul • Haliç generation pipeline into the repository and show that it reproduces the map; the map, `assets/istanbul_halic.glb`, the game code, the profiles, and the measurement baselines do not change, and a regenerated GLB does not replace the shipped one; Safranbolu is deferred. Decisions: `PROJECT_CONTEXT.md`, D22 and T39. Guide: `docs/maps/istanbul_halic/README.md`, "Regenerating the map".
+
+### What exists now
+
+- `tools/maps/istanbul_halic/`: `build_map.py` with `terrain.py`, `architecture.py`, `bridge.py`, `vegetation.py`, `street_details.py`; `render_map.py`; first committed byte-identical to the package (`3d4bb1a`), then changed only in their paths (`87dee5e`: `--source`, `--out`, 36 lines added and 22 removed in five files). `compare_outputs.py` (`94c6e21`). `requirements.txt` (numpy 2.5.4, shapely 2.1.2 / GEOS 3.13.1, mapbox_earcut 2.1.0, pillow 13.0.0) and `.python-version` (3.12).
+- `maps/istanbul_halic/source/` (inputs, 20.1 MB) and `maps/istanbul_halic/reference/` (the shipped records, 3.0 MB), each with a `.gdignore`: after adding them, `godot --headless --path . --import` exits 0 with no new imported files. Added to the repository in total: 23.1 MB (scripts 84 KB).
+- Output: `build/maps/istanbul_halic/` (ignored): `istanbul_halic.glb`, `map_metadata.json`, and seven JSON records.
+
+### Reading before the first run
+
+- The package `Istanbul_Halic_Godot_Paketi.zip` (SHA-256 `726fb7ee…5e46a2c`, the same before and after the task) was extracted outside the repository; all 55 files matched its `manifest.sha256`.
+- All seven Python files were read in full before anything ran. They import only the standard library, numpy, shapely, mapbox_earcut, and Pillow (`render_map.py`: `bpy`, `mathutils`, and `os` for the `RENDER_ONLY` variable). There is no network access, no subprocess or shell call, no `eval`/`exec`, and no file deletion; the "http" strings in `architecture.py` (15) and `bridge.py` (1) are reference URLs in data. `render_map.py` deletes the objects of the open Blender scene before importing the GLB (in memory, not files).
+- What the original scripts wrote: the GLB and `map_metadata.json` into the package's `Godot/assets/`, and `mosques.json`, `buildings.json`, `statistics.json`, `spawn.json`, `bridge_metadata.json`, `vegetation.json`, `street_details.json` into its `source/`, over the shipped copies; `render_map.py` overwrote `previews/` and the `.blend`. `street_details.py` reads the `vegetation.json` written earlier in the same run. Read as input: the OSM extract, `elevation/`, `building_height_overrides.json`. Not read: `osm_v4_metadata.json`, the validation records, and `validate_scene.gd` (identical to `tests/map/validate_scene.gd`).
+- The OSM XML has no DOCTYPE or entity declarations. It contains a café's Wi-Fi password as public OSM tags (`internet_access:password`); left as it is, like all input data.
+
+### Reproduction (Mac, Apple Silicon, Python 3.12.15, pinned requirements)
+
+| | Shipped (`reference/`, `assets/`) | Run 1 (default `--out`) | Run 2 (`--out build/maps/istanbul_halic_run2`) |
+|---|---|---|---|
+| GLB SHA-256 | `8b00c94b…f21611b1` | `68237c46…4dd819a` | `68237c46…4dd819a` |
+| GLB bytes | 502,541,456 | 502,651,324 | 502,651,324 |
+| Triangles / vertices | 7,070,457 / 14,810,669 | 7,071,605 / 14,814,113 (+1,148 / +3,444) | same as run 1 |
+| Mesh nodes / `-col` nodes | 3,055 / 827 | 3,055 / 827 | same |
+| Lamps, trees, shrubs | 4,008, 5,477, 1,119 | 4,008, 5,477, 1,119 | same |
+| Buildings (estimated heights), mosques, crosswalks, signal heads | 9,001 (8,648), 125, 160, 223 | the same | same |
+| Time / peak resident / peak footprint | — | 156.7 s / 3.61 GB / 5.07 GB | 157.5 s / 3.83 GB / 5.09 GB |
+
+- **Mesh names:** the same 3,055 names except one (`SignalGlow_green_14_17` instead of `SignalGlow_red_14_17`); the order differs only at three positions in chunk 14_17.
+- **Records:** `buildings.json`, `spawn.json`, `mosques.json`, `bridge_metadata.json`, `vegetation.json` are byte-identical with the shipped ones (and with the package manifest); `statistics.json` differs only in `triangles` and `vertices`; in `street_details.json` the lights and crossings are identical and 6 of the 223 signal heads stand elsewhere (112 list entries differ because the rest shift); `map_metadata.json` differs only in its `stats` (walk spawn, bounds, mosques, metro bridge, and lights identical).
+- **Where the GLB differs** (`compare_outputs.py`):
+
+| Meshes | Difference |
+|---|---|
+| 2,550 of 3,055 | byte-identical |
+| `Road_*` (236), `Pavement_*` (234), `Quays_*` (3) | re-triangulated by GEOS: Road +568 triangles, area +0.02 %; Pavement +579, +0.02 %; Quays +1, same area. Delaunay triangles of each road buffer are kept when their centre lies inside it, so a different triangulation keeps a slightly different area |
+| `TrafficSignals_*` (4), `SignalGlow_*` (5 and the renamed one), `RoadPaint_*` (10) | the 6 signal heads and their stop lines (`STRtree.nearest` picks another of two equidistant roads at a junction); RoadPaint same triangles, −0.1 % area |
+| `Ataturk_Bridge-col` | same triangles and area; vertex order rotated (where GEOS starts the ring) |
+| `Ground_04_07-col`, `Ground_15_17-col`, `Detail_08_07`, 2 `Gardens_*`, 6 `MosqueDetail_*` | float noise: positions ≤ 7.6 × 10⁻⁶ m, normals ≤ 10⁻⁶ |
+
+- **Which shapely:** same machine and numpy, three versions (2.2.0 with the original, unmodified scripts in a copy of the package layout; the others with the parametrized scripts):
+
+| shapely (GEOS) | Byte-identical meshes | Triangles | `buildings.json` |
+|---|---|---|---|
+| 2.0.7 (3.11.4) | 2,032 | 7,060,212 | differs (footprint simplification) |
+| **2.1.2 (3.13.1), pinned** | **2,550** | **7,071,605** | identical |
+| 2.2.0 (3.14.1) | 2,503 | 7,071,558 | identical |
+
+  All three place the same 6 signal heads differently from the shipped GLB, so the rest of the difference lies outside these wheels (the package's machine, GEOS build, and CPU are unknown; not investigated further).
+- **Deterministic:** run 1, run 2, and a third run with the same versions made while another generator run was going produced byte-identical files (GLB and all eight JSON files); `compare_outputs.py` run 2 against run 1: 3,055 of 3,055 meshes identical, exit 0.
+- **The path change is output-neutral:** with shapely 2.2.0, the parametrized scripts and the original, unmodified scripts (in a copy of the package layout) produced the same GLB (`a70a7dbf…`) and byte-identical JSON files, all nine.
+- **Never writes into the repository:** the 27 files of `source/`, `reference/`, `assets/istanbul_halic.glb`, and `assets/map_metadata.json` had the same SHA-256 before and after the two runs; `git status --short --ignored` after the runs showed only `build/maps/` as new (ignored) and no `__pycache__/` (runs with `-B`). `--out` inside `--source` stops with exit code 2.
+- **Godot import** (two throwaway projects outside the repository, Godot 4.7.2, the repository's `assets/istanbul_halic.glb.import` settings; the repository project was never run with the regenerated GLB):
+
+| | Shipped | Regenerated |
+|---|---|---|
+| `--import` | exit 0, no errors | exit 0, no errors |
+| `StaticBody3D` / `CollisionShape3D` / `MeshInstance3D` | 827 / 827 / 3,055 | 827 / 827 / 3,055 |
+| Concave collision triangles | 438,012 | 438,012 |
+| Render triangles | 7,070,457 | 7,071,605 |
+| Imported `.scn` | 195,299,372 bytes | 195,394,864 bytes |
+
+- **`render_map.py`** was not run (no Blender run in this task). With a stub `bpy` its paths are `build/maps/istanbul_halic/istanbul_halic.glb` in, `…/previews/*.png` and `…/Istanbul_Halic.blend` out by default, and the given folder with `-- --out DIR`.
+
+### Normals in the shipped GLB (open since Phase 0)
+
+All 3,055 primitives carry `NORMAL` and `COLOR_0` (`build_map.py` writes one normal per face from its first three points). Checked over every triangle: normals are unit length and identical on a triangle's three vertices (flat shading); 7,064,835 triangles agree with their counter-clockwise winding, 113 disagree (fans over non-planar or concave facade polygons: 66 `Detail_*`, 16 `MosqueDetail_*`, the rest in roads, pavements, gardens, paint), and 5,509 have zero area. The vertex palette material is single-sided.
+
+### Safranbolu
+
+Deferred (`PROJECT_CONTEXT.md`, "Deferred map candidate: Safranbolu"). The eight screenshots of its audit, kept outside the repository, were deleted; the user's own Safranbolu downloads were not touched.
 
 ## Phase 5 — extensibility: second map, second vehicle type, NPCs (2026-10-28)
 
@@ -921,7 +1003,8 @@ Thermal state: Nominal at all 13 probes (0–601 s). App footprint 1,022–1,044
 | Behavior | Evidence |
 |---|---|
 | Project imports cleanly. | `godot --headless --path . --import`: exit 0, no errors or warnings (after adding `build/.gdignore`). |
-| Automated tests pass. | `run_tests.gd` → `RESULT 232 passed, 0 failed, 0 skipped`, exit 0; unit only → 185 passed, exit 0; without the GLB → `RESULT 198 passed, 0 failed, 34 skipped`, exit 2 (the 13 test district tests run without it) (2026-10-28, Phase 5; GLB SHA-256 re-verified afterwards). Phase 4d: 198; Phase 4c: 185; Phase 4b: 174; Phase 4a: 161. With Jolt (temporary `override.cfg`): 160 passed, 1 failed (the GodotPhysics3D pin). At 30 Hz physics: 148 passed, 13 failed (see "Phase 4a"). `tests/map/validate_scene.gd` → `VALIDATION PASS`. |
+| Automated tests pass. | 2026-11-01, after the generator import (no game or test code changed): `run_tests.gd` → `RESULT 232 passed, 0 failed, 0 skipped`, exit 0 (491 s); `validate_scene.gd` → `VALIDATION PASS`; GLB SHA-256 unchanged. Phase 5: `run_tests.gd` → `RESULT 232 passed, 0 failed, 0 skipped`, exit 0; unit only → 185 passed, exit 0; without the GLB → `RESULT 198 passed, 0 failed, 34 skipped`, exit 2 (the 13 test district tests run without it) (2026-10-28, Phase 5; GLB SHA-256 re-verified afterwards). Phase 4d: 198; Phase 4c: 185; Phase 4b: 174; Phase 4a: 161. With Jolt (temporary `override.cfg`): 160 passed, 1 failed (the GodotPhysics3D pin). At 30 Hz physics: 148 passed, 13 failed (see "Phase 4a"). `tests/map/validate_scene.gd` → `VALIDATION PASS`. |
+| İstanbul • Haliç generator. | See "Map generator in the repository": two runs byte-identical, the path change output-neutral, inputs and `assets/` unchanged, Godot import of the regenerated GLB in a throwaway project. |
 | Phase 5 maps, van, NPCs, far mode, scenario. | See "Phase 5", including the mutation checks. |
 | Phase 4b sleep, wake, overlay, iOS 60 Hz. | See "Phase 4b", including the mutation checks. |
 | Phase 4a gating and flags. | `test_build_features.gd` (feature logic, release HUD without debug controls, presets: `perf_bench` only in Release Perf presets, `perf_jolt` only in its preset and no `perf_60hz` preset left, keystore fields empty, no personal paths), `test_release_perf_build_runs_benchmarks_without_debug_ui`, `test_normal_release_ignores_experiments`, `test_runtime_experiment_keys_apply_on_the_map`, `test_runtime_keys_parse_and_reject_typos`, `test_frame_time_distribution`, `test_measurement_overrides_do_not_touch_defaults`. |
@@ -939,6 +1022,7 @@ Thermal state: Nominal at all 13 probes (0–601 s). App footprint 1,022–1,044
 
 ## Unverified behaviors
 
+- Generator (2026-11-01): `render_map.py` was not run in Blender (paths checked with a stub `bpy` only); the generator ran only on macOS arm64 with Python 3.12.15; why the shipped GLB differs from every tried shapely version in the 6 signal heads and the road triangulation (the package's environment is unknown); the regenerated GLB was not run in the game, on devices, or measured.
 - Phase 5: two NPCs near the player at once were measured only as the A/B "all under the controller" (`c_npcs_full_*`), not by playing among them; more than two NPCs near the player were not measured. The far mode's behaviour where a route is blocked (it walks through) is by design and not tested. NPC behaviour on Jolt Physics: not tried. The 1 % low gap of the tablet's 40 s far-mode A/B windows in runs 2–3 (below) is unexplained.
 - iPhone: both landscape orientations with the joystick held through a turn (NOT RUN in Phases 4c, 4d, and 5; in Phase 5 the user answered that they could not do it; open question 33); the stutter while turning the camera and driving in the user's own words (only a prepared answer so far). The Phase 4b steps and the fix `5d6c8a7` are now verified on both devices by the device scenario (Phase 4d).
 - iPhone `QUALITY` line from the device: not captured (the unified log had no Godot lines in Phase 4d); the profile name and the startup values come from the app's results file.
@@ -1021,26 +1105,27 @@ Thermal state: Nominal at all 13 probes (0–601 s). App footprint 1,022–1,044
 - **iPhone: set Auto-Lock back to its previous value**, if it is still on "Never". The Release Perf builds of `21196a3` are installed on both devices (the debug builds of the same commit ran the scenario).
 - **iPhone rotation check** (open question 33): start `scenario_orientation` (commands in `docs/ARCHITECTURE.md`, "Device scenario"), hold the phone upright in landscape, and turn it 180° once during the 30 s; the gravity readings in the results file are the evidence.
 - The stutter while turning the camera and driving on the iPhone, in your own words.
-- Choose the next direction after the specification (below; `PROJECT_CONTEXT.md`, "After the specification"); for the map work: approval to change the map pipeline and the generation scripts (open questions 20, 21, 30).
+- Map pipeline decisions (`PROJECT_CONTEXT.md`): a regenerated map replaces the current one or gets a separate id (open question 39); how large outputs are stored (open question 40); before any release, how ODbL share-alike applies (open question 38).
+- The other directions after the specification (real models, store preparation) stay open: `PROJECT_CONTEXT.md`, "After the specification".
 - Open questions 2 (car model source), 12 (barriers), 22–24 (damage, NPC behaviour beyond Phase 5, roll immunity), 28–29 (camera distance, steering modes), 31–32 (test devices, button sizes), 33 (iPhone orientation), 34–37 (character cost, vehicle–character collisions, the test district in release packages, blocking map loads) remain.
 - Later, before any store release: the checklist in `PROJECT_CONTEXT.md`, "Before a store release" (new Apple account and Team ID, final bundle ID, release keystore, AAB build, store metadata; none created).
 - Provide or choose character and car models; decide the app name and icon.
 
 ## Current priorities
 
-1. Review of Phase 5 and of the specification as a whole ("Specification status" under "Phase 5").
-2. The user's choice of the next direction (below).
+1. Review of the generator import ("Map generator in the repository").
+2. The user's decisions on open questions 39 and 40, then the first source-level improvement (below).
 
 ## Recommended next task
 
-The specification's phases 0–5 are implemented; open are user checks (iPhone orientation, feel in the user's own words) and the directions in `PROJECT_CONTEXT.md`, "After the specification":
+The user chose the map-level work (D22); the generator is in the repository and reproduces the map deterministically (T39). Proposed order of the source-level improvements, each a separate task measured against the pinned regeneration (`68237c46…`) with `compare_outputs.py` and against the Phase 5 device baselines:
 
-| | Map-level facades and simple colliders | Real character and vehicle models | Store preparation |
+| # | Improvement | Why in this place | Measurable acceptance |
 |---|---|---|---|
-| Prerequisites | User approval to change the map pipeline; the map generation scripts in the repository (open questions 20, 21, 30) | Models and animations with sources and licences (open questions 1, 2) | New Apple account and Team ID, final bundle ID, release keystore, app name and icon (open question 5) |
-| Expected value | The tablet's picture (low profile: fog, 0.6 scale, blank nearby facades) and some physics time; facade detail is 64.2 % of the triangles. Phase 5 showed that characters are expensive mostly in script, not in trimesh collision (Mac: 0.32 ms per NPC on trimesh, 0.29 ms on boxes), so simple colliders alone are not the fix for character cost | The game stops looking like a prototype; the plug-in points are tested (`CharacterVisual` with punch / roll / hit, `VehicleVisual`); the cost of skinned characters on the tablet, where a character already costs 1.1–1.4 ms per step, has to be measured | A release build path (AAB, archive, release presets without `perf_bench`); nothing for gameplay |
-| Risk | High: regenerates map, occluders, colliders, all baselines | Medium | Low technically; blocked on external accounts |
+| 1 | **Smaller cells and facade detail per building** (`Detail_*` and `Trees_*` split from 150 m chunks into per-building groups or ~40 m cells; geometry unchanged) | Facade detail is 64.2 % of the triangles, and 150 m chunks make the low profile's 100 m visibility range blank nearby facades (D12); regrouping changes no geometry, so it is the lowest-risk first step and the base for 2–5 | Without the new option the output stays `68237c46…`; with it the per-category triangle totals equal the pinned run and every non-regrouped mesh is byte-identical; Godot import 827 colliders; draw calls at the three viewpoints reported; Tab A7 low, three runs: average ≥ 29.9, 1 % low not more than 1 FPS below the Phase 5 medians, no blank facades within 100 m (screenshots); iPhone high: average ≥ 59.5, long frames < 1 % |
+| 2 | **Occluders from building footprints** (one box or prism per building, written by the generator) | Replaces the bake from trimesh collision (D13: 643 occluders, 317,518 triangles) with far fewer vertices; independent of the look | Occluder triangles and load time reported against D13; occlusion still culls at the Galata street view (draw calls within 10 % of the baked occluders) |
+| 3 | **Simple colliders** (building prisms as convex shapes where convex, boxes for trunks; ground stays trimesh) | Open question 30; Phase 5 found character cost mostly in script, so the gain is uncertain and must be measured | Same 827 bodies or fewer with documented names; tablet physics step on foot measured (three runs) against Phase 5; Phase 1–5 tests pass (camera collision, roll on the bridge, vehicle on the Karaköy street) |
+| 4 | **Normals and degenerate triangles** | Normals already exist (flat); 5,509 zero-area triangles and 113 flipped fan triangles could be dropped or fixed | Zero-area triangles 0, flipped 0; everything else byte-identical |
+| 5 | **Lighter facade geometry** (window quads to fewer triangles or a shader/texture) | The largest gain, but it changes the look and needs the user's visual approval | Facade triangles reduced by a stated share; screenshots for approval; device criteria as in 1 |
 
-**Recommendation:** real character (and car) models first if the user can provide or choose them, because they turn the validated architecture into visible progress without touching the map pipeline, and their cost on the tablet is the next unknown (open question 34). Measure them with the existing protocol and the device scenario (it already plays the punch, the hit reaction, and driving; the roll is covered by tests). The map-level work stays the bigger visual win for the tablet but waits for the user's pipeline decision; store preparation waits for the accounts.
-
-Suggested acceptance for a model task: a `CharacterVisual` subclass with an AnimationTree mapping locomotion, punch (contact at `impact`), roll, and hit, used by the player and the NPCs without controller or state changes; a `VehicleVisual` with the four wheels in the controller's order; all Phase 1–5 tests unchanged and passing; the device scenario on both devices; three-run measurements meeting the Phase 5 criteria (iPhone 60 FPS, < 1 % long frames; Tab A7 30 FPS, 1 % low within 1 FPS of Phase 4b) with the models.
+**Recommendation:** task 1 first, as a separate map id if the user chooses that in open question 39 (A/B on the devices without touching the current map), with the outputs regenerated on each machine if the user so chooses in open question 40.

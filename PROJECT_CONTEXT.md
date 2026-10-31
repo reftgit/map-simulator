@@ -2,7 +2,7 @@
 
 Planning context and decision rationale. This file does not describe implemented functionality; see `PROJECT_STATE.md` for that.
 
-Last updated: 2026-10-28 (Phase 5, Claude Code)
+Last updated: 2026-11-01 (map generator in the repository, Claude Code)
 
 ## Product vision and goals
 
@@ -202,6 +202,13 @@ PlayerController, PlayerStateMachine, PlayerCombat, PlayerAnimation, ThirdPerson
 - **Decision:** the second map is a small test map built only from Godot primitives and existing materials (no external assets); the NPC patrols 2–3 points and plays a short hit reaction when punched, with no damage, health, death, attack, or pursuit; the test fixture van may become the game's second vehicle type with a placeholder visual; 2 NPCs on İstanbul, 3 on the test map. İstanbul • Haliç (GLB and scene), the quality profile values, the physics settings, and Phase 1–4 behaviour do not change. Device items count only with a log, a results file, or a screenshot.
 - **Implementation:** T34–T38; results in `PROJECT_STATE.md`, "Phase 5".
 
+### D22 — Rights to the İstanbul • Haliç package; its generator in the repository (2026-11-01, user decision)
+
+- **Statement (user):** the user produced the İstanbul • Haliç package (the map, the Blender file, and the generation scripts) and holds the rights to it.
+- **Decision:** the generation scripts and their input data are kept in the repository (T39); the `.blend`, the previews, the package's Godot demo, and the GLB are not (D6). In the task that brought them in, the map, `assets/istanbul_halic.glb`, the game code, the profiles, and the measurement baselines stayed unchanged, and a regenerated GLB does not replace the current one.
+- **Data licences still apply:** geographic data © OpenStreetMap contributors under ODbL 1.0; terrain from Mapzen/Tilezen Terrain Tiles with the USGS, EU-DEM, and ETOPO1 attributions (`docs/maps/istanbul_halic/KAYNAKLAR.md`). The package's `KAYNAKLAR.md` also offers the scripts and the original decor geometry under CC0 1.0, without changing the data terms.
+- **Open:** how ODbL's share-alike terms apply to a published build (open question 38); to be settled before any store release.
+
 ## Application technical decisions
 
 Decisions made by the implementing agent (Claude Code, 2026-10-24). None was specified by the user unless stated; each can be revisited. Code structure: `docs/ARCHITECTURE.md`.
@@ -397,6 +404,13 @@ Decisions made by the implementing agent (Claude Code, 2026-10-24). None was spe
 
 - **Decision:** the test fixture van became game content (`placeholder_van.tscn`, `definitions/van.tres`); `MapDefinition.vehicle_scenes` gives a vehicle type per spawn (`Main.vehicle_scene` where empty); the test district parks the compact car and the van. The debug CAR button walks up to each vehicle in turn.
 
+### T39 — İstanbul • Haliç generator in the repository (2026-11-01)
+
+- **Layout:** the scripts in `tools/maps/istanbul_halic/` (beside the other generators, excluded from exports by the presets' `tools/*` filter); the inputs in `maps/istanbul_halic/source/` (the map's folder, inputs only); the files the package's run wrote for the shipped GLB in `maps/istanbul_halic/reference/`, never written by the generator. Both data folders carry a `.gdignore`: the export presets include `maps/`, and without it Godot would import the elevation PNGs and pack the 19 MB OSM extract and the JSON records into every build.
+- **Paths:** the scripts were first committed byte-identical to the package (`3d4bb1a`), then changed only in their paths: `--source` (only read) and `--out` (default `build/maps/istanbul_halic/`, ignored by Git; refused inside `--source`); `street_details.py` reads the `vegetation.json` that the same run wrote to `--out`. `render_map.py` (Blender) takes the same `--out`. No geometry code changed.
+- **Environment:** Python 3.12 (3.12.15 verified) with `requirements.txt` pinned (numpy 2.5.4, shapely 2.1.2 with GEOS 3.13.1, mapbox_earcut 2.1.0, pillow 13.0.0); the virtual environment lives outside the repository. shapely 2.1.2 was chosen because, of the three versions tried, it reproduces the shipped GLB most closely; GEOS decides the road and pavement triangulation and, through `STRtree.nearest` ties, where a few signal poles stand. Results: `PROJECT_STATE.md`, "Map generator in the repository".
+- **Rationale:** open question 20 asked for the scripts in the repository so map-level work can be reproduced and reviewed; keeping the original commit separate shows every later change to the generator as a diff against the package.
+
 ## Performance findings and proposed measures
 
 Status: **measured on 2026-10-24, nothing applied.** Full tables and protocol: `PROJECT_STATE.md`, "Performance diagnosis pass". Raw data and screenshots: `docs/perf/`.
@@ -473,7 +487,7 @@ Phases 0–5 of the specification are implemented (`PROJECT_STATE.md`, "Specific
 
 | Option | Prerequisites | Expected effect (from measurements where there are any) | Risk |
 |---|---|---|---|
-| Map-level facades and simple colliders | The user's approval to change the map pipeline and the map generation scripts in the repository (open questions 20, 21, 30) | Facade detail is 64.2 % of the 7.07 M triangles: lighter facades in smaller cells would let the tablet's low profile drop fog, the 0.6 render scale, or the blank nearby facades (D12). Simple colliders instead of 827 trimesh bodies: the player's physics tick costs ~1 ms per step on the tablet (Phase 4a), but Phase 5 found a character's cost to be mostly script and transform work (on the Mac an NPC costs 0.29 ms per step on boxes and 0.32 ms on trimesh), so the physics gain of simple colliders is likely small; not measured on the tablet | High: regenerates the map, occluders, colliders, and every measurement baseline |
+| Map-level facades and simple colliders | The user's approval to change the map pipeline and the decisions in open questions 21, 30, 39, and 40; the generation scripts are in the repository and reproduce the current map (T39, 2026-11-01) | Facade detail is 64.2 % of the 7.07 M triangles: lighter facades in smaller cells would let the tablet's low profile drop fog, the 0.6 render scale, or the blank nearby facades (D12). Simple colliders instead of 827 trimesh bodies: the player's physics tick costs ~1 ms per step on the tablet (Phase 4a), but Phase 5 found a character's cost to be mostly script and transform work (on the Mac an NPC costs 0.29 ms per step on boxes and 0.32 ms on trimesh), so the physics gain of simple colliders is likely small; not measured on the tablet | High: regenerates the map, occluders, colliders, and every measurement baseline |
 | Real character and vehicle models | A character model with idle, walk, run, punch, roll, and hit animations and a car model with four separate wheels, with sources and licences (open questions 1, 2) | Plug-in points exist and are tested: `CharacterVisual` (`play_action` punch / roll / hit for an AnimationTree), `VehicleVisual` (wheel order). Costs to measure: skinned meshes and animation per character (CPU on the tablet, where a character already costs ~1.1–1.4 ms per step, question 34) and draw calls | Medium: art-dependent; performance unknown until measured |
 | Store preparation | The new Apple Developer account and Team ID, the final bundle ID registered there, a release keystore, app name and icon (open question 5), privacy labels; the checklist in "Before a store release" | Release presets without `perf_bench`, an Android App Bundle through the Gradle template (target API 36 already), an iOS archive; decide whether the test district ships (question 36) | Low technically; depends on external accounts and assets |
 
@@ -489,6 +503,12 @@ See "Requirements by phase". `PROJECT_STATE.md` records which parts exist.
 
 - 30 FPS mode for weaker Android devices (Phase 4, to be considered).
 - Desktop keyboard and mouse controls are allowed only as development aids.
+
+### Deferred map candidate: Safranbolu (audited 2026-10-28, deferred 2026-11-01)
+
+- **What it is:** a 500 m Safranbolu model package produced by the user with its own generation script (kept outside the repository). A read-only audit (no repository changes) found: 929,216 triangles in 1,173 meshes, one object per building; no normals and no colliders in the GLB; double-sided materials; 23.2 % of the road centrelines run inside building footprints (Microsoft footprints beside OSM roads); facade geometry 72.6 % of the triangles.
+- **Status:** deferred by the user (2026-11-01) in favour of the İstanbul • Haliç pipeline (D22, T39). Nothing of it is in the repository.
+- **If it resumes:** bring its script and inputs in the same way (T39), fix the road–building overlap, generate normals and simple colliders at the source, and add it as a separate map id (T34).
 
 ## Rejected alternatives
 
@@ -518,8 +538,8 @@ See "Requirements by phase". `PROJECT_STATE.md` records which parts exist.
 17. Is a visible loss of distant facade detail (beyond ~200 m) acceptable on the iPhone long term?
 18. Automatic GPU/device detection for choosing a profile (instead of the per-platform rule), e.g. for strong Android phones or older iPhones?
 19. A user-facing graphics settings menu to pick the profile?
-20. Bringing the map generation scripts (`<SOURCE_PACKAGE>/Istanbul_Halic/source/`) into the repository so map-level work is reproducible.
-21. The map-level facade detail work (lighter facades, LODs, smaller cells): awaiting the user's decision and approval to change the map pipeline.
+20. *(Closed 2026-11-01 by D22 and T39: the generation scripts and their inputs are in the repository, and the current map is reproduced from them; `PROJECT_STATE.md`, "Map generator in the repository".)* Bringing the map generation scripts into the repository so map-level work is reproducible.
+21. The map-level facade detail work (lighter facades, LODs, smaller cells): awaiting the user's decision and approval to change the map pipeline. Since 2026-11-01 the work can start from the scripts in the repository (T39); the decisions it needs first are open questions 39 and 40, and the proposed order is in `PROJECT_STATE.md`, "Recommended next task".
 22. Damage system: punches only signal hits (T21). Since Phase 5 an NPC plays a short hit reaction (user decision for Phase 5); health, damage values, death, and knockback are still undefined.
 23. NPCs: *(answered for Phase 5, 2026-10-28, user: patrol between 2–3 points, a short hit reaction, no damage, attack, or pursuit; implemented on `PlayerController` with an AI input source, T35–T36.)* Still open: what NPCs should do beyond this (reacting to the player, crowds, traffic), and how many there should be (see question 34).
 24. Roll damage immunity (invulnerability frames): none for now (D14). Revisit once damage exists.
@@ -528,7 +548,7 @@ See "Requirements by phase". `PROJECT_STATE.md` records which parts exist.
 27. *(Closed 2026-10-26 by D18: no change needed.)*
 28. Speed-dependent camera distance while driving (optional in the task, not implemented).
 29. Should steering also offer a drag or tilt mode (T25)?
-30. Map colliders: all 827 are trimesh bodies (`ConcavePolygonShape3D`, 438,012 triangles; Phase 4a census). Should they be replaced by simple shapes (boxes or convex hulls per building, simplified ground) for cheaper physics? Phase 4a found the player and the parked car spending ~1 ms each per step against these trimesh bodies on the Galaxy Tab A7, with ~1.3 ms shared. This changes the map's collision, so it belongs to the same map-pipeline decision as the facade work (open questions 20–21): generate simple colliders in the map generation scripts rather than editing the imported GLB, and decide both together.
+30. Map colliders: all 827 are trimesh bodies (`ConcavePolygonShape3D`, 438,012 triangles; Phase 4a census). Should they be replaced by simple shapes (boxes or convex hulls per building, simplified ground) for cheaper physics? Phase 4a found the player and the parked car spending ~1 ms each per step against these trimesh bodies on the Galaxy Tab A7, with ~1.3 ms shared. This changes the map's collision, so it belongs to the same map-pipeline decision as the facade work (open questions 20–21): generate simple colliders in the map generation scripts rather than editing the imported GLB, and decide both together. The scripts are in the repository since 2026-11-01 (T39): colliders are the `-col` meshes that `build_map.py` names (`Ground_*`, `Buildings_*`, `TreeTrunks_*`, `Mosque_*`, `Landmark_*`, the bridges).
 31. Further test devices: only the iPhone 13 Pro and the Galaxy Tab A7 exist; there is no Android phone (user, 2026-10-27). Phone screens other than the iPhone are checked only in the headless layout matrix with assumed insets (T29). Which devices should be added (a 20:9 Android phone with a punch-hole, a smaller or older iPhone, an iPad)? Since Phase 4d the device scenario (T33) can check any added device automatically.
 32. Button sizes per device class: the smallest gameplay touch target is 18.3–21.6 mm on tablets (Tab A7, iPad) and 9.6–10.8 mm on phones (T29 matrix). Should tablets get smaller controls (closer to the thumbs, less of the picture covered) or small phones larger ones? Nothing changed for now.
 33. The iPhone's two-orientation check (holding the joystick through a 180° turn) is still NOT RUN: in Phase 4d the gravity sensor showed the phone lying flat for the whole 90 s window; in Phase 5 the user answered that they could not do it ("Yapamam", not asked again). It needs the user to hold the phone upright and turn it once while `scenario_orientation` runs. The tablet passed the same check automatically (Phase 4d).
@@ -536,6 +556,9 @@ See "Requirements by phase". `PROJECT_STATE.md` records which parts exist.
 35. Collisions between vehicles and characters: a moving vehicle passes through the player and the NPCs (vehicles do not mask the character layers, unchanged since Phase 3), and NPCs in the far mode pass through walls, cars, and each other. Should cars stop at, push, or hit characters (tied to question 22)?
 36. The test district is packaged in every build (about 19 KB of scenes and data): debug and Release Perf builds can load it, normal release builds only load İstanbul. Keep it in release packages as a test map, or exclude `maps/test_district/` from release presets later?
 37. Map switching blocks the game while the new map loads: back to İstanbul took 6.8 s on the tablet and 1.8 s on the iPhone (device scenario), with a frozen frame. A user-facing map choice would need a loading screen or threaded loading (`ResourceLoader.load_threaded_request`).
+38. ODbL share-alike (D22): the map is built from OpenStreetMap data (ODbL 1.0). Before any store release, decide how its terms apply to the published game (attribution in the app is required in any case; whether the map counts as a produced work or a derivative database decides whether share-alike applies), and where the attribution is shown.
+39. A map regenerated from improved scripts (cells, facades, colliders, normals): does it replace the current İstanbul • Haliç (`assets/istanbul_halic.glb`) or join the registry under a separate id until it is measured? Replacing it changes every measurement baseline, the baked occluders (D13), and the tests that pin the current map (827 static bodies, 643 occluders, viewpoints, the vehicle spawn); a separate id (T34) allows A/B measurements on the devices first.
+40. Storing large generated outputs: the GLB is 502 MB and stays out of Git (D6). Generated outputs (GLB, per-cell scenes, occluders) could be regenerated on each machine from the pinned generator (about 2.5 minutes on the Mac), kept in external storage, or made small enough to commit. Which one?
 
 ## Constraints and priorities
 
@@ -543,4 +566,4 @@ See "Requirements by phase". `PROJECT_STATE.md` records which parts exist.
 - The map original in the source package must not be modified or deleted.
 - Physical device results are reported as NOT RUN until actually performed.
 - No store, TestFlight, or Play Console uploads; no release signing without explicit approval.
-- Current priority: review of Phase 5 and of the specification as a whole (`PROJECT_STATE.md`, "Specification status"); then one of the options in "After the specification" (user decision).
+- Current priority: the map-level work chosen by the user (D22): the generator is in the repository (T39); the first source-level improvement waits for open questions 39 and 40 and its task (`PROJECT_STATE.md`, "Recommended next task"). Safranbolu is deferred ("Deferred ideas").

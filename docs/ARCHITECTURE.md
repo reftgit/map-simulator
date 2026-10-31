@@ -27,12 +27,16 @@ game/
   platform/                 Platform: the only code that asks the OS which platform this is (Phase 4d)
 maps/<map_name>/            One folder per map: scene, MapDefinition (.tres), map script, occluders
                             (istanbul_halic: the GLB map; test_district: Godot primitives, Phase 5)
+  istanbul_halic/source/    Generator inputs: OSM extract, Terrarium tiles, height overrides (.gdignore)
+  istanbul_halic/reference/ The package's generated records, for comparison (.gdignore; never written)
 assets/                     Map model and metadata (the 502 MB GLB is not in Git)
 scripts/, main.tscn         Original explorer demo from the map package (desktop only, not used by the game)
 tests/                      Headless test runner, unit and integration suites, fixtures (flat map, fake platform)
 tools/                      Development tools (screenshot capture, iOS debug build, occluder bake, test district generator, perf scripts)
+  maps/istanbul_halic/      İstanbul • Haliç generator (Python): build_map.py and modules, compare_outputs.py,
+                            render_map.py (Blender), requirements.txt; see "Map generation (İstanbul • Haliç)"
 docs/                       This file, map documentation
-build/                      Export output, ignored by Git except build/.gdignore (keeps Godot from importing it)
+build/                      Export and map generator output, ignored by Git except build/.gdignore (keeps Godot from importing it)
 export_presets.cfg          Six presets: Android/iOS debug, Android compatibility, three Release Perf (see "Export presets")
 ```
 
@@ -264,6 +268,21 @@ A `VehicleBody3D` at rest is never put to sleep by GodotPhysics3D: the engine's 
 1. The NPC scene: `game/npc/npc.tscn` inherits `game/player/player.tscn` (controller, states, placeholder visual, collision capsule) and changes only data: the root script `Npc` (it wires the input source and the hurtbox), physics layer 5 "npc" (mask world, player, vehicle, npc), the body's colour, plus a `Hurtbox`, a `HitReaction` state, and an `AiPatrolInput` node. A new kind of NPC is another `PlayerInputSource` (a different behaviour) or another inherited scene (a different look or tuning); `PlayerController` and the existing states stay unchanged.
 2. Routes: add `PatrolRoute` entries to the map's `npc_routes`; `WorldManager.spawn_npcs(Main.npc_scene)` places one NPC per route, tracks it (respawn at its own start, bounds), and frees it with the map.
 3. Reactions belong to the NPC (`Npc._on_hit_received()` starts `HitReactionState`); damage, health, or pursuit would be added there or in another input source.
+
+### Map generation (İstanbul • Haliç)
+
+The İstanbul • Haliç GLB is generated outside Godot by a Python script (T39). It reads `maps/istanbul_halic/source/` and writes to `build/maps/istanbul_halic/` (ignored by Git); `maps/istanbul_halic/reference/` holds the records of the shipped GLB for comparison. Setup, output files, and the Blender preview script: `docs/maps/istanbul_halic/README.md`, "Regenerating the map".
+
+```bash
+python3.12 -m venv <VENV> && <VENV>/bin/python -m pip install -r tools/maps/istanbul_halic/requirements.txt
+<VENV>/bin/python -B tools/maps/istanbul_halic/build_map.py        # --source DIR, --out DIR
+<VENV>/bin/python -B tools/maps/istanbul_halic/compare_outputs.py  # vs assets/istanbul_halic.glb and reference/
+```
+
+- Structure of `build_map.py`: module-level stages in order (DEM sampling, terrain, quays, streets, building shells and facade detail, landmarks via `architecture.py`, Galata and Atatürk bridges, the metro bridge via `bridge.py`, trees and gardens via `vegetation.py`, lamps, signals, and road paint via `street_details.py`, ferries), each adding faces to named meshes; `export_glb()` writes them. The modules get the generator's globals (`g['mesh']`, `g['chunk']`, `g['OUT']`, …).
+- Mesh names are the contract with the game: `<Category>_<cx>_<cy>` for 150 m chunks (the `RenderSettings.CATEGORIES` prefixes), a `-col` suffix for static collision (827 bodies), per-landmark names for mosques and bridges.
+- Seeds are fixed (`random.Random(41023)`, vegetation `4102303`), so a run is repeatable; GEOS (bundled with shapely) decides road, pavement, and quay triangulation, which is why the shapely version is pinned.
+- A regenerated GLB is never copied over `assets/istanbul_halic.glb` by the tools; the game, its tests, and the baked occluders keep using the shipped one.
 
 ## NPCs (Phase 5)
 
