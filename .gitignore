@@ -11,5 +11,12 @@
 !/build/.gdignore
 /android/
 
+# Map generator output (default --out of tools/maps/istanbul_halic/build_map.py).
+# Already inside /build/*; listed so it stays ignored if that rule changes.
+/build/maps/
+
+# Python bytecode caches of the map generator
+__pycache__/
+
 # OS files
 .DS_Store

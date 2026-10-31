@@ -1,12 +1,17 @@
 """Optional Blender 4.5 render/source-file builder. Run with Blender's Python or bpy.
 The previews use the exact exported GLB geometry, with studio lighting.
+Run: blender --background --python render_map.py -- [--out DIR]
+Reads DIR/istanbul_halic.glb from build_map.py and writes DIR/previews/ and
+DIR/Istanbul_Halic.blend (default DIR: build/maps/istanbul_halic, ignored by Git).
 """
 from pathlib import Path
-import bpy, math, os
+import argparse, bpy, math, os, sys
 from mathutils import Vector
-ROOT=Path(__file__).resolve().parent.parent
+cli=argparse.ArgumentParser(prog='render_map.py',description='Render the previews and save the .blend of a generated GLB.')
+cli.add_argument('--out',type=Path,default=Path(__file__).resolve().parents[3]/'build/maps/istanbul_halic',help='folder with istanbul_halic.glb (default: %(default)s)')
+OUT=cli.parse_args(sys.argv[sys.argv.index('--')+1:] if '--' in sys.argv else []).out.resolve()
 bpy.ops.object.select_all(action='SELECT');bpy.ops.object.delete(use_global=False)
-bpy.ops.import_scene.gltf(filepath=str(ROOT/'Godot/assets/istanbul_halic.glb'))
+bpy.ops.import_scene.gltf(filepath=str(OUT/'istanbul_halic.glb'))
 scene=bpy.context.scene
 scene.render.engine='CYCLES';scene.cycles.samples=24;scene.cycles.use_denoising=True
 scene.render.threads_mode='FIXED';scene.render.threads=12
@@ -28,7 +33,7 @@ def camera(pos,target,lens=45,ortho=None):
 def render(name,width=1800,height=1300):
  if os.environ.get("RENDER_ONLY") and name not in os.environ["RENDER_ONLY"].split(","):return
  scene.render.resolution_x=width;scene.render.resolution_y=height
- scene.render.filepath=str(ROOT/'previews'/name);bpy.ops.render.render(write_still=True)
+ scene.render.filepath=str(OUT/'previews'/name);bpy.ops.render.render(write_still=True)
 # A studio floor below the map makes the finite gameplay slice readable.
 bpy.ops.mesh.primitive_plane_add(size=20000,location=(0,0,-16))
 floor=bpy.context.object;floor.name='Preview_Backdrop-noimp'
@@ -56,5 +61,5 @@ for obj in hidden:obj.hide_render=False
 camera((-280,700,340),(-1080,850,15),lens=40)
 render('08_kasimpasa.png',1800,1150)
 camera((-410,-350,165),(-690,0,35),lens=36)
-bpy.ops.wm.save_as_mainfile(filepath=str(ROOT/'Istanbul_Halic.blend'),compress=True)
+bpy.ops.wm.save_as_mainfile(filepath=str(OUT/'Istanbul_Halic.blend'),compress=True)
 print('PREVIEWS_AND_BLEND_SAVED',flush=True)

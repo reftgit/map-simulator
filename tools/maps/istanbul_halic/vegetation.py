@@ -202,6 +202,6 @@ def build(g):
     assert summary['minimum_building_clearance_m']>=3.99
     assert summary['minimum_road_path_clearance_m']>=1.99
     assert summary['all_tree_centres_on_land'] and summary['trees_in_paved_mosque_courts']==0
-    (g['ROOT']/'source/vegetation.json').write_text(json.dumps({'summary':summary,'trees':records,'shrub_centres':shrubs},ensure_ascii=False,indent=2))
+    (g['OUT']/'vegetation.json').write_text(json.dumps({'summary':summary,'trees':records,'shrub_centres':shrubs},ensure_ascii=False,indent=2))
     print('VEGETATION',json.dumps(summary),flush=True)
     return summary

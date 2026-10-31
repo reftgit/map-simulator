@@ -41,7 +41,7 @@ def build(g):
     polecol=rgb('59686B');ivory=rgb('F2EFE0');warm=rgb('FFF0BC')
     doors=[Point(g['nodes'][n.get('id')]) for n in g['doc'].findall('node') if tags(n).get('entrance') not in [None,'no']]
     door_lookup=STRtree(doors) if doors else None
-    tree_data=json.loads((g['ROOT']/'source/vegetation.json').read_text())['trees']
+    tree_data=json.loads((g['OUT']/'vegetation.json').read_text())['trees']
     tree_points=[Point(t['east'],t['north']) for t in tree_data];trees=STRtree(tree_points)
     def available(x,y):
         p=Point(x,y)
@@ -153,6 +153,6 @@ def build(g):
             lamp(x,y,toward/norm if norm>.1 else u,6,'OSM lamp')
     counts['lamp_mesh_triangles_estimate']=counts['street_lamps']*60
     data={'counts':dict(counts),'lights':lights,'signals':signals,'crossings':crossings,'notes':'Mapped OSM signal/crossing positions; inferred pole offsets, static indications; authored lamp spacing and lane paint; not a surveyed traffic plan.'}
-    (g['ROOT']/'source/street_details.json').write_text(json.dumps(data,ensure_ascii=False,indent=2))
+    (g['OUT']/'street_details.json').write_text(json.dumps(data,ensure_ascii=False,indent=2))
     print('STREET DETAILS',dict(counts),flush=True)
     return data

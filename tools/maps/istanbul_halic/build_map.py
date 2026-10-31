@@ -1,11 +1,13 @@
 """Deterministic Istanbul environment from the bundled OpenStreetMap extract.
-Python 3.11+; pip install numpy shapely mapbox-earcut pillow
-Run from anywhere: python build_map.py
+Python 3.11+; pip install -r requirements.txt (pinned versions)
+Run from anywhere: python build_map.py [--source DIR] [--out DIR]
+Inputs are only read from --source (default: maps/istanbul_halic/source);
+every output goes to --out (default: build/maps/istanbul_halic, ignored by Git).
 Coordinates inside this generator: east, north, up, in metres.
 Export: glTF/Godot +X east, +Y up, -Z north. Origin 28.975 E, 41.023 N.
 """
 from pathlib import Path
-import json, math, struct, random, re, collections, xml.etree.ElementTree as ET
+import argparse, json, math, struct, random, re, collections, xml.etree.ElementTree as ET
 import numpy as np
 import mapbox_earcut
 from shapely.geometry import Polygon, LineString, Point, box, MultiPolygon
@@ -14,7 +16,14 @@ from shapely.ops import unary_union, polygonize, triangulate
 from shapely import segmentize
 from terrain import Elevation
 
-ROOT = Path(__file__).resolve().parent.parent
+REPO = Path(__file__).resolve().parents[3]
+cli = argparse.ArgumentParser(description='Generate the Istanbul Halic map GLB and its JSON records.')
+cli.add_argument('--source', type=Path, default=REPO/'maps/istanbul_halic/source', help='input folder, only read (default: %(default)s)')
+cli.add_argument('--out', type=Path, default=REPO/'build/maps/istanbul_halic', help='output folder, created if missing (default: %(default)s)')
+opts = cli.parse_args()
+SOURCE = opts.source.resolve(); OUT = opts.out.resolve()
+if OUT == SOURCE or SOURCE in OUT.parents: cli.error('--out must not be inside --source')
+OUT.mkdir(parents=True, exist_ok=True)
 RNG = random.Random(41023)
 SX = 111320 * math.cos(math.radians(41.023)); SY = 111320
 BBOX = [28.952,41.013,28.984,41.037]
@@ -22,7 +31,7 @@ BOUNDS = ((BBOX[0]-28.975)*SX,(BBOX[1]-41.023)*SY,(BBOX[2]-28.975)*SX,(BBOX[3]-4
 AREA = box(*BOUNDS)
 def ll(lon,lat): return ((lon-28.975)*SX,(lat-41.023)*SY)
 def tags(n): return {t.get('k'):t.get('v') for t in n.findall('tag')}
-doc=ET.parse(ROOT/'source/istanbul_extended_v4.osm').getroot()
+doc=ET.parse(SOURCE/'istanbul_extended_v4.osm').getroot()
 nodes={n.get('id'):ll(float(n.get('lon')),float(n.get('lat'))) for n in doc.findall('node')}
 ways={w.get('id'):w for w in doc.findall('way')}
 def coords(w): return [nodes[n.get('ref')] for n in w.findall('nd') if n.get('ref') in nodes]
@@ -30,7 +39,7 @@ coasts=[LineString(coords(w)).intersection(AREA) for w in ways.values() if tags(
 parts=list(polygonize(unary_union([AREA.boundary]+coasts)))
 land=[p for p in parts if p.contains(Point(ll(28.97417,41.0256))) or p.contains(Point(ll(28.971,41.017)))]
 LAND=unary_union(land); COAST=unary_union(coasts)
-DEM=Elevation(ROOT/'source/elevation')
+DEM=Elevation(SOURCE/'elevation')
 # Use an 8 metre game mesh over the coarser source DEM. Waterfront elevations
 # are corrected to a 1.5 m quay to avoid DEM/coastline mismatches.
 GRID_STEP=8
@@ -186,7 +195,7 @@ for wid,w in ways.items():
         surf(chunk('Road',cx,cy),tr,rgb('737B79') if kind in ['pedestrian','footway','steps','path'] else rgb('535F61'),lambda x,y:height(x,y)+.20)
 print('Building facades',len(buildings),flush=True)
 records=[];estimated=0
-height_overrides=json.loads((ROOT/'source/building_height_overrides.json').read_text())
+height_overrides=json.loads((SOURCE/'building_height_overrides.json').read_text())
 for p,t,wid in buildings:
  x,y=p.centroid.coords[0];p=orient(p.simplify(.16,preserve_topology=True),1)
  name=t.get('name','')
@@ -282,7 +291,7 @@ for p,t,wid in landmarks:
     continue
  records.append({'osm_id':wid,'name':name,'east':round(x,2),'north':round(y,2),'height_source':'authored_stylization'})
 
-(ROOT/'source/mosques.json').write_text(json.dumps(ARCH.inventory,ensure_ascii=False,indent=2))
+(OUT/'mosques.json').write_text(json.dumps(ARCH.inventory,ensure_ascii=False,indent=2))
 
 # Galata Bridge: aligned with its OSM endpoints. The centre rises gently to 6 m.
 a=np.array(ll(28.97194,41.01821));b=np.array(ll(28.97443,41.02191));axis=b-a;length=np.linalg.norm(axis);u=axis/length;v=np.array([-u[1],u[0]])
@@ -402,11 +411,11 @@ def export_glb(path):
     with open(path,'wb') as f:
         f.write(struct.pack('<4sII',b'glTF',2,12+8+len(js)+8+len(blob)));f.write(struct.pack('<I4s',len(js),b'JSON'));f.write(js);f.write(struct.pack('<I4s',len(blob),b'BIN\x00'));f.write(blob)
     return stats
-stats=export_glb(ROOT/'Godot/assets/istanbul_halic.glb')
+stats=export_glb(OUT/'istanbul_halic.glb')
 stats.update(street_details=street_metadata['counts'],bridge_main_span_m=180,vegetation=vegetation_stats,buildings=len(records),estimated_building_heights=estimated,road_ways=road_count,trees=tree_count,dimensions_m=[round(BOUNDS[2]-BOUNDS[0]),round(BOUNDS[3]-BOUNDS[1])],land_area_km2=round(LAND.area/1e6,3),origin=[28.975,41.023],bbox=BBOX,mosques=sum(is_mosque(t) for p,t,wid in landmarks),cars=0,trams=0,elevation_min_m=float(HG.min()),elevation_max_m=float(HG.max()),elevation_source="Mapzen/Tilezen Terrain Tiles")
-(ROOT/'source/buildings.json').write_text(json.dumps(records,ensure_ascii=False,indent=2))
-(ROOT/'source/statistics.json').write_text(json.dumps(stats,indent=2))
-(ROOT/'source/spawn.json').write_text(json.dumps({'bridge':[*bridge_xy(length*.78,17),bridge_z(length*.78)],'galata':[*ll(28.97417,41.02563),height(*ll(28.97417,41.02563))]},indent=2))
+(OUT/'buildings.json').write_text(json.dumps(records,ensure_ascii=False,indent=2))
+(OUT/'statistics.json').write_text(json.dumps(stats,indent=2))
+(OUT/'spawn.json').write_text(json.dumps({'bridge':[*bridge_xy(length*.78,17),bridge_z(length*.78)],'galata':[*ll(28.97417,41.02563),height(*ll(28.97417,41.02563))]},indent=2))
 print(json.dumps(stats,indent=2),flush=True)
 
-(ROOT/'Godot/assets/map_metadata.json').write_text(json.dumps({'stats':stats,'walk_spawn':[float(bridge_xy(length*.78,17)[0]),float(bridge_z(length*.78)+2),float(-bridge_xy(length*.78,17)[1])],'mosques':ARCH.inventory,'bounds':[BOUNDS[0],BOUNDS[1],BOUNDS[2],BOUNDS[3]],'metro_bridge':bridge_metadata,'street_lights':street_metadata['lights']},ensure_ascii=False,indent=2))
+(OUT/'map_metadata.json').write_text(json.dumps({'stats':stats,'walk_spawn':[float(bridge_xy(length*.78,17)[0]),float(bridge_z(length*.78)+2),float(-bridge_xy(length*.78,17)[1])],'mosques':ARCH.inventory,'bounds':[BOUNDS[0],BOUNDS[1],BOUNDS[2],BOUNDS[3]],'metro_bridge':bridge_metadata,'street_lights':street_metadata['lights']},ensure_ascii=False,indent=2))

@@ -107,5 +107,5 @@ def build(g):
             cube(mesh('LampGlow_Bridge'),(*p,base+3.40),(.32,.32,.06),rgb('FFF0BD'),angle)
             lamps.append([float(p[0]),float(base+3.3),float(-p[1])])
     data={'name':'Haliç Metro Köprüsü','reference':'https://www.istconinsaat.com.tr/tr/projelerimiz/istanbul-metrosu-halic-metro-gecis-koprusu-yapim-isi','overall_model_length_m':round(length,2),'main_span_m':180,'pylon_top_m_above_water':65,'cable_count':36,'station_canopy_length_m':156,'model_deck_level_m':deck,'pylon_positions':[list(map(float,xy(s))) for s in pylons],'station_centre':list(map(float,xy(mid))),'walkway_test_position':[float(xy(mid,11)[0]),deck-3.7+2,float(-xy(mid,11)[1])],'lamps':lamps,'notes':'Static photo-referenced interpretation; swing span closed; no rolling stock.'}
-    (g['ROOT']/'source/bridge_metadata.json').write_text(json.dumps(data,ensure_ascii=False,indent=2))
+    (g['OUT']/'bridge_metadata.json').write_text(json.dumps(data,ensure_ascii=False,indent=2))
     return data

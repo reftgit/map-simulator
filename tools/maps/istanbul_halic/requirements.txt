@@ -1,0 +1,9 @@
+# İstanbul • Haliç map generator (build_map.py), verified with Python 3.12.15 on macOS arm64.
+# Install into a virtual environment outside the repository:
+# docs/maps/istanbul_halic/README.md, "Regenerating the map".
+# shapely 2.1.2 wheels bundle GEOS 3.13.1, the closest match to the shipped GLB of the
+# versions tried (2.0.7 / GEOS 3.11.4 and 2.2.0 / GEOS 3.14.1 differ more).
+mapbox_earcut==2.1.0
+numpy==2.5.4
+pillow==13.0.0
+shapely==2.1.2
