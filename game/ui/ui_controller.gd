@@ -4,7 +4,8 @@ extends CanvasLayer
 ## corners, home indicator, cutouts, navigation bars; from a SafeAreaSource,
 ## re-applied when it changes), fades the roll button while the bound player's
 ## roll is on cooldown and the exit button while the bound vehicle is too fast
-## to get out, shows a loading screen while a map loads, and, in debug builds
+## to get out, shows a loading screen while a map loads (or an error when no
+## map can be loaded), and, in debug builds
 ## only, shows a performance overlay (with the player's or the driven
 ## vehicle's speed and whether each vehicle is awake or asleep), logs the same
 ## numbers as "PERF" lines (readable from adb logcat or the Xcode console),
@@ -108,6 +109,13 @@ func set_loading(on: bool) -> void:
 
 func is_loading() -> bool:
 	return _loading_screen.visible
+
+
+## When the game cannot start (Main: no map available): the loading screen
+## with `message` in place of its text, and no controls.
+func show_fatal_error(message: String) -> void:
+	set_loading(true)
+	(_loading_screen.get_node("Label") as Label).text = message
 
 
 func _process(delta: float) -> void:

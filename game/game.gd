@@ -3,7 +3,7 @@ extends Node
 ## profile, and connects input, camera, and HUD. Systems do not look each
 ## other up; they are wired here.
 
-## The maps the game can load; the first is the default (MapRegistry).
+## The maps the game can load; the first available is the default (MapRegistry).
 @export var maps: MapRegistry
 ## Parked at each of the map's vehicle spawns.
 @export var vehicle_scene: PackedScene
@@ -70,7 +70,13 @@ func _ready() -> void:
 	vehicle_interaction.exited.connect(_on_vehicle_exited)
 	hud.vehicles = world.vehicles
 
-	_load_map(_initial_map(OS.get_cmdline_user_args()))
+	var definition := _initial_map(OS.get_cmdline_user_args())
+	if definition == null:
+		push_error(_no_map_message())
+		hud.show_fatal_error("Harita yüklenemedi: harita dosyaları eksik.")
+		player.process_mode = Node.PROCESS_MODE_DISABLED
+		return
+	_load_map(definition)
 	if _experiment:
 		apply_runtime_settings(_experiment.runtime)
 	set_quality_profile(_initial_profile())
@@ -348,20 +354,37 @@ func _start_benchmark(config: PerfConfig) -> PerfBenchmark:
 
 ## Map at startup: requested_map (tests); in debug and Release Perf builds
 ## the experiment's "map" key, else --map=<id> in `args`; otherwise, and
-## always in normal release builds, the registry's first map. An unknown id,
-## or a map whose generated files are missing, falls back to the first map
-## with a warning.
+## always in normal release builds, the registry's default: its first map,
+## or, while that map's files are missing (a fresh clone without the
+## generated GLB), the first available one, with a warning. An unknown id, or
+## a map whose files are missing, falls back to the default with a warning.
+## Null when no map is available (_ready() reports it).
 func _initial_map(args: PackedStringArray) -> MapDefinition:
 	var id := requested_map
 	if id.is_empty() and BuildFeatures.perf_enabled():
 		id = _experiment.map if _experiment and not _experiment.map.is_empty() else MapRegistry.id_from_args(args)
+	var fallback := maps.default_map()
 	if not id.is_empty():
 		var found := maps.find(id)
 		if found and found.is_available():
 			return found
 		var reason := "Map '%s' is not available (missing: %s)" % [id, ", ".join(PackedStringArray(found.required_files))] if found else "Unknown map '%s'" % id
-		push_warning("%s; loading '%s'" % [reason, maps.default_map().id])
-	return maps.default_map()
+		if fallback:
+			push_warning("%s; loading '%s'" % [reason, fallback.id])
+		return fallback
+	var first: MapDefinition = maps.definitions[0] if not maps.definitions.is_empty() else null
+	if fallback and fallback != first:
+		push_warning("Default map '%s' is not available (missing: %s); loading '%s'" % [first.id, ", ".join(PackedStringArray(first.required_files)), fallback.id])
+	return fallback
+
+
+## The error when no map of the registry is available: what each one lacks.
+func _no_map_message() -> String:
+	var lacking := PackedStringArray()
+	for definition in maps.definitions:
+		var missing := PackedStringArray(definition.required_files.filter(func(path: String) -> bool: return not MapDefinition.is_loadable(path)))
+		lacking.append("%s (missing: %s)" % [definition.id, ", ".join(missing)])
+	return "No map is available: %s. Generate or copy in a map's files (docs/maps/istanbul_halic/README.md)." % ("; ".join(lacking) if not lacking.is_empty() else "the registry is empty")
 
 
 ## Profile at startup, strongest first: the experiment's "profile" key,

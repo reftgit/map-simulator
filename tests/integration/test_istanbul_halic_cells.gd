@@ -55,7 +55,7 @@ func test_same_map_data_as_istanbul() -> void:
 	var registry := MapRegistry.load_default()
 	var cells := registry.find("istanbul_halic_cells")
 	var istanbul := registry.find("istanbul_halic")
-	check(cells != null and registry.default_map() == istanbul, "in the registry; İstanbul • Haliç stays the default")
+	check(cells != null and registry.definitions[0] == istanbul, "in the registry; İstanbul • Haliç stays first, the default")
 	check(registry.ids().find("istanbul_halic_cells") > registry.ids().find("test_district"), "after the test district, so MAP still goes to the test district first (%s)" % [registry.ids()])
 	check(cells.is_available() and cells.required_files == (["res://assets/istanbul_halic_cells.glb"] as Array[String]), "available, needing its generated GLB")
 	check(cells.player_spawn_position == istanbul.player_spawn_position and cells.player_spawn_yaw_degrees == istanbul.player_spawn_yaw_degrees, "same spawn")

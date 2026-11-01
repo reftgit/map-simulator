@@ -88,7 +88,7 @@ func test_same_map_data_as_the_cells_map() -> void:
 	var registry := MapRegistry.load_default()
 	var mine := registry.find(map_id())
 	var cells := registry.find("istanbul_halic_cells")
-	check(mine != null and registry.default_map().id == "istanbul_halic", "in the registry; İstanbul • Haliç stays the default")
+	check(mine != null and registry.definitions[0].id == "istanbul_halic", "in the registry; İstanbul • Haliç stays first, the default")
 	check(registry.ids().find(map_id()) > registry.ids().find("istanbul_halic_cells"), "after the cells map (%s)" % [registry.ids()])
 	check(mine.is_available() and mine.required_files == ([model_path()] as Array[String]), "available, needing its generated GLB")
 	check(mine.player_spawn_position == cells.player_spawn_position and mine.player_spawn_yaw_degrees == cells.player_spawn_yaw_degrees, "same spawn")

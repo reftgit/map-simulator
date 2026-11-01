@@ -25,5 +25,6 @@ kill_height = -5.0
 npc_routes = Array[ExtResource("2_route")]([SubResource("Resource_bridge_inner"), SubResource("Resource_bridge_outer")])
 vehicle_spawns = Array[Transform3D]([Transform3D(0.25881907, 0, 0.9659258, 0, 1, 0, -0.9659258, 0, 0.25881907, -88.96, 14.7, 36.14)])
 occluders_path = "res://maps/istanbul_halic/istanbul_halic_occluders.scn"
+required_files = Array[String](["res://assets/istanbul_halic.glb"])
 debug_viewpoints = Array[Transform3D]([Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.03, 120), Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -20, 39.49, -250)])
 debug_viewpoint_names = Array[String](["Karaköy street, facing north", "Galata street, facing south"])

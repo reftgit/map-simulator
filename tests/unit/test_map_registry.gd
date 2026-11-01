@@ -1,7 +1,7 @@
 extends "res://tests/test_case.gd"
 ## The map registry and how the game picks its map at startup (Phase 5):
-## the first map by default and always in normal release builds, another by
-## id in debug and Release Perf builds.
+## the first available map by default and always in normal release builds,
+## another by id in debug and Release Perf builds.
 
 const GAME_SCRIPT := preload("res://game/game.gd")
 
@@ -28,7 +28,9 @@ func _game_with(registry: MapRegistry) -> Node:
 func test_registry_lists_the_maps() -> void:
 	var registry := MapRegistry.load_default()
 	check(registry != null and not registry.definitions.is_empty(), "registry loads with maps")
-	check(registry.default_map().id == "istanbul_halic", "İstanbul • Haliç is the default (%s)" % registry.default_map().id)
+	check(registry.definitions[0].id == "istanbul_halic", "İstanbul • Haliç is first, the default (%s)" % registry.definitions[0].id)
+	var available := registry.definitions.filter(func(definition: MapDefinition) -> bool: return definition.is_available())
+	check(not available.is_empty() and registry.default_map() == available[0], "the default is the first available map (%s)" % registry.default_map().id)
 	var seen := {}
 	for definition in registry.definitions:
 		check(not definition.id.is_empty() and not seen.has(definition.id), "unique, non-empty id (%s)" % definition.id)
@@ -110,6 +112,45 @@ func test_maps_with_missing_generated_files_are_skipped() -> void:
 	game.free()
 
 
+func test_default_is_the_first_available_map() -> void:
+	# A fresh clone has no generated GLB: the default passes over a map whose
+	# files are missing, and the game starts on the next with a warning, in
+	# every kind of build.
+	var registry := MapRegistry.new()
+	var missing := _fixture_definition("missing")
+	missing.required_files.assign(["res://tests/fixtures/none.glb"])
+	var second := _fixture_definition("second")
+	registry.definitions.assign([missing, second])
+	check(not missing.is_available() and registry.default_map() == second, "the first available map is the default")
+	var game := _game_with(registry)
+	BuildFeatures.debug_override = 0
+	BuildFeatures.perf_feature_override = 0
+	check(game._initial_map(PackedStringArray()) == second, "normal release: the first available map")
+	BuildFeatures.debug_override = 1
+	check(game._initial_map(PackedStringArray()) == second, "debug, no argument: the first available map")
+	check(game._initial_map(PackedStringArray(["--map=missing"])) == second, "debug, --map naming the missing map: the first available map")
+	missing.required_files.assign(["res://tests/fixtures/flat_map.tscn"])
+	check(registry.default_map() == missing and game._initial_map(PackedStringArray()) == missing, "once its files exist, the first map again")
+	game.free()
+
+
+func test_no_available_map_is_an_error() -> void:
+	var registry := MapRegistry.new()
+	var unavailable := _fixture_definition("unavailable")
+	unavailable.required_files.assign(["res://tests/fixtures/flat_map.tscn", "res://tests/fixtures/none.glb"])
+	registry.definitions.assign([unavailable])
+	check(registry.default_map() == null and MapRegistry.new().default_map() == null, "no default when no map is available")
+	var game := _game_with(registry)
+	BuildFeatures.debug_override = 0
+	BuildFeatures.perf_feature_override = 0
+	check(game._initial_map(PackedStringArray()) == null, "normal release: no map")
+	BuildFeatures.debug_override = 1
+	check(game._initial_map(PackedStringArray(["--map=unavailable"])) == null, "debug, --map: no map")
+	var message: String = game._no_map_message()
+	check(message.contains("unavailable (missing: res://tests/fixtures/none.glb)") and message.contains("docs/maps/istanbul_halic/README.md"), "the error names what is missing and where the steps are (%s)" % message)
+	game.free()
+
+
 func test_imported_files_count_once_imported() -> void:
 	# A committed .import file without its import result (a fresh checkout
 	# before the GLB is generated and imported) is not loadable.
@@ -136,7 +177,9 @@ func test_istanbul_cells_map_is_registered_after_the_test_district() -> void:
 		check(FileAccess.file_exists("res://assets/%s.glb.import" % variant), "%s: the GLB's import settings are committed" % variant)
 		check("/assets/%s.glb" % variant in FileAccess.get_file_as_string("res://.gitignore").split("\n"), "%s: the GLB is kept out of Git" % variant)
 	check(cells.required_files == (["res://assets/istanbul_halic_cells.glb"] as Array[String]), "the cells map needs its generated GLB")
-	check(registry.default_map().required_files.is_empty() and registry.find("test_district").is_available(), "İstanbul and the test district need no generated file")
+	check(registry.find("istanbul_halic").required_files == (["res://assets/istanbul_halic.glb"] as Array[String]), "İstanbul needs its GLB (copied in, kept out of Git)")
+	check("/assets/istanbul_halic.glb" in FileAccess.get_file_as_string("res://.gitignore").split("\n"), "İstanbul's GLB is kept out of Git")
+	check(registry.find("test_district").required_files.is_empty() and registry.find("test_district").is_available(), "the test district needs no file")
 	check(FileAccess.file_exists("res://assets/istanbul_halic_cells.glb.import"), "the cells GLB's import settings are committed")
 	var ignored := FileAccess.get_file_as_string("res://.gitignore").split("\n")
 	check("/assets/istanbul_halic_cells.glb" in ignored, "the cells GLB is kept out of Git")

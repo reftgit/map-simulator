@@ -206,6 +206,34 @@ func test_device_scenario_map_switch() -> void:
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(PerfBenchmark.RESULTS_PATH))
 
 
+func test_missing_default_map_falls_back_to_the_first_available() -> void:
+	# As in a fresh clone without the generated GLB: the registry's first map
+	# lacks its file, so the game starts on the next available map.
+	var registry := MapRegistry.new()
+	var missing := MapDefinition.new()
+	missing.id = "missing"
+	missing.scene_path = "res://tests/fixtures/none.tscn"
+	missing.required_files.assign(["res://tests/fixtures/none.glb"])
+	registry.definitions.assign([missing, MapRegistry.load_default().find("test_district")])
+	game = (load("res://game/main.tscn") as PackedScene).instantiate()
+	game.maps = registry
+	add_node(game)
+	player = game.player
+	await physics_frames(60)
+	check(game.map_definition.id == "test_district" and game.world.map_root.name == &"TestDistrict", "the test district loaded (%s)" % game.map_definition.id)
+	check(player.is_on_floor() and Vector2(player.global_position.x - SPAWN.x, player.global_position.z - SPAWN.z).length() < 0.2, "the player at its spawn")
+	check(not game.hud.is_loading() and game.hud.input.visible, "no loading screen, the controls shown")
+
+
+func test_fatal_error_screen() -> void:
+	# What the game shows when no map is available (Main._ready() then stops).
+	await _setup()
+	game.hud.show_fatal_error("Harita yüklenemedi: harita dosyaları eksik.")
+	var label: Label = game.hud.get_node("LoadingScreen/Label")
+	check(game.hud.is_loading() and label.text == "Harita yüklenemedi: harita dosyaları eksik.", "the screen shows the error")
+	check(not game.hud.input.visible and game.hud.input.process_mode == Node.PROCESS_MODE_DISABLED, "no controls")
+
+
 func _tap(button: TouchButton, index: int) -> void:
 	var point := button.get_global_rect().get_center()
 	touch(index, point, true)

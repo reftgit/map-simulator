@@ -1,10 +1,12 @@
 class_name MapRegistry
 extends Resource
-## The maps the game can load, found by MapDefinition.id. The first entry is
-## the default: normal release builds always start there. Debug and Release
-## Perf builds can start on another with --map=<id> or an experiment's "map"
-## key; debug builds also cycle through them with the overlay's MAP button,
-## skipping maps whose generated files are missing (MapDefinition.is_available()).
+## The maps the game can load, found by MapDefinition.id. The first available
+## entry is the default: normal release builds always start there. A map whose
+## files are missing (MapDefinition.is_available(): its GLB is generated or
+## copied in on each machine, so a fresh clone lacks it) is passed over. Debug
+## and Release Perf builds can start on another with --map=<id> or an
+## experiment's "map" key; debug builds also cycle through them with the
+## overlay's MAP button, skipping unavailable maps.
 
 const PATH := "res://game/world/maps.tres"
 
@@ -15,8 +17,12 @@ static func load_default() -> MapRegistry:
 	return load(PATH) as MapRegistry
 
 
+## The first available map; null when none is available.
 func default_map() -> MapDefinition:
-	return definitions[0] if not definitions.is_empty() else null
+	for definition in definitions:
+		if definition.is_available():
+			return definition
+	return null
 
 
 ## The map with `id`, or null.
