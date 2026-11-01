@@ -1,0 +1,29 @@
+         1793562720.819   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793562720.823   555   555 I lmkd    : Reclaim 'android:drmService' (5143), uid 1000, oom_score_adj 999, state 10 to free 8764kB rss, 44980kB swap; reason: min2x watermark is breached and swap is low (1873596kB < 786428kB)
+         1793562720.858   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793562720.862   555   555 I lmkd    : Reclaim 'com.google.process.gapps' (23787), uid 10157, oom_score_adj 999, state 19 to free 25448kB rss, 39252kB swap; reason: min2x watermark is breached even after kill
+         1793562720.911   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793562720.921   555   555 I lmkd    : Reclaim 'com.samsung.android.lool' (23862), uid 1000, oom_score_adj 999, state 19 to free 29372kB rss, 37696kB swap; reason: min2x watermark is breached even after kill
+         1793562744.869   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793562744.878   555   555 I lmkd    : Reclaim 'com.google.process.gservices' (13140), uid 10157, oom_score_adj 999, state 19 to free 23788kB rss, 40308kB swap; reason: min2x watermark is breached and swap is low (1699232kB < 786428kB)
+         1793562744.940   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793562744.946   555   555 I lmkd    : Reclaim 'com.android.keychain' (23976), uid 1000, oom_score_adj 995, state 19 to free 25208kB rss, 36904kB swap; reason: min2x watermark is breached even after kill
+         1793562751.614   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793562751.626   555   555 I lmkd    : Reclaim 'com.samsung.android.rubin.app' (24046), uid 5010, oom_score_adj 999, state 19 to free 31132kB rss, 40176kB swap; reason: min2x watermark is breached and swap is low (1657024kB < 786428kB)
+         1793562751.699   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793562751.706   555   555 I lmkd    : Reclaim 'com.android.settings:remote' (24000), uid 1000, oom_score_adj 995, state 19 to free 33480kB rss, 40564kB swap; reason: min2x watermark is breached even after kill
+         1793562751.764   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793562751.769   555   555 I lmkd    : Reclaim 'com.samsung.android.sm.policy' (23874), uid 10128, oom_score_adj 985, state 19 to free 20588kB rss, 44112kB swap; reason: min2x watermark is breached even after kill
+         1793562751.816   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793562751.820   555   555 I lmkd    : Reclaim 'com.samsung.android.bbc.bbcagent' (24172), uid 1000, oom_score_adj 975, state 19 to free 22844kB rss, 37068kB swap; reason: min2x watermark is breached even after kill
+         1793562751.859   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793562751.865   555   555 I lmkd    : Reclaim 'com.samsung.android.sm.devicesecurity' (23829), uid 5012, oom_score_adj 965, state 19 to free 24720kB rss, 38856kB swap; reason: min2x watermark is breached even after kill
+         1793562751.915   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793562751.918   555   555 I lmkd    : Reclaim 'com.sec.android.app.soundalive' (24362), uid 10047, oom_score_adj 955, state 19 to free 26792kB rss, 36528kB swap; reason: min2x watermark is breached even after kill
+         1793562751.956   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793562751.961   555   555 I lmkd    : Reclaim 'com.samsung.android.game.gos' (1166), uid 10072, oom_score_adj 945, state 19 to free 19428kB rss, 47596kB swap; reason: min2x watermark is breached even after kill
+         1793562784.994   555   555 I lmkd    : 0(delay),50(swap), 19(freelimit) memory pressure events were skipped after a kill!
+         1793562871.962   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793562871.967   555   555 I lmkd    : Reclaim 'com.google.android.apps.turbo:aab' (25572), uid 10155, oom_score_adj 905, state 19 to free 18332kB rss, 42752kB swap; reason: low watermark is breached and swap is low (1780120kB < 786428kB)
+         1793562872.042   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793562872.045   555   555 I lmkd    : Reclaim 'com.google.process.gservices' (25384), uid 10157, oom_score_adj 905, state 19 to free 12076kB rss, 44288kB swap; reason: low watermark is breached and swap is low (1786336kB < 786428kB)

@@ -1,0 +1,17 @@
+         1793562984.385   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793562984.399   555   555 I lmkd    : Reclaim 'com.google.android.googlequicksearchbox:search' (9860), uid 10158, oom_score_adj 935, state 19 to free 21976kB rss, 63528kB swap; reason: min2x watermark is breached and swap is low (1998452kB < 786428kB)
+         1793562984.490   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793562984.495   555   555 I lmkd    : Reclaim 'com.sec.android.app.soundalive' (28478), uid 10047, oom_score_adj 925, state 19 to free 29668kB rss, 36472kB swap; reason: min2x watermark is breached even after kill
+         1793562984.567   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793562984.570   555   555 I lmkd    : Reclaim 'com.samsung.android.game.gos' (28501), uid 10072, oom_score_adj 915, state 19 to free 19880kB rss, 49292kB swap; reason: min2x watermark is breached even after kill
+         1793562984.585   555   555 W lmkd    : Failed to open /proc/9860/oom_score_adj; errno=2: process 9860 might have been killed
+         1793562984.649   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793562984.671   555   555 I lmkd    : Reclaim 'com.google.android.googlequicksearchbox:googleapp' (27915), uid 10158, oom_score_adj 900, state 17 to free 18116kB rss, 81196kB swap; reason: min2x watermark is breached even after kill
+         1793562990.312   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793562990.316   555   555 I lmkd    : Reclaim 'com.refdev.games.game1' (24590), uid 10238, oom_score_adj 850, state 19 to free 9728kB rss, 43796kB swap; reason: min2x watermark is breached and swap is low (2064220kB < 786428kB)
+         1793562990.517   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793562990.529   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793562990.541   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793562990.555   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793562990.569   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793562990.583   555   555 I lmkd    : cached 0, sandbox(not0) 0

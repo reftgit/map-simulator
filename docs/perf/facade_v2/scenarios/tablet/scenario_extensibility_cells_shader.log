@@ -1,0 +1,41 @@
+11-01 22:56:22.980 29309 29343 I godot   : QUALITY profile=low experiment=scenario_extensibility_cells_shader occluders={"ms":86,"occluders":643,"source":"baked","triangles":317518} effective={"camera_far":400.0,"fog":true,"hide":[],"lod_threshold":4.0,"max_fps":30,"occlusion":true,"render_scale":0.6,"scaling_mode":"bilinear","shadows":"off","visibility_end":{"decor":100.0,"facade_detail":100.0,"lamps":100.0,"trees":100.0}}
+11-01 22:56:23.018 29309 29343 I godot   : SCENARIO step=start result=INFO t=0.0 scenario=extensibility rotate_hold_s=0
+11-01 22:56:23.507 29309 29343 I godot   : STARTUP map_ready_ms=8696 first_frame_ms=9200 map=istanbul_halic_cells_shader profile=low occluders={"ms":86,"occluders":643,"source":"baked","triangles":317518} physics_3d=GodotPhysics3D (setting DEFAULT) vehicles=awake npcs=2 build={"android_frame_pacing":true,"debug_build":true,"display_refresh_rate":60.0000038146973,"ios_allow_high_refresh_rate":false,"max_fps":30,"perf_feature":false,"physics_engine_setting":"DEFAULT","physics_interpolation":true,"physics_ticks":60,"screen_refresh_rate":60.0000038146973,"vsync_mode":1} user_dir=/data/data/com.mirongi.mapsimulator/files
+11-01 22:56:32.371 29309 29343 I godot   : QUALITY profile=low experiment=scenario_extensibility_cells_shader occluders={"ms":98,"occluders":643,"source":"baked","triangles":317518} effective={"camera_far":400.0,"fog":true,"hide":[],"lod_threshold":4.0,"max_fps":30,"occlusion":true,"render_scale":0.6,"scaling_mode":"bilinear","shadows":"off","visibility_end":{"decor":100.0,"facade_detail":100.0,"lamps":100.0,"trees":100.0}}
+11-01 22:56:32.372 29309 29343 I godot   : MAP istanbul_halic loaded in 8319 ms (istanbul_halic_cells_shader freed after 1462 ms, 4 frames)
+11-01 22:56:33.730 29309 29343 I godot   : QUALITY profile=low experiment=scenario_extensibility_cells_shader occluders={"ms":7,"occluders":7,"source":"baked","triangles":84} effective={"camera_far":400.0,"fog":true,"hide":[],"lod_threshold":4.0,"max_fps":30,"occlusion":true,"render_scale":0.6,"scaling_mode":"bilinear","shadows":"off","visibility_end":{"decor":100.0,"facade_detail":100.0,"lamps":100.0,"trees":100.0}}
+11-01 22:56:33.731 29309 29343 I godot   : MAP test_district loaded in 479 ms (istanbul_halic freed after 442 ms, 4 frames)
+11-01 22:56:34.258 29309 29343 I godot   : SCENARIO step=map_test_district result=INFO t=11.2 loaded after 10.2 s
+11-01 22:56:35.301 29309 29343 I godot   : SCENARIO step=map_switch result=PASS t=12.3 map test_district, player 0.00 m from its spawn, vehicles 2, NPCs 3, nodes 220 (on istanbul_halic_cells_shader: 8549)
+11-01 22:56:36.426 29309 29343 I godot   : SCENARIO step=van_parked result=PASS t=13.4 PlaceholderVan (Van (placeholder)), asleep
+11-01 22:56:37.444 29309 29343 I godot   : SCENARIO step=van_walk_up result=PASS t=14.4 beside PlaceholderVan, interact button true
+11-01 22:56:37.961 29309 29343 I godot   : SCENARIO step=van_get_in result=PASS t=14.9 driving PlaceholderVan, awake, camera on it true
+11-01 22:56:39.943 29309 29343 I godot   : SCENARIO step=van_throttle result=PASS t=16.9 forward speed 5.0 m/s (max 14)
+11-01 22:56:41.461 29309 29343 I godot   : SCENARIO step=van_get_out result=PASS t=18.4 speed when stopped 0.06 m/s
+11-01 22:56:41.997 29309 29343 I godot   : SCENARIO step=van_asleep_after_getting_out result=PASS t=19.0 PlaceholderVan asleep
+11-01 22:56:45.011 29309 29343 I godot   : SCENARIO step=npc_patrols result=PASS t=22.0 Npc3 moved 6.9 m in 3 s, 0 arrivals, state Walk
+11-01 22:56:47.851 29309 29343 I godot   : SCENARIO step=npc_hit_reaction result=PASS t=24.8 Npc3 hit after 1 punch(es), state HitReaction
+11-01 22:56:48.877 29309 29343 I godot   : SCENARIO step=npc_one_hit_per_punch result=PASS t=25.9 1 hit(s) for the punch that landed
+11-01 22:56:52.143 29309 29343 I godot   : SCENARIO step=npc_patrol_resumes result=PASS t=29.1 Npc3 state Idle, moved 0.6 m, heading for point 1 (was 0)
+11-01 22:57:00.529 29309 29343 I godot   : QUALITY profile=low experiment=scenario_extensibility_cells_shader occluders={"ms":98,"occluders":643,"source":"baked","triangles":317518} effective={"camera_far":400.0,"fog":true,"hide":[],"lod_threshold":4.0,"max_fps":30,"occlusion":true,"render_scale":0.6,"scaling_mode":"bilinear","shadows":"off","visibility_end":{"decor":100.0,"facade_detail":100.0,"lamps":100.0,"trees":100.0}}
+11-01 22:57:00.530 29309 29343 I godot   : MAP istanbul_halic_cells loaded in 8284 ms (test_district freed after 95 ms, 4 frames)
+11-01 22:57:09.180 29309 29343 I godot   : QUALITY profile=low experiment=scenario_extensibility_cells_shader occluders={"ms":88,"occluders":643,"source":"baked","triangles":317518} effective={"camera_far":400.0,"fog":true,"hide":[],"lod_threshold":4.0,"max_fps":30,"occlusion":true,"render_scale":0.6,"scaling_mode":"bilinear","shadows":"off","visibility_end":{"decor":100.0,"facade_detail":100.0,"lamps":100.0,"trees":100.0}}
+11-01 22:57:09.181 29309 29343 I godot   : MAP istanbul_halic_cells_light loaded in 7655 ms (istanbul_halic_cells freed after 923 ms, 4 frames)
+11-01 22:57:16.790 29309 29343 I godot   : QUALITY profile=low experiment=scenario_extensibility_cells_shader occluders={"ms":88,"occluders":643,"source":"baked","triangles":317518} effective={"camera_far":400.0,"fog":true,"hide":[],"lod_threshold":4.0,"max_fps":30,"occlusion":true,"render_scale":0.6,"scaling_mode":"bilinear","shadows":"off","visibility_end":{"decor":100.0,"facade_detail":100.0,"lamps":100.0,"trees":100.0}}
+11-01 22:57:16.791 29309 29343 I godot   : MAP istanbul_halic_cells_shader loaded in 6624 ms (istanbul_halic_cells_light freed after 796 ms, 4 frames)
+11-01 22:57:17.729 29309 29343 I godot   : SCENARIO step=map_istanbul_halic_cells_shader result=INFO t=54.7 loaded after 25.6 s
+11-01 22:57:18.731 29309 29343 I godot   : SCENARIO step=map_back result=PASS t=55.7 map istanbul_halic_cells_shader, player 0.00 m from its spawn, vehicles 1, NPCs 2, nodes 8549 (before the switches 8549)
+11-01 22:57:19.795 29309 29343 I godot   : SCENARIO step=parked_car_asleep result=PASS t=56.8 car asleep
+11-01 22:57:20.796 29309 29343 I godot   : SCENARIO step=car_button result=PASS t=57.8 distance 2.5 m, car asleep, interact button true
+11-01 22:57:21.228 29309 29343 I godot   : SCENARIO step=walk_into_car_wakes_it result=PASS t=58.2 player on a wall true, car awake
+11-01 22:57:22.552 29309 29343 I godot   : SCENARIO step=asleep_after_stopping result=PASS t=59.5 after 1.3 s
+11-01 22:57:25.620 29309 29343 I godot   : SCENARIO step=stays_asleep_beside_it result=PASS t=62.6 player touched the car true, distance 1.36 m
+11-01 22:57:26.146 29309 29343 I godot   : SCENARIO step=get_in_wakes_it result=PASS t=63.1 driving true, car awake
+11-01 22:57:27.344 29309 29343 I godot   : SCENARIO step=throttle result=PASS t=64.3 forward speed 5.0 m/s
+11-01 22:57:28.696 29309 29343 I godot   : SCENARIO step=get_out result=PASS t=65.7 speed when stopped 0.07 m/s
+11-01 22:57:29.194 29309 29343 I godot   : SCENARIO step=asleep_after_getting_out result=PASS t=66.2 car asleep
+11-01 22:57:33.297 29309 29343 I godot   : SCENARIO step=slope_setup result=PASS t=70.3 view Galata street, facing south, ground slope under the car 12.6°
+11-01 22:57:34.028 29309 29343 I godot   : SCENARIO step=slope_walk_into_car_wakes_it result=PASS t=71.0 player on a wall true, car awake
+11-01 22:57:35.878 29309 29343 I godot   : SCENARIO step=slope_asleep_after_stopping result=PASS t=72.9 after 1.9 s
+11-01 22:57:38.920 29309 29343 I godot   : SCENARIO step=slope_stays_asleep_beside_it result=PASS t=75.9 player touched the car true, distance 1.26 m
+11-01 22:57:38.920 29309 29343 I godot   : SCENARIO step=done result=PASS t=75.9 passed=25 failed=0

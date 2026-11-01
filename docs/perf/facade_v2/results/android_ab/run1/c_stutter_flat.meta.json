@@ -1,0 +1,4 @@
+{"experiment": "c_stutter_flat", "device": "android", "battery_c_start": 30.5, "battery_c_end": 31.5,
+ "thermal_status_start": "0", "thermal_status_end": "0",
+ "pss_peak_kb": 0, "wall_s": 288, "started": "2026-11-01 19:59:20",
+ "cool_wait_s": 30, "cool_target_c": "31.0"}

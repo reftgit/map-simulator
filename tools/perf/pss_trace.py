@@ -4,19 +4,21 @@
     python3 -I tools/perf/pss_trace.py sample OUT_DIR [--timeout S]
     python3 -I tools/perf/pss_trace.py summary OUT_DIR RESULTS_JSON
 
-sample: waits for the app to start, then reads `dumpsys meminfo` as often as
-the device answers (about every 0.6 s on the Galaxy Tab A7) until the app has
-quit; writes OUT_DIR/pss_trace.jsonl (host unix time, TOTAL PSS, RSS, and swap
-PSS in kB) and OUT_DIR/pss_meta.json (the device clock's offset), then
-OUT_DIR/logcat.txt (the device log since the last clear, with
-unix times) and OUT_DIR/lmkd.txt (the low-memory killer's lines). Run it beside
-android_bench.sh with SAMPLE_PSS=0 (the bench's own 15 s sampling would only
-add load); the "map_switch" scenario logs host-comparable unix times.
+sample: waits for the app to start (at most --timeout, default 1800 s), then
+reads `dumpsys meminfo` as often as the device answers (about every 0.6 s on
+the Galaxy Tab A7) until the app has quit or --timeout has passed; writes
+OUT_DIR/pss_trace.jsonl (host unix time, TOTAL PSS, RSS, and swap PSS in kB)
+and OUT_DIR/pss_meta.json (the device clock's offset), then OUT_DIR/logcat.txt
+(the device log since the last clear, with unix times) and OUT_DIR/lmkd.txt
+(the low-memory killer's lines). Run it beside android_bench.sh with
+SAMPLE_PSS=0 (the bench's own 15 s sampling would only add load); the
+"map_switch" scenario logs unix times that the summary aligns with it.
 
 summary: the stable PSS of each map hold (median of the hold's second half)
 and the peak PSS of each switch (from its start until 5 s after it finished),
 against the larger of the two maps' stable PSS and against the largest map's,
-as a Markdown table.
+with the lowest PSS in between (the old map freed) and the peak of PSS plus
+swap PSS (zram), as a Markdown table.
 """
 import json
 import pathlib
@@ -58,9 +60,10 @@ def sample(out, timeout):
     (out / "pss_meta.json").write_text(json.dumps({"device_clock_offset_s": round(clock_offset(), 3)}) + "\n")
     started = time.time()
     while not adb("shell", "pidof", PACKAGE).strip():
-        if time.time() - started > 120:
+        if time.time() - started > timeout:
             sys.exit("the app did not start")
         time.sleep(0.5)
+    started = time.time()
     peak = 0
     with open(out / "pss_trace.jsonl", "w") as trace:
         while time.time() - started < timeout:
@@ -98,14 +101,14 @@ def summary(out, results_path):
         if step["step"].startswith("hold_"):
             marks.append((unix, "hold", step["step"][5:], step))
         elif step["step"].endswith("_start"):
-            source, target = re.match(r"(\S+) -> (\S+)", step["detail"]).groups()
+            source, target = re.match(r"([^,\s]+) -> ([^,\s]+)", step["detail"]).groups()
             marks.append((unix, "start", (source, target), step))
         elif step["step"].startswith("switch_"):
-            marks.append((unix, "done", re.match(r"\S+ -> (\S+)", step["detail"]).group(1), step))
+            marks.append((unix, "done", re.match(r"[^,\s]+ -> ([^,\s]+)", step["detail"]).group(1), step))
     end = samples[-1]["t"] if samples else 0
 
-    def in_window(a, b):
-        return [s["pss_kb"] for s in samples if a <= s["t"] <= b and "pss_kb" in s]
+    def in_window(a, b, swap=False):
+        return [s["pss_kb"] + (s.get("swap_pss_kb", 0) if swap else 0) for s in samples if a <= s["t"] <= b and "pss_kb" in s]
 
     holds = []  # (map, start, end)
     for i, (unix, kind, value, _) in enumerate(marks):
@@ -124,8 +127,8 @@ def summary(out, results_path):
         values = in_window(a + (b - a) / 2, b)
         print("| %s (%.0f–%.0f s) | %s |" % (name, a - holds[0][1], b - holds[0][1], "%.0f" % (statistics.median(values) / 1024) if values else "-"))
     print()
-    print("| Switch | Took (s) | Peak PSS (MiB) | Larger map stable + 50 | Result | Largest map stable + 50 | Result |")
-    print("|---|---|---|---|---|---|---|")
+    print("| Switch | Took (s) | Peak PSS (MiB) | Larger map stable + 50 | Result | Largest map stable + 50 | Result | Lowest PSS (old map freed) | Peak PSS + swap PSS |")
+    print("|---|---|---|---|---|---|---|---|---|")
     starts = [m for m in marks if m[1] == "start"]
     dones = [m for m in marks if m[1] == "done"]
     for (a, _, (source, target), step), (b, _, _, done) in zip(starts, dones):
@@ -133,8 +136,10 @@ def summary(out, results_path):
         peak = max(values) / 1024 if values else float("nan")
         larger = max(max(stable.get(source, [0])), max(stable.get(target, [0]))) / 1024 + 50
         took = re.search(r"in (\d+) ms", done["detail"])
-        print("| %s -> %s | %s | %.0f | %.0f | %s | %.0f | %s |" % (source, target, "%.1f" % (int(took.group(1)) / 1000) if took else "-",
-              peak, larger, "PASS" if peak <= larger else "FAIL", largest / 1024 + 50, "PASS" if peak <= largest / 1024 + 50 else "FAIL"))
+        lowest = min(values) / 1024 if values else float("nan")
+        with_swap = max(in_window(a, b + 5, True)) / 1024 if values else float("nan")
+        print("| %s -> %s | %s | %.0f | %.0f | %s | %.0f | %s | %.0f | %.0f |" % (source, target, "%.1f" % (int(took.group(1)) / 1000) if took else "-",
+              peak, larger, "PASS" if peak <= larger else "FAIL", largest / 1024 + 50, "PASS" if peak <= largest / 1024 + 50 else "FAIL", lowest, with_swap))
     print()
     print("samples: %d, every %.2f s on average; overall peak %.0f MiB" % (len(samples), (end - samples[0]["t"]) / max(len(samples) - 1, 1) if samples else 0,
           max((s.get("pss_kb", 0) for s in samples), default=0) / 1024))

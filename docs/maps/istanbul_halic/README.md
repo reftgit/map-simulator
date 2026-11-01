@@ -108,7 +108,7 @@ A run took 157.9 s on the Mac (Apple Silicon, 16 GB) with a peak resident size o
 `--facade full|light|shader` changes only the facade detail of ordinary buildings (`Detail_*`); `full` (the default) is the original geometry, so `--facade full` gives `68237c46…` without cells and `7973071a…` with `--detail-cell 40`. Mosques, the Galata Tower, every `-col` mesh, trees, and all other meshes stay byte-identical. Analysis of what the facade is made of: `docs/perf/facade/generator/facade_analysis.md`.
 
 - `light`: each window keeps its light surround and its glass; the mullions and sills are dropped; windows whose point 1 m in front of the wall lies inside a building with a higher roof are dropped, with the cornices and string courses hidden along such walls; balcony railings are flat bars. About half the facade triangles (`PROJECT_CONTEXT.md`, T41).
-- `shader`: each wall of 2.8 m or more gets one panel 3 cm in front of it instead of its cornice, string courses, and windows; `maps/istanbul_halic_cells_shader/facade_windows.gdshader` draws them from the panel's UV (metres along the wall and above its ground line), UV2 (column width, wall height), colour (the wall colour), and colour alpha (a per-wall seed). The panels use a seventh GLB material, `Istanbul_FacadeWindows`, which the map's script replaces with the shader. Roofs, doors, awnings, chimneys, and balconies (with flat railings) stay geometry (T42).
+- `shader`: each wall of 2.8 m or more gets one panel 3 cm in front of it instead of its cornice, string courses, and windows; `maps/istanbul_halic_cells_shader/facade_windows.gdshader` draws them from the panel's UV (metres along the wall and above its ground line), UV2 (column width, wall height), colour (the wall colour), and colour alpha (a per-wall seed). The panels use a seventh GLB material, `Istanbul_FacadeWindows`, which the map's script replaces with the shader. Roofs, doors, awnings, chimneys, and balconies (with flat railings) stay geometry (T42). Since 2026-11-01 the shader box-filters each element over the pixel's footprint instead of fading distant windows to an average colour (T43, `docs/perf/facade_v2/`); that change is in the shader file only, so the GLB is still `60b9f729…`.
 
 ```bash
 <VENV>/bin/python -B tools/maps/istanbul_halic/build_map.py --detail-cell 40 --facade light --out build/maps/istanbul_halic_cells_light
@@ -133,7 +133,7 @@ cp build/maps/istanbul_halic_cells_shader/istanbul_halic.glb assets/istanbul_hal
 godot --headless --path . --import
 ```
 
-Their tests check these hashes. A visual comparison of all four İstanbul maps is in `docs/perf/facade/`.
+Their tests check these hashes. A visual comparison of all four İstanbul maps is in `docs/perf/facade/`. The user chose the shader facade (`PROJECT_CONTEXT.md`, D25); it stays an experimental map until D25's criteria pass (on 2026-11-01 the tablet's long-frame criterion failed), so İstanbul • Haliç (`assets/istanbul_halic.glb`) is still the default. Its distant windows and device results: `docs/perf/facade_v2/`.
 
 ## Attribution
 

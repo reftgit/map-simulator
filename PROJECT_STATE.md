@@ -2,11 +2,13 @@
 
 What actually exists in the repository and how it was verified. Plans and decisions belong in `PROJECT_CONTEXT.md`; code structure, build, and test commands are in `docs/ARCHITECTURE.md`.
 
-Last updated: 2026-11-01 (lighter facades on the cells map, Claude Code)
+Last updated: 2026-11-01 (shader facade toward the default, Claude Code)
 
 ## Current phase
 
-**After Phase 5: two lighter facades exist as experimental maps (2026-11-01); no map changed and none became the default (D24).** The generator's `--facade light` keeps every window's surround and glass and drops mullions, sills, and the windows behind neighbours (facade triangles −50.03 %); `--facade shader` draws windows, cornices, and string courses on one panel per wall with a shader (−92.26 %); every other mesh stays byte-identical and both are deterministic. As `istanbul_halic_cells_light` and `istanbul_halic_cells_shader` (cells map data, shared occluders, GLBs generated per machine) both met the iPhone criteria including 10-minute sessions, and both met the tablet's average and 1 % low thresholds; light also its long-frame limit, shader not (one run at Galata with 4.4 % long frames). On the iPhone they recover 174–184 MiB (light) and 422–429 MiB (shader) of the cells map's +280 MiB footprint; on the tablet the PSS barely drops (−10 / −18 of +128 MiB), because its increase came with the mesh count, while the engine's video memory falls 477 → 350 → 262 MiB. The `vehicle_sleep` scenario passed on the shader map on both devices, `extensibility` on the iPhone; on the tablet the app was killed by the low-memory killer while switching between two large maps. The user chooses a variant from `docs/perf/facade/` (open question 42). Details: "Lighter facades on the cells map" below.
+**After Phase 5: the shader facade is the chosen variant (D25) but did not become the default (2026-11-01).** A map switch now frees the old map before loading the next, behind a loading screen; on the Galaxy Tab A7 six switches between the shader map, İstanbul, and the cells map passed without the low-memory kills of before, and the `extensibility` and `vehicle_sleep` scenarios passed on both devices, but the cells map's load still peaked 64 MiB above the target. The tablet's long frames turned out to be a pacing state of single launches that hits any map (the shader map, İstanbul, the cells map, the panels without a shader), not the window shader; a 31 FPS cap did not remove it, and no fix was applied. The shader's distant windows are now filtered over the pixel footprint instead of fading (closer to the full facade, no more shimmering in a pan). D25's criteria: iPhone (60.00 FPS, 0 long frames, 10 minutes Nominal), the scenarios, and memory (tablet 641 MiB peak, iPhone 854–860 MiB) passed; the tablet's long-frame criterion failed in one of three runs (46 and 107 long frames), so İstanbul • Haliç stays the default; the visual approval is with the user. Details: "Shader facade toward the default" below.
+
+Before it: **two lighter facades exist as experimental maps (2026-11-01); no map changed and none became the default (D24).** The generator's `--facade light` keeps every window's surround and glass and drops mullions, sills, and the windows behind neighbours (facade triangles −50.03 %); `--facade shader` draws windows, cornices, and string courses on one panel per wall with a shader (−92.26 %); every other mesh stays byte-identical and both are deterministic. As `istanbul_halic_cells_light` and `istanbul_halic_cells_shader` (cells map data, shared occluders, GLBs generated per machine) both met the iPhone criteria including 10-minute sessions, and both met the tablet's average and 1 % low thresholds; light also its long-frame limit, shader not (one run at Galata with 4.4 % long frames). On the iPhone they recover 174–184 MiB (light) and 422–429 MiB (shader) of the cells map's +280 MiB footprint; on the tablet the PSS barely drops (−10 / −18 of +128 MiB), because its increase came with the mesh count, while the engine's video memory falls 477 → 350 → 262 MiB. The `vehicle_sleep` scenario passed on the shader map on both devices, `extensibility` on the iPhone; on the tablet the app was killed by the low-memory killer while switching between two large maps. The user then chose the shader variant (D25). Details: "Lighter facades on the cells map" below.
 
 Before it: **the cells map is in the game for measurement (2026-11-01); İstanbul • Haliç, the profiles, and the game's behaviour are unchanged.** The generator can mesh facade detail, tree crowns, and shrubs per cell inside each 150 m chunk (`--detail-cell`; without it the output is byte-identical), and a grouping-only comparison proves that no triangle changed. The 40 m variant (chosen over 75 m on the Mac: no nearby building blanked within 50 m on the low profile, 8.7 % within 100 m against 18.0 %) is a separate registry map, `istanbul_halic_cells`, whose GLB is generated on each machine and ignored by Git; its tests SKIP without it. On the devices (Release Perf, three runs) it met every criterion: Tab A7 low 30.00 / 29.99 / 29.99 FPS with 1 % low 25.90 / 25.83 / 25.28, iPhone high 60.00 FPS with at most 0.08 % long frames; its near facades are drawn where İstanbul blanks them, at +128 MiB PSS and +1.2 s map ready on the tablet and +280 MiB footprint on the iPhone. An experiment with 150 m ranges and no fog on the tablet kept the median 1 % low (one run had long-frame windows). The OSM input lost its Wi-Fi password tags with the output unchanged. Details: "Cell grouping and the cells map" below.
 
@@ -24,7 +26,7 @@ Before Phase 4b: **Phase 4a (release baseline and diagnosis, measurement only) d
 
 ## Current objective
 
-The user's visual choice between the facade variants (`docs/perf/facade/`, open question 42 in `PROJECT_CONTEXT.md`) and review of the measurements; then the next task (see "Recommended next task").
+The user's visual approval of the shader facade's distant windows (`docs/perf/facade_v2/`, D25 criterion 5) and a decision on the tablet's frame pacing (open question 43), which decides criterion 1; review of the measurements; then the next task (see "Recommended next task").
 
 ## Git
 
@@ -94,7 +96,11 @@ The user's visual choice between the facade variants (`docs/perf/facade/`, open 
 - `8bb22f1`: `build_map.py --facade light`, `compare_outputs.py --facade`.
 - `68f0cac`: `build_map.py --facade shader`, `facade_windows.gdshader`.
 - `83c8f0a`: the experimental facade maps (`istanbul_halic_cells_light`, `istanbul_halic_cells_shader`), their tests and experiments; the shader's distant fade moved.
-- Facade comparison, measurements, and documentation (D24, T41, T42): the commit after `83c8f0a` (`git log`).
+- `5679844`: facade comparison, measurements, and documentation (D24, T41, T42).
+- `d8f78fb`: the map switch frees the old map before loading the next (loading screen, `unload_map_and_wait()`), the `map_switch` scenario, `tools/perf/pss_trace.py`.
+- `4242efe`: stutter diagnosis tools (traced benchmarks, facade runtime keys, `facade_windows_simple.gdshader`, `c_stutter_*`).
+- `56aaf0d`: distant windows filtered over the pixel footprint; `capture_views.gd` far views and pan; `tools/perf/pan_flicker.py`.
+- Measurements and documentation (D25, T43): the commit after `56aaf0d` (`git log`). No stutter fix and no default change were committed ("Shader facade toward the default").
 
 ## Repository contents
 
@@ -102,7 +108,7 @@ The user's visual choice between the facade variants (`docs/perf/facade/`, open 
 |---|---|
 | `game/` | Game code: composition root, world, player (with Punch/Roll states and `CharacterVisual`), combat areas, vehicle (controller, definition, interaction, visual), camera, input, HUD with on-foot and vehicle control groups and a debug overlay. See `docs/ARCHITECTURE.md`. |
 | `maps/istanbul_halic/` | Game map scene (GLB + sky/ambient + sun + water shader + vertex-color fix) and its `MapDefinition` (two debug viewpoints, two NPC routes). |
-| `maps/istanbul_halic_cells_light/`, `maps/istanbul_halic_cells_shader/` | The experimental facade maps (2026-11-01, D24): the cells map's scene structure and data on their generated GLBs; the shader map adds `facade_windows.gdshader` and a script that puts it on the facade surfaces. They share the cells map's occluders. |
+| `maps/istanbul_halic_cells_light/`, `maps/istanbul_halic_cells_shader/` | The experimental facade maps (2026-11-01, D24): the cells map's scene structure and data on their generated GLBs; the shader map adds `facade_windows.gdshader` (filtered over the pixel footprint since 2026-11-01, T43), a script that puts it on the facade surfaces and reads the measurement-only facade keys, and `facade_windows_simple.gdshader` (measurement only). They share the cells map's occluders. The shader facade is the chosen variant (D25), not the default. |
 | `maps/istanbul_halic_cells/` | The cells map (2026-11-01): İstanbul's scene structure on the generated `assets/istanbul_halic_cells.glb` (facade detail, tree crowns, shrubs in 40 m cells), a `MapDefinition` with İstanbul's data and `required_files`, its own baked occluders (2,300,915 bytes). |
 | `maps/test_district/` | Second map (Phase 5): scene and box occluders generated from Godot primitives by `tools/build_test_district.gd`, `MapDefinition` (both vehicle types, three NPC routes, two viewpoints). |
 | `game/world/maps.tres` | The map registry: İstanbul • Haliç (default), the test district, the cells map, the light and shader facade maps (the last three skipped while their GLBs are missing). |
@@ -110,16 +116,16 @@ The user's visual choice between the facade variants (`docs/perf/facade/`, open 
 | `project.godot` | Main scene `res://game/main.tscn`; Mobile renderer; sensor landscape; `expand` aspect; physics interpolation; input actions; mouse emulates touch; ETC2/ASTC import (required for Android export); placeholder icon. |
 | `export_presets.cfg` | "Android Debug" (arm64 APK, `com.mirongi.mapsimulator`), "Android Debug Compatibility" (same, with `--rendering-method gl_compatibility`), "iOS Debug" (`com.mirongi.mapsimulator.dev`, team `8N7RYA42S6`, project-only export), and the measurement-only "Android Release Perf", "Android Release Perf Jolt", "iOS Release Perf" (`perf_bench`; release templates). No passwords or keystore paths. |
 | `icon.svg` | Placeholder app icon (capsule character over water). |
-| `tests/` | Headless runner, 185 unit tests, 47 integration tests (34 need the GLB, 13 run on the test district without it), fixtures (flat map, fake platform), original map validation. The test van moved into the game in Phase 5. |
+| `tests/` | Headless runner, 193 unit tests, 81 integration tests (2026-11-01; 15 run on the test district without any GLB, the rest SKIP without their map's GLB), fixtures (flat map, fake platform), original map validation. The test van moved into the game in Phase 5. |
 | `tools/capture_screenshot.gd` | Windowed render to PNG with render stats. |
-| `tools/capture_views.gd` | Fixed-camera comparison shots of map variants (six views, a profile, no HUD). |
+| `tools/capture_views.gd` | Fixed-camera comparison shots of map variants (eight views, a profile, no HUD; `--views`, `--facade-shader`, `--pan`). |
 | `tools/build_ios_debug.sh` | iOS debug build without contacting the Apple Developer portal; optional `devicectl` install. |
 | `tools/build_android_perf.sh`, `tools/build_ios_perf.sh` | Release Perf builds for measurements only (debug keystore via environment variables, read from the editor settings: macOS path by default, `GODOT_EDITOR_SETTINGS` elsewhere; Xcode Release without `-allowProvisioningUpdates`). |
 | `game/quality/` | `RenderSettings` (applies render settings; shared by profiles and experiments), `QualityProfile`, `QualityProfiles` (selection rule), `profiles/high.tres`, `profiles/low.tres`. |
 | `game/debug/` | Debug-only: `PerfConfig` (experiment flags from JSON, layered on a profile), `PerfBenchmark` (automatic measurement). |
 | `maps/istanbul_halic/istanbul_halic_occluders.scn` | Baked occluders, 2,300,873 bytes (643 occluders, 317,518 triangles), referenced by the `MapDefinition`. |
 | `tools/bake_occluders.gd` | Headless occluder bake. |
-| `tools/perf/` | Experiment definitions (`experiments/*.json`), device orchestration (`android_bench.sh`, `ios_bench.sh`, `run_batch.sh`, `android_rotate_on_cue.sh`), `parse_xctrace.py`, `summarize.py`, `median.py`, `collider_census.gd`, `vehicle_sleep_cost.gd`, `npc_cost.gd`. |
+| `tools/perf/` | Experiment definitions (`experiments/*.json`), device orchestration (`android_bench.sh`, `ios_bench.sh`, `run_batch.sh`, `android_rotate_on_cue.sh`), `parse_xctrace.py`, `summarize.py`, `median.py`, `trace_summary.py` (traced benchmarks), `pss_trace.py` (dense Android PSS trace and map-switch summary), `pan_flicker.py` (shimmering in pans; needs Pillow), `collider_census.gd`, `vehicle_sleep_cost.gd`, `npc_cost.gd`. |
 | `tools/build_test_district.gd` | Generates the test district's scene and occluders (Phase 5). |
 | `tools/maps/istanbul_halic/` | İstanbul • Haliç generator (Python 3.12): `build_map.py` (with `--detail-cell`, `--facade`) and its modules, `render_map.py` (Blender previews, not run), `compare_outputs.py` (with `--grouped`, `--facade`), `blank_facades.py`, `requirements.txt` (pinned), `.python-version`. Output goes to `build/maps/` (ignored). |
 | `maps/istanbul_halic/source/` | Generator inputs (20.1 MB): OSM extract (19.4 MB), Terrarium tiles, building height overrides, OSM request metadata. `.gdignore`. |
@@ -134,11 +140,13 @@ The user's visual choice between the facade variants (`docs/perf/facade/`, open 
 | `assets/istanbul_halic_cells.glb` | 506 MB, **not tracked**, generated on each machine (SHA-256 `7973071a…`); its `.import` is tracked. Steps: `docs/maps/istanbul_halic/README.md`, "The cells map". |
 | `assets/istanbul_halic_cells_light.glb`, `assets/istanbul_halic_cells_shader.glb` | 363 MB and 255 MB, **not tracked**, generated on each machine (`6531ca28…`, `60b9f729…`); their `.import` files are tracked. Steps: same README, "Facade variants". |
 | `docs/perf/facade/` | Facade variants: the visual comparison (README, sheets), the facade analysis and generator evidence (`generator/`), three-run device results (`results/`). |
+| `docs/perf/facade_v2/` | Shader facade toward the default (2026-11-01): README with every table, the distant-window sheets and pan GIFs, device frames, the stutter A/B (`results/android_ab/`, traces gzipped), three-run device results (`results/android`, `results/ios`), the map switch and scenario evidence with PSS traces (`scenarios/`). 5.6 MB. |
 | `docs/perf/cells/` | Cell grouping evidence: generator comparisons, hashes, run times, the blank-facade estimate, the occluder comparison (`generator/`), the desktop benchmarks and side-by-side shots (`desktop/`), three-run device results (`results/`), side-by-side device shots (`shots/`). |
 | `.vscode/settings.json` | The user's editor colors. Untracked, intentionally not committed. |
 
 ## Implemented features
 
+- **Map switch (2026-11-01; debug and Release Perf builds, where switches happen):** the old map is freed before the next loads, behind a loading screen; a second switch during one is refused. Debug builds: the `map_switch` scenario. Traced benchmarks and the facade runtime keys (debug and Release Perf builds).
 - **Facade maps (2026-11-01; debug and Release Perf builds):** `istanbul_halic_cells_light` and `istanbul_halic_cells_shader` in the registry, skipped while their GLBs are missing; the shader map draws its facades with `facade_windows.gdshader`. Generator: `build_map.py --facade`, `compare_outputs.py --facade`; tool: `tools/capture_views.gd`.
 - **Cells map (2026-11-01; debug and Release Perf builds):** `istanbul_halic_cells` in the registry, loaded with `--map`, an experiment's `"map"` key, or the MAP button; skipped while its generated GLB is missing (`MapDefinition.required_files`). Generator: `build_map.py --detail-cell`, `compare_outputs.py --grouped`, `blank_facades.py`.
 - **Phase 5 (all builds):** map registry (`game/world/maps.tres`) with İstanbul • Haliç first; NPCs on both maps (patrol, hit reaction, far mode beyond 10 m from the player); the van parked on the test district; `WorldManager` places a vehicle type per spawn and the NPCs, and respawns NPCs at their own start. Debug and Release Perf builds: the start map from `--map=<id>` or an experiment's `"map"` key, the `"npcs"` / `"npc_far_mode"` runtime keys, `map` and `npcs` in `STARTUP` / `PERF` / results. Debug builds: MAP overlay button (`switch_map()`), CAR cycles through the map's vehicles, `DeviceScenario` "extensibility". The test district is packaged in every build but normal release builds never load it.
@@ -158,6 +166,93 @@ The user's visual choice between the facade variants (`docs/perf/facade/`, open 
 - **Quality profiles (all builds):** high (60 FPS cap, occlusion, 200 m visibility range for trees/lamps/decor/facade detail) and low (occlusion, 400 m far plane + depth fog, 100 m ranges, 0.6 render scale, shadows off, LOD threshold 4, 30 FPS cap). Default: iOS → high, Android → low, desktop → none. `--quality=<name>` overrides; debug builds can cycle profiles with the Q button.
 - **Baked occluders** loaded from `maps/istanbul_halic/istanbul_halic_occluders.scn` when a profile enables occlusion; runtime building from collision remains as a fallback with a warning.
 - Debug builds only: performance experiment flags (`PerfConfig`) layered on top of the profile (experiment > profile > defaults), and an automatic benchmark (`PerfBenchmark`) driven by host scripts in `tools/perf/`. Off unless an experiment file or `--perf-config` is given.
+
+## Shader facade toward the default (2026-11-01)
+
+Task of 2026-11-01 (user): after the user chose the shader facade (D25; open question 42 closed), free the old map before the next one loads on a map switch, find and fix the cause of the shader map's long frames on the tablet, adjust its distant windows, measure the criteria of D25 on both devices, and make `istanbul_halic_cells_shader` the default if criteria 1–4 pass; the profile values, the physics, and the gameplay do not change. Decisions: `PROJECT_CONTEXT.md`, D25, T43, open questions 37, 42, 43. Evidence: `docs/perf/facade_v2/` (README with every table).
+
+### What exists now
+
+- **Safe map switch** (`d8f78fb`): `Main.switch_map()` is a coroutine; the HUD shows a loading screen ("Yükleniyor...") with the controls hidden and stopped, the player's processing stops, `WorldManager.unload_map_and_wait()` frees the old map, its vehicles, and its NPCs, waits until they are gone and three more frames, and only then is the next map loaded. A second switch during one is refused. The `map_switch` device scenario and `tools/perf/pss_trace.py` measure the memory of switches (`docs/ARCHITECTURE.md`, "Maps and the map registry", "Device scenario").
+- **Diagnosis tools** (`4242efe`): traced benchmarks (`"trace": true`) and `tools/perf/trace_summary.py`; the measurement-only runtime keys `facade_material`, `facade_priority`, `facade_warmup` of the shader map and `facade_windows_simple.gdshader`; the experiments `c_stutter_*`.
+- **No fix for the long frames:** the A/B showed that the window shader does not cause them (below); no code was changed for them.
+- **Distant windows** (`56aaf0d`): `facade_windows.gdshader` box-filters every element over the pixel's footprint instead of fading to an average colour (T43); the GLB is unchanged (`60b9f729…`). `tools/capture_views.gd` gained two far street views, `--views`, `--facade-shader`, and `--pan`; `tools/perf/pan_flicker.py` measures shimmering.
+- **The default did not change:** criterion 1 failed on the tablet (below), so İstanbul • Haliç stays the default (D25); the registry order is unchanged.
+
+### D25 criteria
+
+| Criterion | Result | Evidence |
+|---|---|---|
+| 1. Tab A7 low, shader map: long frames ≤ 1 % in every run (3 runs × 3 viewpoints) | **FAIL**: run 3 had 46 (2.6 %) at Spawn and 107 (5.9 %) at Galata (13 at Karaköy); runs 1–2 at most 3 per viewpoint | measured cause: a pacing state of single launches that hits any map (İstanbul in run 1 of the same session: 200 / 117 / 138), not the shader (below) |
+| 2. iPhone high: average ≥ 59.5, long frames < 1 %, 10 minutes with thermal ≤ Fair | **PASS**: 60.00 at all viewpoints, 0 long frames in every run; the session 59.96–60.00 FPS every minute, at most 1 long frame per minute, Nominal at all 14 probes | `docs/perf/facade_v2/results/ios/` |
+| 3. `vehicle_sleep` and `extensibility` on both devices | **PASS**: tablet 13 / 13 and 25 / 25, iPhone 13 / 13 and 25 / 25 (both with `ios_bench.sh`) | `docs/perf/facade_v2/scenarios/` |
+| 4. Tablet PSS ≤ 650 MiB, iPhone footprint ≤ 1,000 MiB | **PASS**: tablet peak 641 MiB (dense trace; stable 615), iPhone 854–860 MiB | dense PSS trace of one launch; iPhone probes of every run |
+| 5. The user's visual approval of the distant windows | open: `docs/perf/facade_v2/` (manual action) | — |
+
+### Map switch
+
+- **Headless:** on the test district the old map, its vehicles, and its NPCs are freed (211 → 51 nodes) and its scene is out of the resource cache before the next map enters; the loading screen is up and the controls hidden meanwhile; the player does not fall; a second switch is refused (`test_map_switch_frees_the_old_map_before_loading_the_next`; it fails when the old order, load first and free later, is restored). On İstanbul the GLB's scene is released before the fixture map loads. The existing switch, refusal, and leak tests pass with the coroutine. Desktop switch times: 22–35 ms on the test district, 0.5–0.9 s to a big map (freed after 13–108 ms, 4–5 frames).
+- **Tablet (debug build, `scenario_map_switch`, PSS every 0.23 s):** six switches between the shader map, İstanbul, and the cells map passed (node counts 8,549 / 5,475 as on the first visit), and the app was not killed (the low-memory killer reclaimed other apps' processes, none of this app). Each switch first drops to 402–420 MiB (the old map freed), then rises while the next map loads and falls back when the load ends. Against the target "peak ≤ the larger map's stable PSS + 50 MiB": 5 of 6 switches PASS; **shader → cells FAIL** with a peak of 810 MiB against 746 (cells stable 696): the loader's temporary data of a big map, 15–115 MiB above its stable PSS depending on how much the system swaps meanwhile. Stable PSS in the debug build: shader 661–673, cells 693–696, İstanbul 584–585 MiB. Switch times 6.8–9.5 s.
+- **Before:** peaks of 821 and 978 MiB with two maps in memory and the app killed twice (`docs/perf/facade/scenarios/tablet/`). Now `extensibility` passes on the tablet (peak 809 MiB, through five maps).
+- Normal release builds load one map and never switch; their startup is unchanged.
+
+### Long frames on the tablet: diagnosis
+
+Release Perf build of `4242efe`, three runs of six traced experiments, order rotated, after two unused warm-ups (battery 30.5–33.5 °C, thermal status 0):
+
+| Experiment | Launches with a viewpoint over 1 % long frames | Long frames per viewpoint (Spawn / Karaköy / Galata; runs 1, 2, 3) |
+|---|---|---|
+| `c_stutter_shader` (as it is) | 0 of 3 | 4,4,1 / 4,3,2 / 0,5,3 |
+| `c_stutter_flat` (panels with the wall colour, no shader) | 1 of 3 | 1,1,94 / 4,3,81 / 2,3,120 |
+| `c_stutter_simple` (simplified shader) | 0 of 3 | 5,5,1 / 1,3,3 / 4,6,9 |
+| `c_stutter_warmup` (facade drawn once after loading) | 1 of 3 | 1,74,2 / 0,61,3 / 5,120,5 |
+| `c_stutter_priority` (panels drawn before the walls) | 1 of 3 | 219,3,4 / 131,2,7 / 118,1,3 |
+| `c_stutter_cells` (full facade as geometry) | 1 of 3 | 206,0,4 / 79,1,2 / 152,3,4 |
+
+- **Not the shader:** the variant without any window shader had a bad launch too, and so did the cells map; the shader itself had none here (one in the device measurements). A bad launch is bad at all three viewpoints from its first warm-up; 91–100 % of its long frames sit next to a short frame (frame times cycle about 28 → 42 → 30 ms), the average stays 30.00 FPS, the 1 % low drops to 22.5–23.7. Phase 4a saw the same on İstanbul ("Frame pacing": one run with 7–12 % frames of 50 ms).
+- **Time distribution:** at the first viewpoint of every launch the first three frames take 240–300 ms (4 canvas and 5–6 specialization pipelines compiled, every variant); after a viewpoint change 67–88 ms; the simplified shader's first use after the install 753 ms once. All in the warm-up; no pipeline was compiled inside any measurement. Not periodic beyond the three-frame cycle of a bad launch.
+- **Not the double pacing:** Godot paces a 30 FPS cap with its CPU limiter and with Swappy; a 31 FPS cap (the limiter out of Swappy's way, still 30.00–30.01 FPS) had 79 long frames at Galata in one of three runs. The cause sits in the device's frame delivery at the 30 FPS cap (Swappy, the display, or the system) and was not separated further.
+- **GPU time** (`viewport_get_measured_render_time_gpu`) stayed at 24.4–26.4 ms in every experiment and viewpoint and changes only every few seconds; with the driver scaling the GPU clock it shows no cost difference between variants.
+- **Consequence:** no shader fix and no low-profile shader path; the warm-up and the render priority change nothing. A remedy would change the low profile's frame pacing (open question 43).
+
+### Distant windows
+
+The first version faded the pattern to its average colour beyond 0.35–0.9 m of wall per pixel, which flattened the windows of buildings about 120 m away in the 960×540 comparison shots. The footprint filter keeps them up to the 200 m range and looks like the cells map there; at 1920×1080 old and new look alike. In a half-pixel-per-frame pan the ratio of temporal second difference to change is lowest for the filter in all three views (raised 1.28, `far_avenue` 1.34, `far_bridge` 1.44; first version 1.34 / 1.39 / 1.46; cells 1.47 / 1.46 / 1.51): no more shimmering than the first version while showing more detail. Sheets, GIFs, and commands: `docs/perf/facade_v2/README.md`. Unit test: both window shaders compile and the fixed fade is gone (`tests/unit/test_facade_shader.gd`).
+
+### Devices (Release Perf builds of `56aaf0d`, three runs, medians)
+
+| Galaxy Tab A7 low | Shader map (Spawn / Karaköy / Galata) | İstanbul |
+|---|---|---|
+| Average FPS | 30.00 / 30.00 / 29.98 | 30.00 / 30.00 / 30.00 |
+| 1 % low (median [runs]) | 25.60 [26.14 / 25.60 / 23.60] / 25.95 [26.27 / 25.95 / 24.05] / 24.87 [25.39 / 24.87 / 22.51] | 26.06 [23.26 / 26.07 / 26.06] / 26.01 [23.35 / 26.05 / 26.01] / 25.11 [22.40 / 25.29 / 25.11] |
+| Long frames per run | 0, 2, 46 / 3, 3, 13 / 2, 2, 107 | 200, 0, 3 / 117, 4, 1 / 138, 3, 7 |
+| Map ready (median) | 5,822 ms | 6,596 ms |
+| PSS peak / stable (dense trace, one launch) | 641 / 615 MiB | 568 / 502 MiB (+127 MiB swap) |
+| Video memory (engine) | 262 MiB | 482 MiB |
+
+| iPhone 13 Pro high | Shader map (Spawn / Karaköy / Galata) | İstanbul |
+|---|---|---|
+| Average FPS | 60.00 / 60.00 / 60.00 | 60.00 / 60.00 / 60.00 |
+| 1 % low (median) | 57.91 / 56.93 / 56.03 | 55.21 / 57.02 / 56.03 |
+| Long frames | 0 | 0 |
+| Footprint (three runs) | 854–859 MiB | 997–1,005 MiB |
+| Map ready (median) | 1,194 ms | 1,379 ms |
+
+The shader map with 150 m ranges and no fog on the tablet (information): 1 % low 26.23 / 26.04 / 24.87, at most 5 long frames. Every result has `debug_build: false`, `perf_feature: true`, and the expected map; tablet battery 32.5–33.0 °C, thermal status 0; iPhone Nominal at every probe. Builds: APK 674,576,699 bytes, iOS `.pck` 648,569,620 bytes (five maps).
+
+### Tests (2026-11-01)
+
+| Run (2026-11-01) | Result |
+|---|---|
+| `godot --headless --path . --import` | exit 0, no errors or warnings |
+| `run_tests.gd`, all GLBs present | `RESULT 274 passed, 0 failed, 0 skipped`, exit 0 (also on each commit: `d8f78fb` 269, `4242efe` 272, `56aaf0d` 274) |
+| without the three generated GLBs and their import results | `RESULT 242 passed, 0 failed, 32 skipped`, exit 2 |
+| without any GLB | `RESULT 208 passed, 0 failed, 66 skipped`, exit 2 |
+| `-- unit` | `RESULT 193 passed, 0 failed, 0 skipped`, exit 0 (also without any GLB) |
+| `tests/map/validate_scene.gd` | `VALIDATION PASS` |
+| Mutation: the switch loading the next map before the old one is freed (the old order) | `test_map_switch_frees_the_old_map_before_loading_the_next` FAIL (six of its checks), the older switch tests still PASS |
+
+New: `test_map_switch_frees_the_old_map_before_loading_the_next` and `test_device_scenario_map_switch` (test district, no GLB), İstanbul's GLB scene released before the next map (`test_map_switch_replaces_the_map_and_frees_the_old_one`), `test_facade_experiment_keys` and `test_traced_benchmark` (shader map), `test_trace_and_facade_keys`, `tests/unit/test_facade_shader.gd` (both window shaders compile; the fixed fade is gone). All four GLBs' SHA-256 unchanged at the start and the end.
 
 ## Lighter facades on the cells map (2026-11-01)
 
@@ -1239,8 +1334,9 @@ Thermal state: Nominal at all 13 probes (0–601 s). App footprint 1,022–1,044
 | Behavior | Evidence |
 |---|---|
 | Project imports cleanly. | `godot --headless --path . --import`: exit 0, no errors or warnings (after adding `build/.gdignore`). |
-| Automated tests pass. | 2026-11-01, with the facade maps (`83c8f0a` and the documentation commit after it): `run_tests.gd` → `RESULT 267 passed, 0 failed, 0 skipped`, exit 0 (550 s); without the generated GLBs → 237 passed, 30 skipped, exit 2; without any GLB → 203 passed, 64 skipped, exit 2; unit only → 190 passed, exit 0; `validate_scene.gd` → `VALIDATION PASS`; all four GLBs' SHA-256 checked. 2026-11-01, with the cells map (`3e00ada` and the documentation commit after it): `run_tests.gd` → `RESULT 246 passed, 0 failed, 0 skipped`, exit 0 (510 s); without the cells GLB → 237 passed, 9 skipped, exit 2; without both GLBs → 203 passed, 43 skipped, exit 2; unit only → 190 passed, exit 0; `validate_scene.gd` → `VALIDATION PASS`; both GLBs' SHA-256 checked. 2026-11-01, after the generator import (no game or test code changed): `run_tests.gd` → `RESULT 232 passed, 0 failed, 0 skipped`, exit 0 (491 s); `validate_scene.gd` → `VALIDATION PASS`; GLB SHA-256 unchanged. Phase 5: `run_tests.gd` → `RESULT 232 passed, 0 failed, 0 skipped`, exit 0; unit only → 185 passed, exit 0; without the GLB → `RESULT 198 passed, 0 failed, 34 skipped`, exit 2 (the 13 test district tests run without it) (2026-10-28, Phase 5; GLB SHA-256 re-verified afterwards). Phase 4d: 198; Phase 4c: 185; Phase 4b: 174; Phase 4a: 161. With Jolt (temporary `override.cfg`): 160 passed, 1 failed (the GodotPhysics3D pin). At 30 Hz physics: 148 passed, 13 failed (see "Phase 4a"). `tests/map/validate_scene.gd` → `VALIDATION PASS`. |
+| Automated tests pass. | 2026-11-01, shader facade toward the default (`d8f78fb`, `4242efe`, `56aaf0d`, and the documentation commit after them): `run_tests.gd` → `RESULT 274 passed, 0 failed, 0 skipped`, exit 0; without the generated GLBs → 242 passed, 32 skipped, exit 2; without any GLB → 208 passed, 66 skipped, exit 2; unit only → 193 passed, exit 0; `validate_scene.gd` → `VALIDATION PASS`; all four GLBs' SHA-256 checked. 2026-11-01, with the facade maps (`83c8f0a` and the documentation commit after it): `run_tests.gd` → `RESULT 267 passed, 0 failed, 0 skipped`, exit 0 (550 s); without the generated GLBs → 237 passed, 30 skipped, exit 2; without any GLB → 203 passed, 64 skipped, exit 2; unit only → 190 passed, exit 0; `validate_scene.gd` → `VALIDATION PASS`; all four GLBs' SHA-256 checked. 2026-11-01, with the cells map (`3e00ada` and the documentation commit after it): `run_tests.gd` → `RESULT 246 passed, 0 failed, 0 skipped`, exit 0 (510 s); without the cells GLB → 237 passed, 9 skipped, exit 2; without both GLBs → 203 passed, 43 skipped, exit 2; unit only → 190 passed, exit 0; `validate_scene.gd` → `VALIDATION PASS`; both GLBs' SHA-256 checked. 2026-11-01, after the generator import (no game or test code changed): `run_tests.gd` → `RESULT 232 passed, 0 failed, 0 skipped`, exit 0 (491 s); `validate_scene.gd` → `VALIDATION PASS`; GLB SHA-256 unchanged. Phase 5: `run_tests.gd` → `RESULT 232 passed, 0 failed, 0 skipped`, exit 0; unit only → 185 passed, exit 0; without the GLB → `RESULT 198 passed, 0 failed, 34 skipped`, exit 2 (the 13 test district tests run without it) (2026-10-28, Phase 5; GLB SHA-256 re-verified afterwards). Phase 4d: 198; Phase 4c: 185; Phase 4b: 174; Phase 4a: 161. With Jolt (temporary `override.cfg`): 160 passed, 1 failed (the GodotPhysics3D pin). At 30 Hz physics: 148 passed, 13 failed (see "Phase 4a"). `tests/map/validate_scene.gd` → `VALIDATION PASS`. |
 | İstanbul • Haliç generator. | See "Map generator in the repository": two runs byte-identical, the path change output-neutral, inputs and `assets/` unchanged, Godot import of the regenerated GLB in a throwaway project. |
+| Map switch frees the old map first; shader facade's filter and diagnosis keys. | See "Shader facade toward the default": the switch tests (node counts, resource cache, loading screen, refusal) and a mutation check, the map switch scenario on the tablet and the device scenarios on both devices, the window shaders compile, the facade keys and traced benchmarks on the shader map. |
 | Facade variants and their maps. | See "Lighter facades on the cells map": only `Detail_*` changes (`compare_outputs.py --facade` PASS for light and shader), three runs each byte-identical, the maps' tests and a mutation check, three-run device results and 10-minute iPhone sessions, the device scenarios on the shader map. |
 | Cell grouping and the cells map. | See "Cell grouping and the cells map": output without the option byte-identical, `--grouped` PASS for 40 and 75 m (and FAIL against the shipped GLB), two 40 m runs byte-identical, the cells map's tests and the mutation checks, three-run device results on both devices. |
 | Phase 5 maps, van, NPCs, far mode, scenario. | See "Phase 5", including the mutation checks. |
@@ -1260,7 +1356,8 @@ Thermal state: Nominal at all 13 probes (0–601 s). App footprint 1,022–1,044
 
 ## Unverified behaviors
 
-- Facade maps (2026-11-01): moving shots and aliasing in motion were not compared (still shots only); the shader on other GPUs than the Mac, the Adreno 610, and the A15; no in-vehicle runs or NPC A/B on the variants; the cause of the shader map's long-frame windows on the tablet (fragment cost suspected, not separated); why the first iPhone `extensibility` attempt produced no results; the light variant's culled windows were checked by the culling rule, not by looking into the 1 m gaps.
+- Shader facade toward the default (2026-11-01): what in the tablet's frame delivery causes the per-launch pacing state (Swappy, the display, the system; presented frame times were not recorded); whether the jitter is visible to a player; the shimmering check is a Mac pan at 960×540 (Metal), not a device recording; the footprint filter on devices was looked at only in the 640 px benchmark frames; the map switch memory was measured in a debug build (its stable PSS is 46–82 MiB above the Release Perf build's); the iPhone's footprint during switches comes from 45 s probes only; switches on the iPhone and in release builds with the loading screen were not timed separately; the user's visual approval of the filter is open.
+- Facade maps (2026-11-01): the shader on other GPUs than the Mac, the Adreno 610, and the A15; no in-vehicle runs or NPC A/B on the variants; why the first iPhone `extensibility` attempt (with the old switch code) produced no results (the retry and this task's runs passed with `ios_bench.sh`); the light variant's culled windows were checked by the culling rule, not by looking into the 1 m gaps.
 - Cells map (2026-11-01): the device scenarios ran on the shader map (same data and collision), not on the cells map itself; no 10-minute session, no in-vehicle runs, and no NPC A/B on it; the 150 m / no-fog experiment has one set of three runs; the trunk-under-crown case on the low profile was not looked for systematically; the blank-facade figures are a geometric estimate (AABB centres of the meshes, 3,000 street points), not counted on screen; the generator option and the GLB hash were checked only on macOS arm64; `render_map.py` was not run on the cells output.
 - Generator (2026-11-01): `render_map.py` was not run in Blender (paths checked with a stub `bpy` only); the generator ran only on macOS arm64 with Python 3.12.15; why the shipped GLB differs from every tried shapely version in the 6 signal heads and the road triangulation (the package's environment is unknown); the regenerated GLB was not run in the game, on devices, or measured.
 - Phase 5: two NPCs near the player at once were measured only as the A/B "all under the controller" (`c_npcs_full_*`), not by playing among them; more than two NPCs near the player were not measured. The far mode's behaviour where a route is blocked (it walks through) is by design and not tested. NPC behaviour on Jolt Physics: not tried. The 1 % low gap of the tablet's 40 s far-mode A/B windows in runs 2–3 (below) is unexplained.
@@ -1303,11 +1400,12 @@ Thermal state: Nominal at all 13 probes (0–601 s). App footprint 1,022–1,044
 
 ## Known bugs and limitations
 
-- Map switches (2026-11-01): a switch loads the new map while the old one is only queued for freeing; on the Galaxy Tab A7 switching between two large maps got the app killed by the low-memory killer (twice in the `extensibility` scenario on the shader map). With five maps in debug and Release Perf builds, the MAP button and the scenario's way back pass through several large maps; Phase 5's scenario on İstanbul would now pass through them too.
-- Facade maps (2026-11-01): light has no mullions or sills; shader is flat (no relief), uses other glass tints, and fades distant windows; the shader map had long-frame windows on the tablet at Galata; builds with all five maps are 675 MB (APK) and 649 MB (iOS `.pck`).
+- Map switches (2026-11-01): fixed so that two maps are never in memory at once; loading a big map still holds 15–115 MiB of temporary data above its stable PSS (the tablet peaked at 810 MiB loading the cells map in a debug build, 64 MiB above the task's target), and the load blocks for 6.8–9.5 s on the tablet behind the loading screen. The tablet's low-memory killer reclaims other apps' processes during such loads.
+- Tablet frame pacing (2026-11-01): about one launch in four on the Galaxy Tab A7 runs with frame times cycling about 28 → 42 → 30 ms (0.7–12 % long frames per viewpoint, 1 % low 22.4–24.1 at 30.00 FPS) on any map; this decides D25's criterion 1 by chance (open question 43).
+- Facade maps (2026-11-01): light has no mullions or sills; shader is flat (no relief) and uses other glass tints (its distant windows are filtered since T43, no longer faded); builds with all five maps are 675 MB (APK) and 649 MB (iOS `.pck`).
 - Cells map (2026-11-01): lamps, lamp glows, and decor keep their 150 m chunks, so on the low profile nearby lamp posts are not drawn (as on İstanbul); tree trunks stay in chunks while their crowns are in cells (T40); within 100 m about 8.7 % of the buildings still lose their facade detail on the low profile (estimate); the map costs +128 MiB PSS and +1.2 s to map ready on the tablet, +280 MiB footprint on the iPhone; a fresh clone must generate its GLB (about 2.5 minutes) before the map is offered.
 - NPCs (Phase 5): far NPCs (more than 10 m from the player) pass through walls, cars, and each other, so routes must be clear; moving vehicles pass through NPCs as through the player; getting out of a vehicle does not check for NPCs at the exit point (the player is pushed out of an NPC standing there); no damage, health, or reactions beyond the stagger; placeholder capsules.
-- Map switching (debug builds) blocks while the new map loads (back to İstanbul: 6.8 s on the tablet, 1.8 s on the iPhone) and is refused while driving.
+- Map switching (debug builds) blocks while the new map loads (6.8–9.5 s on the tablet between the big maps, behind a loading screen since 2026-11-01; about 1–1.5 s per switch on the iPhone, from the scenario's step times) and is refused while driving and during another switch.
 - Placeholder car (boxes and cylinders); no engine sound, damage, or traffic. Brake lights also light while parked (handbrake held).
 - Cars drive through railings, lamp posts, and kerbs (no collision) and can leave bridge decks and quays into the water; they reset to the spawn below the kill height (open question 12).
 - Exit markers are fixed points beside the doors; on a narrow street with both sides blocked the player cannot get out until the car is moved.
@@ -1331,7 +1429,7 @@ Thermal state: Nominal at all 13 probes (0–601 s). App footprint 1,022–1,044
 
 ## Technical risks
 
-- **Memory on the tablet (2026-11-01):** the PSS follows the mesh count, not the geometry (the facade variants keep the cells map's 6,129 meshes and its PSS within 18 MiB); two large maps in memory during a switch exceed what the 3 GB tablet allows.
+- **Memory on the tablet (2026-11-01):** the PSS follows the mesh count, not the geometry (the facade variants keep the cells map's 6,129 meshes and its PSS within 18 MiB); a switch no longer holds two maps, but a big map's load peaks 15–115 MiB above its stable PSS, and the low-memory killer reclaims other processes meanwhile; any bigger map would need streaming.
 - **Memory per mesh (2026-11-01):** on Metal every extra mesh costs video memory (the cells map's 3,074 extra meshes: +184 MiB on the iPhone and the Mac); smaller cells or more categories in cells raise it further. The tablet's PSS rose by 128 MiB.
 - **Characters on the tablet (Phase 5):** a walking character under `PlayerController` costs about 1.1–1.4 ms per physics step on the Galaxy Tab A7 (three-run A/B; two steps per frame), mostly script and transform work; two NPCs near the player at once lower its 1 % low by about 2 FPS. The far mode keeps distant NPCs cheap; denser NPCs near the player need a cheaper character (open question 34).
 - **Tablet physics margin:** with the parked car asleep the physics step on foot is 3.8–4.8 ms (two per frame at 30 FPS); the player's `move_and_slide` (≈ 1 ms) and the trimesh map colliders remain (open question 30).
@@ -1347,9 +1445,9 @@ Thermal state: Nominal at all 13 probes (0–601 s). App footprint 1,022–1,044
 
 ## Required manual actions
 
-- **iPhone: set Auto-Lock back to its previous value**, if it is still on "Never". The debug builds of `83c8f0a` (all five maps) are installed on both devices (the Release Perf builds of the same commit ran the measurements).
-- **Choose a facade variant** (open question 42, `PROJECT_CONTEXT.md`): look at `docs/perf/facade/comparison_high.jpg`, `comparison_low.jpg`, and `closeups_high.jpg` (and the list of differences in the README there) and say which variant, if any, should be developed further; no map becomes the default before that (D24).
-- **iPhone:** an iOS alert "Some iCloud Data Isn't Syncing" was on the screen during the scenario runs; dismiss it if it is still there.
+- **Approve or reject the shader facade's distant windows** (D25, criterion 5): look at `docs/perf/facade_v2/far_windows_high.jpg` (2× crops: cells / first version / footprint filter), `views_high.jpg`, `views_low.jpg`, `far_windows_high_1920.jpg`, and the pans `pan_raised.gif` and `pan_far_avenue.gif`, with the list of differences in `docs/perf/facade_v2/README.md`.
+- **Decide on the tablet's frame pacing** (open question 43): whether the low profile's pacing may be changed (to be measured first), or criterion 1 relaxed; until then the shader map cannot meet criterion 1 reliably and stays experimental.
+- **iPhone: set Auto-Lock back to its previous value**, if it is still on "Never". The debug builds of `56aaf0d` (all five maps) are installed on both devices (the Release Perf builds of the same commit ran the measurements).
 - **iPhone rotation check** (open question 33): start `scenario_orientation` (commands in `docs/ARCHITECTURE.md`, "Device scenario"), hold the phone upright in landscape, and turn it 180° once during the 30 s; the gravity readings in the results file are the evidence.
 - The stutter while turning the camera and driving on the iPhone, in your own words.
 - Before any release: how ODbL share-alike applies (open question 38), and whether the cells map (and the test district, question 36) stay out of release packages. Open questions 39 and 40 were decided (D23).
@@ -1360,22 +1458,28 @@ Thermal state: Nominal at all 13 probes (0–601 s). App footprint 1,022–1,044
 
 ## Current priorities
 
-1. The user's visual choice between the facade variants (open question 42) and review of the measurements ("Lighter facades on the cells map").
-2. Map switching on the tablet (the low-memory kills), before any further map is added to the registry.
+1. The user's visual approval of the distant windows (D25, criterion 5) and a decision on the tablet's frame pacing (open question 43); review of the measurements ("Shader facade toward the default").
+2. Streaming or partial map loading (below), before any further map is added to the registry.
 
 ## Recommended next task
 
-Order of the remaining work by what the facade variants measured (each a separate task, measured against this task's results):
+Order of the remaining work by this task's measurements (each a separate task, measured against them):
 
 | # | Work | Why in this place (measurements of 2026-11-01) | Measurable acceptance |
 |---|---|---|---|
-| 1 | **Map switching without two maps in memory** (free the old map, and wait for it, before loading the next; or let the device scenario switch directly instead of tapping through the registry) | The Galaxy Tab A7 was killed by lmkd twice while switching between two large maps (peak PSS 821 / 978 MiB); the MAP button now passes through four large maps; it blocks the `extensibility` scenario on the tablet | `extensibility` on the shader map and on İstanbul passes on the tablet (25 / 25) with the peak PSS during a switch at most the larger map's + 50 MiB; the headless switch tests unchanged; no change for normal release builds |
-| 2 | **Streaming / loading the map in parts** | The tablet's PSS follows the mesh count (+128 MiB with the cells, −10 / −18 MiB with lighter facades), map ready 6.1–8.0 s; loading only nearby cells would cut both, and a threaded load would answer open question 37 | Tablet PSS ≤ 506 MiB (İstanbul's) on a cells map; map ready ≤ 6 s; no frame over 50 ms while parts load at walking and driving speed; 1 % low within 0.5 FPS |
-| 3 | **The chosen facade variant, refined** (after open question 42) | light: −50 % triangles, no long-frame problem, small visual loss; shader: −92 %, the iPhone's footprint below İstanbul's, but long-frame windows at Galata on the tablet and a flat look | For shader: the tablet's long frames ≤ 1 % in every run at all three viewpoints (e.g. a cheaper fragment path or the fade earlier on low); for light: the user's visual approval; either: device criteria as in this task |
-| 4 | **Simple colliders** | The tablet's physics step (4.3–5.3 ms) did not change with any facade variant and stays the largest CPU cost; it would also let the trunks join the cells | Tablet physics step at the three viewpoints ≥ 0.5 ms lower (three runs); Phase 1–5 tests pass |
-| 5 | **Occluders from building footprints** | Occlusion works (Galata 39 draw calls on the tablet, the same on every variant); the bake costs about 40 MiB and 86–220 ms at load | Occluder triangles −80 %; draw calls within 10 %; load time and memory reported |
+| 1 | **Tablet frame pacing at the 30 FPS cap** (after the user's answer to open question 43; measurement first, then at most one setting change) | Decides D25's criterion 1: about one launch in four runs with a 28 → 42 → 30 ms cycle on every map (shader run 3: 46 / 13 / 107 long frames; İstanbul run 1: 200 / 117 / 138); the shader, a warm-up draw, the render priority, and a 31 FPS cap change nothing | With the chosen change (or none), at least 9 launches of the shader map and İstanbul each on the tablet: no launch over 1 % long frames at any viewpoint; average ≥ 29.9; 1 % low not below this task's medians − 0.5; the iPhone unchanged |
+| 2 | **Streaming / partial loading of the map** | Tablet: the cells-type maps sit at 615 MiB PSS (Release Perf, shader) against İstanbul's 502; a map load blocks 5.8–6.6 s at startup and 6.8–9.5 s per switch (debug) and holds 15–115 MiB of temporary data above the stable PSS (810 MiB peak); the low-memory killer reclaims other processes during loads; the PSS follows the mesh count (6,129 meshes), which loading only the cells near the player would cut | Definition below |
+| 3 | **Shader facade as the default** (when 1 and the visual approval pass) | Criteria 2–4 passed (iPhone 60 FPS and 854–860 MiB; scenarios 25 / 25 on both devices; tablet 641 MiB peak) | D25's criteria in a fresh session; the registry change in its own commit (revertable); the clean-clone fallback (first available map with a warning) and İstanbul's tests as a selectable map |
+| 4 | **Simple colliders** | The tablet's physics step (4.4–5.5 ms) is unchanged on every map and variant and the largest CPU cost | Physics step ≥ 0.5 ms lower at the three viewpoints (three runs); Phase 1–5 tests pass |
+| 5 | **Occluders from building footprints** | Occlusion works (39 draw calls at Galata on the tablet); the bake costs about 40 MiB and 86–220 ms at load | Occluder triangles −80 %; draw calls within 10 %; load time and memory reported |
 | 6 | **Normals and degenerate triangles** | No measurable effect | Zero-area and flipped triangles 0, the rest byte-identical |
+
+**Streaming loader, defined by these measurements:** the map's 40 m facade cells (and trees, shrubs) as separately loadable parts around the player, with the terrain, roads, building shells, and collision of the whole map (or of the 150 m chunks) loaded at start; parts loaded on a background thread (`ResourceLoader.load_threaded_request`) and added within a frame budget, unloaded behind the player with hysteresis; the loading screen of this task kept for the first part set and for map switches, which would then load only that set.
+
+- Acceptance on the Galaxy Tab A7 (Release Perf, three runs; debug for the switch scenario): steady PSS on the shader map ≤ 502 MiB (İstanbul's today); map ready ≤ 4.0 s (today 5.8 s); the peak PSS of a map switch ≤ the larger map's stable PSS + 50 MiB (today shader → cells 810 against 746) and no low-memory reclaim of this app; while walking and driving the three viewpoints' route, no frame over 50 ms caused by part loading and long frames ≤ 1 % (apart from the pacing state of open question 43, measured separately); 1 % low within 0.5 FPS of this task's medians.
+- On the iPhone: footprint ≤ 860 MiB, 60 FPS with 0 long frames, map ready ≤ 1.2 s.
+- Unchanged: the look within the profiles' ranges (side-by-side shots), the collision, the tests of all maps.
 
 Smaller follow-up: lamps, lamp glows, and decor in cells (the lamp post beside the spawn is still missing on the low profile).
 
-**Recommendation:** task 1 first (it is small and keeps the debug device checks usable), then the user's choice in open question 42 decides task 3; task 2 is the largest remaining memory and startup gain.
+**Recommendation:** task 1 first if the user allows a pacing experiment (it is cheap and decides whether the shader map can become the default); otherwise task 2, the largest remaining memory and startup gain.

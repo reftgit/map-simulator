@@ -1,0 +1,134 @@
+{
+  "config": {
+    "experiment": "scenario_map_switch",
+    "map": "istanbul_halic_cells_shader",
+    "profile": "",
+    "runtime": {},
+    "scenario": {
+      "hold_s": 20.0,
+      "maps": [
+        "istanbul_halic",
+        "istanbul_halic_cells",
+        "istanbul_halic",
+        "istanbul_halic_cells_shader",
+        "istanbul_halic_cells",
+        "istanbul_halic_cells_shader"
+      ],
+      "name": "map_switch",
+      "rotate_hold_s": 0.0
+    },
+    "settings": {}
+  },
+  "profile": "low",
+  "scenario": [
+    {
+      "detail": "scenario=map_switch rotate_hold_s=0",
+      "result": "INFO",
+      "step": "start",
+      "t": 0.0
+    },
+    {
+      "detail": "unix 1793562724.418",
+      "result": "INFO",
+      "step": "hold_istanbul_halic_cells_shader",
+      "t": 0.0
+    },
+    {
+      "detail": "istanbul_halic_cells_shader -> istanbul_halic, nodes 8549, unix 1793562744.469",
+      "result": "INFO",
+      "step": "switch_1_start",
+      "t": 20.1
+    },
+    {
+      "detail": "istanbul_halic_cells_shader -> istanbul_halic in 9334 ms, player 0.00 m from its spawn, nodes 5475 (earlier on this map: -), unix 1793562754.813",
+      "result": "PASS",
+      "step": "switch_1",
+      "t": 30.4
+    },
+    {
+      "detail": "istanbul_halic -> istanbul_halic_cells, nodes 5475, unix 1793562774.828",
+      "result": "INFO",
+      "step": "switch_2_start",
+      "t": 50.4
+    },
+    {
+      "detail": "istanbul_halic -> istanbul_halic_cells in 9543 ms, player 0.00 m from its spawn, nodes 8549 (earlier on this map: -), unix 1793562785.389",
+      "result": "PASS",
+      "step": "switch_2",
+      "t": 61.0
+    },
+    {
+      "detail": "istanbul_halic_cells -> istanbul_halic, nodes 8549, unix 1793562805.408",
+      "result": "INFO",
+      "step": "switch_3_start",
+      "t": 81.0
+    },
+    {
+      "detail": "istanbul_halic_cells -> istanbul_halic in 7838 ms, player 0.00 m from its spawn, nodes 5475 (earlier on this map: 5475), unix 1793562814.277",
+      "result": "PASS",
+      "step": "switch_3",
+      "t": 89.9
+    },
+    {
+      "detail": "istanbul_halic -> istanbul_halic_cells_shader, nodes 5475, unix 1793562834.295",
+      "result": "INFO",
+      "step": "switch_4_start",
+      "t": 109.9
+    },
+    {
+      "detail": "istanbul_halic -> istanbul_halic_cells_shader in 6794 ms, player 0.00 m from its spawn, nodes 8549 (earlier on this map: 8549), unix 1793562842.156",
+      "result": "PASS",
+      "step": "switch_4",
+      "t": 117.7
+    },
+    {
+      "detail": "istanbul_halic_cells_shader -> istanbul_halic_cells, nodes 8549, unix 1793562862.179",
+      "result": "INFO",
+      "step": "switch_5_start",
+      "t": 137.8
+    },
+    {
+      "detail": "istanbul_halic_cells_shader -> istanbul_halic_cells in 9519 ms, player 0.00 m from its spawn, nodes 8549 (earlier on this map: 8549), unix 1793562872.733",
+      "result": "PASS",
+      "step": "switch_5",
+      "t": 148.3
+    },
+    {
+      "detail": "istanbul_halic_cells -> istanbul_halic_cells_shader, nodes 8549, unix 1793562892.803",
+      "result": "INFO",
+      "step": "switch_6_start",
+      "t": 168.4
+    },
+    {
+      "detail": "istanbul_halic_cells -> istanbul_halic_cells_shader in 7323 ms, player 0.00 m from its spawn, nodes 8549 (earlier on this map: 8549), unix 1793562901.147",
+      "result": "PASS",
+      "step": "switch_6",
+      "t": 176.7
+    },
+    {
+      "detail": "passed=6 failed=0",
+      "result": "PASS",
+      "step": "done",
+      "t": 196.8
+    }
+  ],
+  "startup": {
+    "android_frame_pacing": true,
+    "debug_build": true,
+    "display_refresh_rate": 60.0000038146973,
+    "first_frame_ms": 10359,
+    "ios_allow_high_refresh_rate": false,
+    "map": "istanbul_halic_cells_shader",
+    "map_ready_ms": 9733,
+    "max_fps": 30,
+    "npcs": 2,
+    "perf_feature": false,
+    "physics_3d": "GodotPhysics3D",
+    "physics_engine_setting": "DEFAULT",
+    "physics_interpolation": true,
+    "physics_ticks": 60,
+    "screen_refresh_rate": 60.0000038146973,
+    "vehicles": "awake",
+    "vsync_mode": 1
+  }
+}
