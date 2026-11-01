@@ -1,0 +1,43 @@
+--------- beginning of main
+11-01 16:16:05.875 26829 26859 I godot   : Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+11-01 16:16:06.033 26829 26859 I godot   : Vulkan 1.1.128 - Forward Mobile - Using Device #0: Qualcomm - Adreno (TM) 610
+11-01 16:16:06.548 26829 26859 I godot   : 
+11-01 16:16:07.681 26829 26859 I godot   : SAFE_AREA window=(2000, 1200) safe=[P: (0, 0), S: (2000, 1200)] canvas=[P: (0.0, 0.0), S: (1500.0, 900.0)] viewport=(1500.0, 900.0)
+11-01 16:16:13.864 26829 26859 I godot   : QUALITY profile=low experiment=scenario_extensibility_cells_shader occluders={"ms":96,"occluders":643,"source":"baked","triangles":317518} effective={"camera_far":400.0,"fog":true,"hide":[],"lod_threshold":4.0,"max_fps":30,"occlusion":true,"render_scale":0.6,"scaling_mode":"bilinear","shadows":"off","visibility_end":{"decor":100.0,"facade_detail":100.0,"lamps":100.0,"trees":100.0}}
+11-01 16:16:13.908 26829 26859 I godot   : SCENARIO step=start result=INFO t=0.0 scenario=extensibility rotate_hold_s=0
+11-01 16:16:14.423 26829 26859 I godot   : STARTUP map_ready_ms=8346 first_frame_ms=8901 map=istanbul_halic_cells_shader profile=low occluders={"ms":96,"occluders":643,"source":"baked","triangles":317518} physics_3d=GodotPhysics3D (setting DEFAULT) vehicles=awake npcs=2 build={"android_frame_pacing":true,"debug_build":true,"display_refresh_rate":60.0000038146973,"ios_allow_high_refresh_rate":false,"max_fps":30,"perf_feature":false,"physics_engine_setting":"DEFAULT","physics_interpolation":true,"physics_ticks":60,"screen_refresh_rate":60.0000038146973,"vsync_mode":1} user_dir=/data/data/com.mirongi.mapsimulator/files
+11-01 16:16:23.675 26829 26859 I godot   : QUALITY profile=low experiment=scenario_extensibility_cells_shader occluders={"ms":268,"occluders":643,"source":"baked","triangles":317518} effective={"camera_far":400.0,"fog":true,"hide":[],"lod_threshold":4.0,"max_fps":30,"occlusion":true,"render_scale":0.6,"scaling_mode":"bilinear","shadows":"off","visibility_end":{"decor":100.0,"facade_detail":100.0,"lamps":100.0,"trees":100.0}}
+11-01 16:16:23.680 26829 26859 I godot   : MAP istanbul_halic loaded in 8736 ms
+11-01 16:16:27.793 26829 26859 I godot   : QUALITY profile=low experiment=scenario_extensibility_cells_shader occluders={"ms":8,"occluders":7,"source":"baked","triangles":84} effective={"camera_far":400.0,"fog":true,"hide":[],"lod_threshold":4.0,"max_fps":30,"occlusion":true,"render_scale":0.6,"scaling_mode":"bilinear","shadows":"off","visibility_end":{"decor":100.0,"facade_detail":100.0,"lamps":100.0,"trees":100.0}}
+11-01 16:16:27.793 26829 26859 I godot   : MAP test_district loaded in 325 ms
+11-01 16:16:28.891 26829 26859 I godot   : SCENARIO step=map_test_district result=INFO t=15.0 loaded after 13.9 s
+11-01 16:16:30.071 26829 26859 I godot   : SCENARIO step=map_switch result=PASS t=16.2 map test_district, player 0.00 m from its spawn, vehicles 2, NPCs 3, nodes 218 (on istanbul_halic_cells_shader: 8547)
+11-01 16:16:31.232 26829 26859 I godot   : PERF map=test_district profile=low view="Spawn" fps=3 draw_calls=89 primitives=7068 objects=332 video_mem_mb=70 static_mem_mb=98 static_peak_mb=399 vehicles=awake,awake
+11-01 16:16:32.515 26829 26859 I godot   : VEHICLE PlaceholderCar asleep
+11-01 16:16:32.821 26829 26859 I godot   : VEHICLE PlaceholderVan asleep
+11-01 16:16:32.826 26829 26859 I godot   : SCENARIO step=van_parked result=PASS t=18.9 PlaceholderVan (Van (placeholder)), asleep
+11-01 16:16:32.915 26829 26859 I godot   : CAR walk-up PlaceholderCar
+11-01 16:16:33.239 26829 26859 I godot   : PERF map=test_district profile=low view="Spawn" fps=30 draw_calls=80 primitives=5604 objects=327 video_mem_mb=70 static_mem_mb=98 static_peak_mb=399 vehicles=asleep,asleep
+11-01 16:16:33.396 26829 26859 I godot   : CAR walk-up PlaceholderVan
+11-01 16:16:33.867 26829 26859 I godot   : SCENARIO step=van_walk_up result=PASS t=20.0 beside PlaceholderVan, interact button true
+11-01 16:16:33.913 26829 26859 I godot   : VEHICLE PlaceholderVan awake
+11-01 16:16:34.384 26829 26859 I godot   : SCENARIO step=van_get_in result=PASS t=20.5 driving PlaceholderVan, awake, camera on it true
+11-01 16:16:35.225 26829 26859 I godot   : PERF map=test_district profile=low view="Spawn" fps=29 draw_calls=92 primitives=5386 objects=345 video_mem_mb=71 static_mem_mb=99 static_peak_mb=399 vehicles=asleep,awake
+11-01 16:16:36.349 26829 26859 I godot   : SCENARIO step=van_throttle result=PASS t=22.4 forward speed 5.0 m/s (max 14)
+11-01 16:16:37.215 26829 26859 I godot   : PERF map=test_district profile=low view="Spawn" fps=29 draw_calls=83 primitives=4942 objects=336 video_mem_mb=71 static_mem_mb=99 static_peak_mb=399 vehicles=asleep,awake
+11-01 16:16:37.867 26829 26859 I godot   : SCENARIO step=van_get_out result=PASS t=24.0 speed when stopped 0.06 m/s
+11-01 16:16:38.363 26829 26859 I godot   : VEHICLE PlaceholderVan asleep
+11-01 16:16:38.366 26829 26859 I godot   : SCENARIO step=van_asleep_after_getting_out result=PASS t=24.5 PlaceholderVan asleep
+11-01 16:16:39.240 26829 26859 I godot   : PERF map=test_district profile=low view="Spawn" fps=30 draw_calls=76 primitives=5476 objects=325 video_mem_mb=71 static_mem_mb=99 static_peak_mb=399 vehicles=asleep,asleep
+11-01 16:16:41.240 26829 26859 I godot   : PERF map=test_district profile=low view="Spawn" fps=30 draw_calls=78 primitives=5968 objects=327 video_mem_mb=71 static_mem_mb=99 static_peak_mb=399 vehicles=asleep,asleep
+11-01 16:16:41.367 26829 26859 I godot   : SCENARIO step=npc_patrols result=PASS t=27.5 Npc3 moved 6.8 m in 3 s, 0 arrivals, state Walk
+11-01 16:16:43.238 26829 26859 I godot   : PERF map=test_district profile=low view="Spawn" fps=30 draw_calls=63 primitives=5164 objects=312 video_mem_mb=71 static_mem_mb=99 static_peak_mb=399 vehicles=asleep,asleep
+11-01 16:16:44.272 26829 26859 I godot   : SCENARIO step=npc_hit_reaction result=PASS t=30.4 Npc3 hit after 1 punch(es), state HitReaction
+11-01 16:16:45.251 26829 26859 I godot   : PERF map=test_district profile=low view="Spawn" fps=25 draw_calls=63 primitives=5164 objects=312 video_mem_mb=71 static_mem_mb=99 static_peak_mb=399 vehicles=asleep,asleep
+11-01 16:16:45.286 26829 26859 I godot   : SCENARIO step=npc_one_hit_per_punch result=PASS t=31.4 1 hit(s) for the punch that landed
+11-01 16:16:47.248 26829 26859 I godot   : PERF map=test_district profile=low view="Spawn" fps=30 draw_calls=63 primitives=5164 objects=312 video_mem_mb=71 static_mem_mb=99 static_peak_mb=399 vehicles=asleep,asleep
+11-01 16:16:48.555 26829 26859 I godot   : SCENARIO step=npc_patrol_resumes result=PASS t=34.6 Npc3 state Idle, moved 0.6 m, heading for point 1 (was 0)
+11-01 16:16:56.980 26829 26859 I godot   : QUALITY profile=low experiment=scenario_extensibility_cells_shader occluders={"ms":103,"occluders":643,"source":"baked","triangles":317518} effective={"camera_far":400.0,"fog":true,"hide":[],"lod_threshold":4.0,"max_fps":30,"occlusion":true,"render_scale":0.6,"scaling_mode":"bilinear","shadows":"off","visibility_end":{"decor":100.0,"facade_detail":100.0,"lamps":100.0,"trees":100.0}}
+11-01 16:16:56.981 26829 26859 I godot   : MAP istanbul_halic_cells loaded in 8372 ms
+11-01 16:17:06.881 26829 26859 I godot   : QUALITY profile=low experiment=scenario_extensibility_cells_shader occluders={"ms":89,"occluders":643,"source":"baked","triangles":317518} effective={"camera_far":400.0,"fog":true,"hide":[],"lod_threshold":4.0,"max_fps":30,"occlusion":true,"render_scale":0.6,"scaling_mode":"bilinear","shadows":"off","visibility_end":{"decor":100.0,"facade_detail":100.0,"lamps":100.0,"trees":100.0}}
+11-01 16:17:06.882 26829 26859 I godot   : MAP istanbul_halic_cells_light loaded in 9235 ms

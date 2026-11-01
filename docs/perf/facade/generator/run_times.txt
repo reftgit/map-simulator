@@ -1,0 +1,13 @@
+# /usr/bin/time -l of the generator runs (Mac, Apple Silicon, 16 GB)
+## --facade light --detail-cell 40, alone
+139.03 real       130.27 user         5.66 sys
+3212263424  maximum resident set size
+4102655360  peak memory footprint
+## --facade shader --detail-cell 40, alone
+122.78 real       119.24 user         2.07 sys
+2574483456  maximum resident set size
+2626062616  peak memory footprint
+## --facade full, alone (output 68237c46...; the same command took 157-173 s in other runs)
+173.28 real       160.66 user         8.86 sys
+4422762496  maximum resident set size
+5252436144  peak memory footprint

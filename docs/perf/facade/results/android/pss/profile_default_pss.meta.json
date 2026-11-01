@@ -1,0 +1,4 @@
+{"experiment": "profile_default_pss", "device": "android", "battery_c_start": 35.0, "battery_c_end": 35.0,
+ "thermal_status_start": "0", "thermal_status_end": "0",
+ "pss_peak_kb": 517776, "wall_s": 281, "started": "2026-11-01 15:32:20",
+ "cool_wait_s": 0, "cool_target_c": "35.5"}

@@ -103,6 +103,38 @@ godot --headless --path . --import
 
 A run took 157.9 s on the Mac (Apple Silicon, 16 GB) with a peak resident size of 3.6 GiB (peak memory footprint 4.8 GiB), and two runs are byte-identical; the import takes about 12 s. `tests/integration/test_istanbul_halic_cells.gd` checks the hash. After any change to the map's collision, re-bake its occluders: `godot --headless --path . --script res://tools/bake_occluders.gd -- --map=res://maps/istanbul_halic_cells/istanbul_halic_cells.tres`.
 
+### Facade variants (`--facade`)
+
+`--facade full|light|shader` changes only the facade detail of ordinary buildings (`Detail_*`); `full` (the default) is the original geometry, so `--facade full` gives `68237c46…` without cells and `7973071a…` with `--detail-cell 40`. Mosques, the Galata Tower, every `-col` mesh, trees, and all other meshes stay byte-identical. Analysis of what the facade is made of: `docs/perf/facade/generator/facade_analysis.md`.
+
+- `light`: each window keeps its light surround and its glass; the mullions and sills are dropped; windows whose point 1 m in front of the wall lies inside a building with a higher roof are dropped, with the cornices and string courses hidden along such walls; balcony railings are flat bars. About half the facade triangles (`PROJECT_CONTEXT.md`, T41).
+- `shader`: each wall of 2.8 m or more gets one panel 3 cm in front of it instead of its cornice, string courses, and windows; `maps/istanbul_halic_cells_shader/facade_windows.gdshader` draws them from the panel's UV (metres along the wall and above its ground line), UV2 (column width, wall height), colour (the wall colour), and colour alpha (a per-wall seed). The panels use a seventh GLB material, `Istanbul_FacadeWindows`, which the map's script replaces with the shader. Roofs, doors, awnings, chimneys, and balconies (with flat railings) stay geometry (T42).
+
+```bash
+<VENV>/bin/python -B tools/maps/istanbul_halic/build_map.py --detail-cell 40 --facade light --out build/maps/istanbul_halic_cells_light
+<VENV>/bin/python -B tools/maps/istanbul_halic/build_map.py --detail-cell 40 --facade shader --out build/maps/istanbul_halic_cells_shader
+<VENV>/bin/python -B tools/maps/istanbul_halic/compare_outputs.py --facade --out build/maps/istanbul_halic_cells_light   # vs build/maps/istanbul_halic_cells
+```
+
+`--facade` (in `compare_outputs.py`) compares with the full build with the same cells (default `build/maps/istanbul_halic_cells`) and passes only when every mesh outside `Detail_*` is byte-identical (attributes, indices, material), the `Detail_*` names are the same, and the reference materials are unchanged (an appended one is listed); it prints the `Detail_*` reduction.
+
+| Variant (with `--detail-cell 40`) | GLB SHA-256 | GLB bytes | `Detail_*` triangles | Run (Mac) | Peak resident / footprint |
+|---|---|---|---|---|---|
+| full (the cells map) | `7973071a…` | 505,589,800 | 4,187,598 | 157.9 s | 3.6 / 4.8 GiB |
+| light | `6531ca28b0ba8be0648615af23b3b625f3c9e9beec39693f163a65e42375355b` | 363,099,796 | 2,092,604 (−50.03 %) | 139.0 s | 3.0 / 3.8 GiB |
+| shader | `60b9f7295be0ca536822126cbcf182de8f6db96de772314c5a80a39b31755303` | 254,569,692 | 324,120 (−92.26 %) | 122.8 s | 2.4 / 2.4 GiB |
+
+Each is the GLB of an experimental map: `istanbul_halic_cells_light` and `istanbul_halic_cells_shader` (`maps/istanbul_halic_cells_light/`, `maps/istanbul_halic_cells_shader/`), with the cells map's data and its occluders, loaded only with `--map`, an experiment's `"map"` key, or the debug MAP button, and skipped (their tests SKIP) while the GLB is missing. To use them on a clean machine, after generating as above:
+
+```bash
+shasum -a 256 build/maps/istanbul_halic_cells_light/istanbul_halic.glb build/maps/istanbul_halic_cells_shader/istanbul_halic.glb   # expected: the table above
+cp build/maps/istanbul_halic_cells_light/istanbul_halic.glb assets/istanbul_halic_cells_light.glb
+cp build/maps/istanbul_halic_cells_shader/istanbul_halic.glb assets/istanbul_halic_cells_shader.glb
+godot --headless --path . --import
+```
+
+Their tests check these hashes. A visual comparison of all four İstanbul maps is in `docs/perf/facade/`.
+
 ## Attribution
 
 Geographic data © OpenStreetMap contributors (ODbL 1.0). Terrain: Mapzen/Tilezen Terrain Tiles (USGS, EU-DEM). Keep these attributions in any published build; details are in `KAYNAKLAR.md`.

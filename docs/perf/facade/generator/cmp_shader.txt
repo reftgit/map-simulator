@@ -1,0 +1,18 @@
+GLB out:       build/maps/istanbul_halic_cells_shader/istanbul_halic.glb  sha256 60b9f7295be0ca536822126cbcf182de8f6db96de772314c5a80a39b31755303  254569692 bytes
+GLB reference: <REPO>/build/maps/istanbul_halic_cells/istanbul_halic.glb  sha256 7973071a3ee900b0af4023fad310c250707d21ebbeea8161b334be4134053c9d  505589800 bytes
+materials: 7 vs 6, added: ['Istanbul_FacadeWindows']
+meshes outside Detail_*: 3664 of 3664 byte-identical (attributes, indices, material); -col meshes 827 vs 827
+Detail_*: 2465 meshes; triangles 324120 vs 4187598 (92.26 % fewer), vertices 684226 vs 8411182 (91.87 % fewer), attributes ['COLOR_0', 'NORMAL', 'POSITION', 'TEXCOORD_0', 'TEXCOORD_1']
+all meshes: triangles 3208127 vs 7071605, vertices 7087157 vs 14814113
+only Detail_* changed: PASS
+json bridge_metadata.json: byte-identical
+json buildings.json: byte-identical
+json mosques.json: byte-identical
+json spawn.json: byte-identical
+json statistics.json: DIFFERENT in keys ['facade', 'triangles', 'vertices']
+  facade: shader vs reference None
+  triangles: 3208127 vs reference 7071605
+  vertices: 7087157 vs reference 14814113
+json street_details.json: byte-identical
+json vegetation.json: byte-identical
+json map_metadata.json: DIFFERENT in keys ['stats']

@@ -1,0 +1,138 @@
+{
+ "experiment": "scenario_extensibility_cells_shader",
+ "device": "ios",
+ "wall_s": 1270,
+ "cooldown_s": 0,
+ "app_args": "",
+ "thermal_start": "Nominal",
+ "thermal_end": "Nominal",
+ "thermal_max": "Nominal",
+ "footprint_peak_mib": 779,
+ "probes": [
+  {
+   "t": 0,
+   "thermal": "Nominal",
+   "footprint_mib": null
+  },
+  {
+   "t": 40,
+   "thermal": "Nominal",
+   "footprint_mib": 779
+  },
+  {
+   "t": 153,
+   "thermal": "Nominal",
+   "footprint_mib": 778
+  },
+  {
+   "t": 204,
+   "thermal": "Nominal",
+   "footprint_mib": 778
+  },
+  {
+   "t": 255,
+   "thermal": "Nominal",
+   "footprint_mib": 778
+  },
+  {
+   "t": 305,
+   "thermal": "Nominal",
+   "footprint_mib": 778
+  },
+  {
+   "t": 356,
+   "thermal": "Nominal",
+   "footprint_mib": 778
+  },
+  {
+   "t": 407,
+   "thermal": "Nominal",
+   "footprint_mib": 778
+  },
+  {
+   "t": 457,
+   "thermal": "Nominal",
+   "footprint_mib": 778
+  },
+  {
+   "t": 508,
+   "thermal": "Nominal",
+   "footprint_mib": 778
+  },
+  {
+   "t": 584,
+   "thermal": "Nominal",
+   "footprint_mib": 778
+  },
+  {
+   "t": 635,
+   "thermal": "Nominal",
+   "footprint_mib": 778
+  },
+  {
+   "t": 685,
+   "thermal": "Nominal",
+   "footprint_mib": 778
+  },
+  {
+   "t": 736,
+   "thermal": "Nominal",
+   "footprint_mib": 778
+  },
+  {
+   "t": 787,
+   "thermal": "Nominal",
+   "footprint_mib": 778
+  },
+  {
+   "t": 837,
+   "thermal": "Nominal",
+   "footprint_mib": 778
+  },
+  {
+   "t": 888,
+   "thermal": "Nominal",
+   "footprint_mib": 778
+  },
+  {
+   "t": 939,
+   "thermal": "Nominal",
+   "footprint_mib": 778
+  },
+  {
+   "t": 989,
+   "thermal": "Nominal",
+   "footprint_mib": 778
+  },
+  {
+   "t": 1039,
+   "thermal": "Nominal",
+   "footprint_mib": 778
+  },
+  {
+   "t": 1090,
+   "thermal": "Nominal",
+   "footprint_mib": 778
+  },
+  {
+   "t": 1140,
+   "thermal": "Nominal",
+   "footprint_mib": 778
+  },
+  {
+   "t": 1191,
+   "thermal": "Nominal",
+   "footprint_mib": 778
+  },
+  {
+   "t": 1259,
+   "thermal": "Nominal",
+   "footprint_mib": 778
+  },
+  {
+   "t": 1270,
+   "thermal": "Nominal",
+   "footprint_mib": null
+  }
+ ]
+}
