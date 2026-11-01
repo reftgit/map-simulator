@@ -1,10 +1,11 @@
-[gd_resource type="Resource" script_class="MapRegistry" load_steps=5 format=3]
+[gd_resource type="Resource" script_class="MapRegistry" load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://game/world/map_registry.gd" id="1_registry"]
 [ext_resource type="Script" path="res://game/world/map_definition.gd" id="2_definition"]
 [ext_resource type="Resource" path="res://maps/istanbul_halic/istanbul_halic.tres" id="3_istanbul"]
 [ext_resource type="Resource" path="res://maps/test_district/test_district.tres" id="4_test_district"]
+[ext_resource type="Resource" path="res://maps/istanbul_halic_cells/istanbul_halic_cells.tres" id="5_istanbul_cells"]
 
 [resource]
 script = ExtResource("1_registry")
-definitions = Array[ExtResource("2_definition")]([ExtResource("3_istanbul"), ExtResource("4_test_district")])
+definitions = Array[ExtResource("2_definition")]([ExtResource("3_istanbul"), ExtResource("4_test_district"), ExtResource("5_istanbul_cells")])

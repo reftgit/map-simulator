@@ -3,7 +3,8 @@ extends Resource
 ## The maps the game can load, found by MapDefinition.id. The first entry is
 ## the default: normal release builds always start there. Debug and Release
 ## Perf builds can start on another with --map=<id> or an experiment's "map"
-## key; debug builds also cycle through them with the overlay's MAP button.
+## key; debug builds also cycle through them with the overlay's MAP button,
+## skipping maps whose generated files are missing (MapDefinition.is_available()).
 
 const PATH := "res://game/world/maps.tres"
 
@@ -33,10 +34,15 @@ func ids() -> Array[String]:
 	return found
 
 
-## The map after `definition`, wrapping around; the first map when
-## `definition` is not in the list.
+## The next available map after `definition`, wrapping around; the first
+## available map when `definition` is not in the list.
 func next_after(definition: MapDefinition) -> MapDefinition:
-	return definitions[(definitions.find(definition) + 1) % definitions.size()]
+	var start := definitions.find(definition)
+	for step in range(1, definitions.size() + 1):
+		var candidate := definitions[(start + step) % definitions.size()]
+		if candidate.is_available():
+			return candidate
+	return definition
 
 
 ## The id given as --map=<id> among the user arguments, or "".

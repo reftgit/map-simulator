@@ -15,7 +15,8 @@ const KEYS := ["hide", "visibility_end", "camera_far", "fog", "shadows", "render
 		"max_fps", "occlusion", "lod_threshold"]
 
 ## Map node categories, matched by node-name prefix in this order (the GLB has
-## no hierarchy; every mesh node is a 150 m chunk or a single landmark).
+## no hierarchy; every mesh node is a 150 m chunk, a cell of one on the cells
+## map, or a single landmark).
 const CATEGORIES := {
 	"facade_detail": ["Detail_", "MosqueDetail_", "LandmarkDetail_"],
 	"decor": ["Galata_Bridge_Detail", "Halic_Metro_Bridge_Detail", "BridgeDetail_", "BridgeGlass_",

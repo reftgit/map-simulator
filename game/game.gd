@@ -328,17 +328,19 @@ func _start_benchmark(config: PerfConfig) -> PerfBenchmark:
 
 ## Map at startup: requested_map (tests); in debug and Release Perf builds
 ## the experiment's "map" key, else --map=<id> in `args`; otherwise, and
-## always in normal release builds, the registry's first map. An unknown id
-## falls back to the first map with a warning.
+## always in normal release builds, the registry's first map. An unknown id,
+## or a map whose generated files are missing, falls back to the first map
+## with a warning.
 func _initial_map(args: PackedStringArray) -> MapDefinition:
 	var id := requested_map
 	if id.is_empty() and BuildFeatures.perf_enabled():
 		id = _experiment.map if _experiment and not _experiment.map.is_empty() else MapRegistry.id_from_args(args)
 	if not id.is_empty():
 		var found := maps.find(id)
-		if found:
+		if found and found.is_available():
 			return found
-		push_warning("Unknown map '%s'; loading '%s'" % [id, maps.default_map().id])
+		var reason := "Map '%s' is not available (missing: %s)" % [id, ", ".join(PackedStringArray(found.required_files))] if found else "Unknown map '%s'" % id
+		push_warning("%s; loading '%s'" % [reason, maps.default_map().id])
 	return maps.default_map()
 
 

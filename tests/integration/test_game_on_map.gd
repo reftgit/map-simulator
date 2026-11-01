@@ -712,9 +712,22 @@ func test_debug_map_button_loads_the_next_map() -> void:
 	await physics_frames(30)
 	check(game.map_definition.id == "test_district" and not is_instance_valid(old_map), "MAP: İstanbul freed, test district loaded (%s)" % game.map_definition.id)
 	check(player.is_on_floor() and game.world.vehicles.size() == game.map_definition.vehicle_spawns.size(), "player standing, the test district's vehicles parked")
-	_tap(button, 1)
-	await physics_frames(60)
-	check(game.map_definition.id == "istanbul_halic" and _on_bridge_deck(), "MAP again: back on İstanbul's bridge spawn")
+	# Further presses go through the other available maps (the cells map
+	# when its GLB is generated) and back to İstanbul.
+	var expected: Array[String] = []
+	for definition in game.maps.definitions.slice(2):
+		if definition.is_available():
+			expected.append(definition.id)
+	expected.append("istanbul_halic")
+	var visited: Array[String] = []
+	for press in game.maps.definitions.size():
+		_tap(button, 1)
+		await physics_frames(60)
+		visited.append(game.map_definition.id)
+		if game.map_definition.id == "istanbul_halic":
+			break
+	check(visited == expected, "MAP again: %s (expected %s)" % [visited, expected])
+	check(game.map_definition.id == "istanbul_halic" and _on_bridge_deck(), "back on İstanbul's bridge spawn")
 	check(_node_count() == before, "node count back to the start (%d, before %d)" % [_node_count(), before])
 	await _get_in()
 	check(game.vehicle_interaction.is_driving(), "the vehicle can be driven after both switches")

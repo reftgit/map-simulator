@@ -91,3 +91,48 @@ func test_experiment_map_key() -> void:
 	check(config.to_dict().map == "istanbul_halic", "map recorded in the result's config")
 	check(PerfConfig.from_dict({"experiment": "default_map"}).map == "", "no key: default map")
 	check(PerfConfig.from_dict({"map": "nowhere"}) == null and PerfConfig.last_error.contains("unknown map"), "unknown map rejected (%s)" % PerfConfig.last_error)
+
+
+func test_maps_with_missing_generated_files_are_skipped() -> void:
+	var registry := MapRegistry.new()
+	var first := _fixture_definition("first")
+	var missing := _fixture_definition("missing")
+	missing.required_files.assign(["res://assets/not_generated_here.glb"])
+	var third := _fixture_definition("third")
+	third.required_files.assign(["res://tests/fixtures/flat_map.tscn"])
+	registry.definitions.assign([first, missing, third])
+	check(first.is_available() and third.is_available() and not missing.is_available(), "available unless a required file is missing")
+	check(registry.next_after(first) == third and registry.next_after(third) == first, "next skips the unavailable map")
+	check(registry.next_after(missing) == third, "next after the unavailable map is the following available one")
+	var game := _game_with(registry)
+	BuildFeatures.debug_override = 1
+	check(game._initial_map(PackedStringArray(["--map=missing"])).id == "first", "--map of an unavailable map: the first map")
+	game.free()
+
+
+func test_imported_files_count_once_imported() -> void:
+	# A committed .import file without its import result (a fresh checkout
+	# before the GLB is generated and imported) is not loadable.
+	var source := "user://probe_generated.glb"
+	var result := "user://probe_generated_imported.scn"
+	var import := FileAccess.open(source + ".import", FileAccess.WRITE)
+	import.store_string('[remap]\n\nimporter="scene"\npath="%s"\n' % result)
+	import.close()
+	check(not MapDefinition.is_loadable(source), "not loadable before the import result exists")
+	FileAccess.open(result, FileAccess.WRITE).close()
+	check(MapDefinition.is_loadable(source), "loadable once the import result exists")
+	for path in [source + ".import", result]:
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+	check(MapDefinition.is_loadable("res://icon.svg"), "an imported project file is loadable")
+	check(MapDefinition.is_loadable("res://tests/fixtures/flat_map.tscn") and not MapDefinition.is_loadable("res://tests/fixtures/none.tscn"), "a plain file counts when it exists")
+
+
+func test_istanbul_cells_map_is_registered_after_the_test_district() -> void:
+	var registry := MapRegistry.load_default()
+	var cells := registry.find("istanbul_halic_cells")
+	check(cells != null and registry.ids() == (["istanbul_halic", "test_district", "istanbul_halic_cells"] as Array[String]), "registry order (%s)" % [registry.ids()])
+	check(cells.required_files == (["res://assets/istanbul_halic_cells.glb"] as Array[String]), "the cells map needs its generated GLB")
+	check(registry.default_map().required_files.is_empty() and registry.find("test_district").is_available(), "İstanbul and the test district need no generated file")
+	check(FileAccess.file_exists("res://assets/istanbul_halic_cells.glb.import"), "the cells GLB's import settings are committed")
+	var ignored := FileAccess.get_file_as_string("res://.gitignore").split("\n")
+	check("/assets/istanbul_halic_cells.glb" in ignored, "the cells GLB is kept out of Git")

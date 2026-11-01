@@ -4,6 +4,8 @@
 # Map model kept out of Git (502 MB, over GitHub's 100 MB limit).
 # Source location and SHA-256: docs/maps/istanbul_halic/README.md
 /assets/istanbul_halic.glb
+# The cells map's GLB is generated on each machine (same README, "The cells map").
+/assets/istanbul_halic_cells.glb
 
 # Export output and platform build templates. build/.gdignore is tracked so
 # Godot never scans or packs build output (e.g. Xcode's CgBI PNGs).

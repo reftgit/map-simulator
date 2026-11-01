@@ -27,6 +27,10 @@ extends Resource
 ## Baked OccluderInstance3D scene (tools/bake_occluders.gd). Without it,
 ## occluders are built from the map's collision at load and a warning is logged.
 @export_file("*.scn", "*.tscn") var occluders_path := ""
+## Files the map needs that are generated on each machine and kept out of Git
+## (e.g. its GLB). While one is missing the map is not available: the MAP
+## button skips it and --map falls back to the first map.
+@export var required_files: Array[String] = []
 
 @export_group("Debug")
 ## Fixed player positions for repeatable performance measurements, cycled
@@ -35,3 +39,22 @@ extends Resource
 ## Array[String], not PackedStringArray: Godot 4.7.2's export conversion of
 ## text resources dropped a PackedStringArray here (seen on device 2026-10-24).
 @export var debug_viewpoint_names: Array[String] = []
+
+
+## Whether every required file can be loaded.
+func is_available() -> bool:
+	for path in required_files:
+		if not is_loadable(path):
+			return false
+	return true
+
+
+## Whether `path` can be loaded. For an imported file that is its import
+## result, named in its .import file: an exported build carries only the
+## result, and in a checkout the committed .import exists before the source
+## file is generated and imported.
+static func is_loadable(path: String) -> bool:
+	var config := ConfigFile.new()
+	if config.load(path + ".import") != OK:
+		return FileAccess.file_exists(path)
+	return FileAccess.file_exists(str(config.get_value("remap", "path", "")))
