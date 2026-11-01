@@ -25031,10 +25031,8 @@
  <node id="4924038719" visible="true" version="4" changeset="149009518" timestamp="2024-03-22T11:49:56Z" user="Mateusz Konieczny - bot account" uid="3199858" lat="41.0280326" lon="28.9743093">
   <tag k="amenity" v="restaurant" />
   <tag k="cuisine" v="turkish" />
-  <tag k="description" v="Wifi Password: 02122432416" />
   <tag k="internet_access" v="wlan" />
   <tag k="internet_access:fee" v="no" />
-  <tag k="internet_access:password" v="02122432416" />
   <tag k="name" v="Sokak Kahvesi" />
   <tag k="wheelchair" v="no" />
  </node>
