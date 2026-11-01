@@ -19,7 +19,9 @@ const USER_PATH := "user://perf_bench.json"
 ## interpolation, the player's physics processing, the parked vehicles,
 ## the radius (m) around the player beyond which map colliders are switched
 ## off (0 = all), the V-Sync mode, whether parked vehicles may sleep, the
-## NPCs, and whether far NPCs may skip the controller (Npc far mode).
+## NPCs, whether far NPCs may skip the controller (Npc far mode), and, on a
+## map that reads them (the shader facade map), the facade material, its
+## render priority, and a warm-up draw of it after loading.
 const RUNTIME_KEYS := {
 	"physics_ticks": TYPE_INT,
 	"physics_interpolation": TYPE_BOOL,
@@ -30,7 +32,11 @@ const RUNTIME_KEYS := {
 	"npc_far_mode": TYPE_BOOL,
 	"collider_radius": TYPE_FLOAT,
 	"vsync_mode": TYPE_STRING,
+	"facade_material": TYPE_STRING,
+	"facade_warmup": TYPE_BOOL,
+	"facade_priority": TYPE_INT,
 }
+const FACADE_MATERIALS := ["shader", "flat", "simple"]
 ## Device scenarios (DeviceScenario) and the keys of a "scenario" section.
 const SCENARIOS := ["vehicle_sleep", "orientation", "extensibility", "map_switch"]
 const _SCENARIO_KEYS := ["name", "rotate_hold_s", "quit_when_done", "maps", "hold_s"]
@@ -57,6 +63,9 @@ var quit_when_done := true
 ## Measure from the driver's seat of the map's first vehicle (moved to each
 ## viewpoint, no pedal pressed, so it holds still).
 var in_vehicle := false
+## Also sample the warm-up, measure the GPU time per frame, count pipeline
+## compilations, and keep every frame's times in the results (PerfBenchmark).
+var trace := false
 
 ## Device scenario to play (SCENARIOS), or "" for none.
 var scenario := ""
@@ -68,7 +77,7 @@ var scenario_rotate_hold_s := 0.0
 var scenario_maps: Array[String] = []
 var scenario_hold_s := 20.0
 
-const _BENCH_KEYS := ["warmup_s", "measure_s", "views", "session_minutes", "session_view", "screenshots", "quit_when_done", "in_vehicle"]
+const _BENCH_KEYS := ["warmup_s", "measure_s", "views", "session_minutes", "session_view", "screenshots", "quit_when_done", "in_vehicle", "trace"]
 
 
 ## Why the last from_dict() call returned null.
@@ -115,6 +124,7 @@ static func from_dict(data: Dictionary) -> PerfConfig:
 		config.screenshots = bool(bench_data.get("screenshots", true))
 		config.quit_when_done = bool(bench_data.get("quit_when_done", true))
 		config.in_vehicle = bool(bench_data.get("in_vehicle", false))
+		config.trace = bool(bench_data.get("trace", false))
 	if data.has("scenario"):
 		error = _parse_scenario(data.scenario, config)
 		if not error.is_empty():
@@ -207,6 +217,8 @@ static func _parse_runtime(data: Variant, out: Dictionary) -> String:
 				out[key] = str(data[key])
 	if out.has("vsync_mode") and out.vsync_mode not in VSYNC_MODES:
 		return "bad vsync_mode '%s'" % out.vsync_mode
+	if out.has("facade_material") and out.facade_material not in FACADE_MATERIALS:
+		return "bad facade_material '%s'" % out.facade_material
 	if out.has("physics_ticks") and out.physics_ticks < 1:
 		return "bad physics_ticks %d" % out.physics_ticks
 	return ""

@@ -73,6 +73,14 @@ func test_frame_stats() -> void:
 	check(PerfBenchmark.frame_stats(PackedInt64Array(), 1.0).frames == 0, "empty window")
 
 
+func test_trace_and_facade_keys() -> void:
+	var config := PerfConfig.from_dict({"experiment": "t", "runtime": {"facade_material": "flat", "facade_warmup": true, "facade_priority": -1}, "bench": {"trace": true}})
+	check(config != null and config.trace and config.runtime == {"facade_material": "flat", "facade_warmup": true, "facade_priority": -1}, "trace and facade keys read (%s)" % PerfConfig.last_error)
+	check(not PerfConfig.from_dict({"experiment": "t", "bench": {}}).trace, "no trace by default")
+	check(PerfConfig.from_dict({"runtime": {"facade_material": "glass"}}) == null and PerfConfig.last_error.contains("glass"), "unknown facade material rejected")
+	check(PerfBenchmark._joined_ms(PackedInt64Array([33300, 41660, 0])) == "33.3,41.7,0.0", "trace values in ms with one decimal")
+
+
 func test_view_slug() -> void:
 	check(PerfBenchmark.view_slug("Karaköy street, facing north") == "karakoy", "Turkish letters to ASCII")
 	check(PerfBenchmark.view_slug("Spawn") == "spawn", "plain name")

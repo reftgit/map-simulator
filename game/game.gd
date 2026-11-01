@@ -286,6 +286,9 @@ func apply_runtime_settings(runtime: Dictionary) -> void:
 		DisplayServer.window_set_vsync_mode(PerfConfig.VSYNC_MODES[runtime.vsync_mode])
 	_collider_radius = runtime.get("collider_radius", -1.0)
 	update_far_colliders(player.global_position)
+	# Map-specific keys (the shader facade map's facade_material, facade_warmup).
+	if world.map_root.has_method(&"apply_runtime_settings"):
+		world.map_root.apply_runtime_settings(runtime, camera_rig.camera)
 	if not runtime.is_empty():
 		print("RUNTIME ", JSON.stringify(runtime))
 

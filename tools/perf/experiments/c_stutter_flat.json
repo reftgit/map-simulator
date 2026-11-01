@@ -1,0 +1,1 @@
+{"experiment": "c_stutter_flat", "profile": "low", "map": "istanbul_halic_cells_shader", "runtime": {"facade_material": "flat"}, "bench": {"trace": true}}

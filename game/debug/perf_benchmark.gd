@@ -4,6 +4,9 @@ extends Node
 ## frame times, physics tick time, and render counters; or one long session at
 ## a single viewpoint with per-minute results. With in_vehicle, the player
 ## sits in the map's first vehicle, which is moved to each viewpoint.
+## With trace, the warm-up is sampled too, the GPU time of each frame is
+## measured, pipeline compilations are counted, and every frame's times are
+## kept in the results (tools/perf/trace_summary.py reads them).
 ## Writes user://bench_results.json, logs one "BENCH {json}" line per result,
 ## saves screenshots under user://bench/, and quits the app when done (unless
 ## quit_when_done is false). On Android the results and screenshots also go to
@@ -18,6 +21,11 @@ const SCREENSHOT_WIDTH := 640
 ## Frame-time histogram: 1 ms bins from 0 to HISTOGRAM_MS - 1, last bin for
 ## longer frames.
 const HISTOGRAM_MS := 100
+## Godot's pipeline compilation counters (RenderingServer.get_rendering_info),
+## by what triggered them; DRAW and SPECIALIZATION happen while drawing.
+const PIPELINE_INFO := [RenderingServer.RENDERING_INFO_PIPELINE_COMPILATIONS_CANVAS,
+		RenderingServer.RENDERING_INFO_PIPELINE_COMPILATIONS_MESH, RenderingServer.RENDERING_INFO_PIPELINE_COMPILATIONS_SURFACE,
+		RenderingServer.RENDERING_INFO_PIPELINE_COMPILATIONS_DRAW, RenderingServer.RENDERING_INFO_PIPELINE_COMPILATIONS_SPECIALIZATION]
 
 var config: PerfConfig
 var game: Node
@@ -33,6 +41,8 @@ func _ready() -> void:
 
 
 func _run() -> void:
+	if config.trace:
+		RenderingServer.viewport_set_measure_render_time(get_viewport().get_viewport_rid(), true)
 	var names: Array[String] = game.get_view_names()
 	if config.session_minutes > 0:
 		var view := config.session_view if not config.session_view.is_empty() else names[0]
@@ -66,9 +76,17 @@ func _go_to(view: String) -> void:
 
 func _measure_view(view: String) -> void:
 	_go_to(view)
-	await _wait_seconds(config.warmup_s)
+	var warmup := {}
+	if config.trace:
+		warmup = await _sample(config.warmup_s)
+	else:
+		await _wait_seconds(config.warmup_s)
 	var result := await _sample(config.measure_s)
 	result["view"] = view
+	if config.trace:
+		result["warmup_long_frames"] = warmup.long_frames
+		result["warmup_pipelines"] = warmup.pipelines
+		result["trace"] = {"warmup": warmup.trace, "measure": result.trace}
 	_record(result)
 	if config.screenshots:
 		await _screenshot(view)
@@ -96,6 +114,13 @@ func _sample(seconds: float) -> Dictionary:
 	var vehicles: Array[VehicleController] = game.world.vehicles
 	var asleep_samples := 0
 	var near_samples := 0
+	# With trace: GPU and render CPU time per frame (µs), pipeline compilations.
+	var viewport := get_viewport().get_viewport_rid()
+	var gpu_us: PackedInt64Array = []
+	var render_cpu_us: PackedInt64Array = []
+	var pipeline_events := []  # [frame index, compilations per PIPELINE_INFO source]
+	var pipelines_before := pipeline_compilations()
+	var pipelines_last := pipelines_before
 	var start := Time.get_ticks_usec()
 	var last := start
 	var next_counter := start
@@ -104,6 +129,16 @@ func _sample(seconds: float) -> Dictionary:
 		var now := Time.get_ticks_usec()
 		frame_us.append(now - last)
 		last = now
+		if config.trace:
+			gpu_us.append(roundi(RenderingServer.viewport_get_measured_render_time_gpu(viewport) * 1000.0))
+			render_cpu_us.append(roundi((RenderingServer.viewport_get_measured_render_time_cpu(viewport) + RenderingServer.get_frame_setup_time_cpu()) * 1000.0))
+			var pipelines := pipeline_compilations()
+			if pipelines != pipelines_last:
+				var event := [frame_us.size() - 1]
+				for k in pipelines.size():
+					event.append(pipelines[k] - pipelines_last[k])
+				pipeline_events.append(event)
+				pipelines_last = pipelines
 		physics_us.append(roundi(Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1e6))
 		process_us.append(roundi(Performance.get_monitor(Performance.TIME_PROCESS) * 1e6))
 		for vehicle in vehicles:
@@ -132,7 +167,32 @@ func _sample(seconds: float) -> Dictionary:
 	stats["video_mem_mb"] = roundi(video_mem_max / 1048576.0)
 	stats["static_mem_mb"] = roundi(OS.get_static_memory_usage() / 1048576.0)
 	stats["static_peak_mb"] = roundi(OS.get_static_memory_peak_usage() / 1048576.0)
+	if config.trace:
+		stats.merge(timing_stats("gpu", gpu_us))
+		stats.merge(timing_stats("render_cpu", render_cpu_us))
+		var compiled := []
+		for k in pipelines_last.size():
+			compiled.append(pipelines_last[k] - pipelines_before[k])
+		stats["pipelines"] = compiled
+		stats["trace"] = {"frame_ms": _joined_ms(frame_us), "gpu_ms": _joined_ms(gpu_us), "render_cpu_ms": _joined_ms(render_cpu_us),
+				"pipelines": pipeline_events}
 	return stats
+
+
+## Pipeline compilations so far, per PIPELINE_INFO source.
+static func pipeline_compilations() -> Array[int]:
+	var counts: Array[int] = []
+	for info: int in PIPELINE_INFO:
+		counts.append(RenderingServer.get_rendering_info(info))
+	return counts
+
+
+## Microseconds as comma-separated milliseconds with one decimal (compact traces).
+static func _joined_ms(samples_us: PackedInt64Array) -> String:
+	var parts := PackedStringArray()
+	for us in samples_us:
+		parts.append(str(snappedf(us / 1000.0, 0.1)))
+	return ",".join(parts)
 
 
 ## Average FPS over the window, "1% low" (FPS at the 99th-percentile frame
@@ -205,7 +265,9 @@ func _record(result: Dictionary) -> void:
 	result["renderer"] = RenderingServer.get_current_rendering_method()
 	result["window"] = str(Platform.current().window_size())
 	results.append(result)
-	print("BENCH ", JSON.stringify(result))
+	var logged := result.duplicate()
+	logged.erase("trace")  # every frame's times: in the results file only
+	print("BENCH ", JSON.stringify(logged))
 
 
 func _wait_seconds(seconds: float) -> void:

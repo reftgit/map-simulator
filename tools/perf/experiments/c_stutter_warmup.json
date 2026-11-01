@@ -1,0 +1,1 @@
+{"experiment": "c_stutter_warmup", "profile": "low", "map": "istanbul_halic_cells_shader", "runtime": {"facade_warmup": true}, "bench": {"trace": true}}
