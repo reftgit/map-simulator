@@ -6,6 +6,9 @@
 /assets/istanbul_halic.glb
 # The cells map's GLB is generated on each machine (same README, "The cells map").
 /assets/istanbul_halic_cells.glb
+# The experimental facade variants of the cells map, generated the same way.
+/assets/istanbul_halic_cells_light.glb
+/assets/istanbul_halic_cells_shader.glb
 
 # Export output and platform build templates. build/.gdignore is tracked so
 # Godot never scans or packs build output (e.g. Xcode's CgBI PNGs).

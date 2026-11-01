@@ -1,0 +1,1 @@
+{"experiment": "c_cells_light_low_vis150_nofog", "profile": "low", "map": "istanbul_halic_cells_light", "visibility_end": {"trees": 150, "lamps": 150, "decor": 150, "facade_detail": 150}, "fog": false, "bench": {}}

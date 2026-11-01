@@ -130,7 +130,11 @@ func test_imported_files_count_once_imported() -> void:
 func test_istanbul_cells_map_is_registered_after_the_test_district() -> void:
 	var registry := MapRegistry.load_default()
 	var cells := registry.find("istanbul_halic_cells")
-	check(cells != null and registry.ids() == (["istanbul_halic", "test_district", "istanbul_halic_cells"] as Array[String]), "registry order (%s)" % [registry.ids()])
+	check(cells != null and registry.ids() == (["istanbul_halic", "test_district", "istanbul_halic_cells", "istanbul_halic_cells_light", "istanbul_halic_cells_shader"] as Array[String]), "registry order (%s)" % [registry.ids()])
+	for variant in ["istanbul_halic_cells_light", "istanbul_halic_cells_shader"]:
+		check(registry.find(variant).required_files == (["res://assets/%s.glb" % variant] as Array[String]), "%s needs its generated GLB" % variant)
+		check(FileAccess.file_exists("res://assets/%s.glb.import" % variant), "%s: the GLB's import settings are committed" % variant)
+		check("/assets/%s.glb" % variant in FileAccess.get_file_as_string("res://.gitignore").split("\n"), "%s: the GLB is kept out of Git" % variant)
 	check(cells.required_files == (["res://assets/istanbul_halic_cells.glb"] as Array[String]), "the cells map needs its generated GLB")
 	check(registry.default_map().required_files.is_empty() and registry.find("test_district").is_available(), "İstanbul and the test district need no generated file")
 	check(FileAccess.file_exists("res://assets/istanbul_halic_cells.glb.import"), "the cells GLB's import settings are committed")

@@ -8,8 +8,8 @@ shader_type spatial;
 //          that are not panels (roofs, doors, balconies), which keep their vertex colour
 //   COLOR: the wall colour (linear, as the palette material reads it); alpha a per-wall seed
 // The layout constants repeat build_map.py. Edges are box-filtered over one pixel, and where
-// a window gets smaller than a few pixels the pattern fades to its average colour, so it does
-// not shimmer in the distance.
+// a window gets smaller than about two pixels (more than 0.35-0.9 m of wall per pixel) the
+// pattern fades to its average colour, so it does not shimmer in the distance.
 
 uniform vec3 frame_color : source_color = vec3(0.878431, 0.839216, 0.729412); // LIGHT E0D6BA
 uniform vec3 glass_color : source_color = vec3(0.227451, 0.313726, 0.341176); // DARK 3A5057
@@ -76,7 +76,7 @@ void fragment() {
 		vec3 average = albedo * (1.0 - frame_share) + frame_color * (frame_share - glass_share) + glass_color * glass_share;
 		float in_window_rows = step(1.18, wall.y) * step(wall.y, 1.18 + floors * 3.3);
 		average = mix(albedo, average, in_window_rows);
-		float distant = smoothstep(0.12, 0.4, max(pixel.x, pixel.y));
+		float distant = smoothstep(0.35, 0.9, max(pixel.x, pixel.y));
 		albedo = mix(pattern, average, distant);
 	}
 	ALBEDO = albedo;
