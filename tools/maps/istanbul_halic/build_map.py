@@ -1,10 +1,11 @@
 """Deterministic Istanbul environment from the bundled OpenStreetMap extract.
 Python 3.11+; pip install -r requirements.txt (pinned versions)
-Run from anywhere: python build_map.py [--source DIR] [--out DIR] [--detail-cell METRES]
+Run from anywhere: python build_map.py [--source DIR] [--out DIR] [--detail-cell METRES] [--facade full|light]
 Inputs are only read from --source (default: maps/istanbul_halic/source);
 every output goes to --out (default: build/maps/istanbul_halic, ignored by Git).
 --detail-cell groups facade detail, tree crowns, and shrubs into smaller cells
 inside each 150 m chunk (by object centre; no geometry changes); off by default.
+--facade light draws the facade detail with fewer triangles (full: unchanged).
 Coordinates inside this generator: east, north, up, in metres.
 Export: glTF/Godot +X east, +Y up, -Z north. Origin 28.975 E, 41.023 N.
 """
@@ -24,8 +25,11 @@ cli.add_argument('--source', type=Path, default=REPO/'maps/istanbul_halic/source
 cli.add_argument('--out', type=Path, default=REPO/'build/maps/istanbul_halic', help='output folder, created if missing (default: %(default)s)')
 cli.add_argument('--detail-cell', type=float, metavar='METRES', help='mesh Detail_*, Trees_*, and Shrubs_* per cell of this size inside each 150 m chunk, '
                  'named <Category>_<cx>_<cy>_<i>_<j>; each building, tree, or shrub goes whole into the cell of its centre (default: off, one mesh per chunk)')
+cli.add_argument('--facade', choices=['full', 'light'], default='full',
+                 help='facade detail of ordinary buildings: full (the original geometry) or light (no windows facing a taller neighbour within '
+                 '1 m, no mullions or sills, flat railings); everything else is unchanged (default: %(default)s)')
 opts = cli.parse_args()
-SOURCE = opts.source.resolve(); OUT = opts.out.resolve(); CELL = opts.detail_cell
+SOURCE = opts.source.resolve(); OUT = opts.out.resolve(); CELL = opts.detail_cell; FACADE = opts.facade
 if OUT == SOURCE or SOURCE in OUT.parents: cli.error('--out must not be inside --source')
 if CELL is not None and not 0 < CELL < 150: cli.error('--detail-cell must be more than 0 and less than 150 metres')
 OUT.mkdir(parents=True, exist_ok=True)
@@ -122,6 +126,10 @@ def dome(m,c,r,col,levels=7,n=24):
             a=k*math.tau/n;b=(k+1)*math.tau/n
             p=[(x+r*math.cos(t)*math.cos(u),y+r*math.cos(t)*math.sin(u),z+r*math.sin(t)) for t,u in [(t0,a),(t0,b),(t1,b),(t1,a)]]
             m.face(p,col)
+def strip(m,a,b,r,col,n):
+    # A flat bar of width 2r facing n (the light facade's railings).
+    a=np.array(a);b=np.array(b);w=np.cross(n,b-a);w=w/np.linalg.norm(w)*r
+    m.face([a-w,b-w,b+w,a+w],col)
 def bar(m,a,b,r,col):
     a=np.array(a);b=np.array(b);d=b-a;d/=np.linalg.norm(d)
     up=np.array([0.,0.,1.]);u=np.cross(d,up)
@@ -206,6 +214,8 @@ for wid,w in ways.items():
         surf(chunk('Road',cx,cy),tr,rgb('737B79') if kind in ['pedestrian','footway','steps','path'] else rgb('535F61'),lambda x,y:height(x,y)+.20)
 print('Building facades',len(buildings),flush=True)
 records=[];estimated=0
+# --facade light: footprints and roof heights, then windows and bands emitted after all heights are known.
+TOPS=[];WINDOWS=[];BANDS=[]
 height_overrides=json.loads((SOURCE/'building_height_overrides.json').read_text())
 for p,t,wid in buildings:
  x,y=p.centroid.coords[0];p=orient(p.simplify(.16,preserve_topology=True),1)
@@ -219,7 +229,7 @@ for p,t,wid in buildings:
  except Exception:h=RNG.choice([10.5,13,16,19,22,25]);sourced=False;estimated+=1
  if not sourced and wid in height_overrides:h=height_overrides[wid]
  if p.area<40:h=min(h,13)
- h=max(4,min(h,42));zt=zg+h
+ h=max(4,min(h,42));zt=zg+h;TOPS.append((p,zt))
  m=chunk('Buildings',x,y,True);d=chunk('Detail',x,y)
  color=RNG.choice(PALETTE);extrude(m,p,zlow,zt,color)
  roof=RNG.choice(ROOFS)
@@ -238,12 +248,15 @@ for p,t,wid in buildings:
     nx,ny=dy/length,-dx/length;ux,uy=dx/length,dy/length
     ncol=max(1,int(length/3.3));nfloor=max(1,int((zt-zg-1)/3.3))
     # Thin cornice and regularly spaced low-cost window quads.
-    d.face([(a[0]+nx*.12,a[1]+ny*.12,zt-.45),(b[0]+nx*.12,b[1]+ny*.12,zt-.45),(b[0]+nx*.12,b[1]+ny*.12,zt-.13),(a[0]+nx*.12,a[1]+ny*.12,zt-.13)],LIGHT)
+    if FACADE=='light':BANDS.append((d,len(TOPS)-1,a,b,nx,ny,.12,zt-.45,zt-.13))
+    else:d.face([(a[0]+nx*.12,a[1]+ny*.12,zt-.45),(b[0]+nx*.12,b[1]+ny*.12,zt-.45),(b[0]+nx*.12,b[1]+ny*.12,zt-.13),(a[0]+nx*.12,a[1]+ny*.12,zt-.13)],LIGHT)
     for floor in range(nfloor):
      wz=zg+1.3+floor*3.3
      for col in range(ncol):
         tpos=(col+.5)/ncol;wx=a[0]+tpos*dx+nx*.025;wy=a[1]+tpos*dy+ny*.025;ww=min(1.2,length/ncol*.43)
         glass=DARK if RNG.random()<.88 else rgb('80918E')
+        if FACADE=='light':
+            WINDOWS.append((d,len(TOPS)-1,wx,wy,nx,ny,ux,uy,wz,ww,glass,j==0 and floor in [1,2] and col%3==0 and int(wid)%7==0));continue
         # Contrasting surround, recessed glass, a thin sill and central mullion.
         fw=ww/2+.12
         d.face([(wx-ux*fw,wy-uy*fw,wz-.12),(wx+ux*fw,wy+uy*fw,wz-.12),(wx+ux*fw,wy+uy*fw,wz+1.78),(wx-ux*fw,wy-uy*fw,wz+1.78)],LIGHT)
@@ -265,6 +278,7 @@ for p,t,wid in buildings:
                 pp=center+np.array([ux,uy])*off+np.array([nx,ny])*.5
                 bar(d,(*pp,wz),(*pp,wz+.85),.025,METAL)
     for zz in np.arange(zg+3.1,zt-1,6.6):
+        if FACADE=='light':BANDS.append((d,len(TOPS)-1,a,b,nx,ny,.045,zz,zz+.13));continue
         d.face([(a[0]+nx*.045,a[1]+ny*.045,zz),(b[0]+nx*.045,b[1]+ny*.045,zz),(b[0]+nx*.045,b[1]+ny*.045,zz+.13),(a[0]+nx*.045,a[1]+ny*.045,zz+.13)],LIGHT)
     if j==0:
         mid=((a[0]+b[0])/2,(a[1]+b[1])/2);doorbase=height(*mid)+.22;dw=min(1.1,length*.16)
@@ -277,6 +291,42 @@ for p,t,wid in buildings:
  if p.area>70 and int(wid)%3==0:
     q=p.representative_point();cube(d,(q.x,q.y,zt+2.1),(1,1,2.4),rgb('AE8068'));cube(d,(q.x,q.y,zt+3.35),(1.3,1.3,.2),LIGHT)
  records.append({'osm_id':wid,'name':name,'east':round(x,2),'north':round(y,2),'height_m':round(h,2),'height_source':'osm' if sourced else 'estimated'})
+
+if FACADE=='light':
+    # A window (or band) is hidden when the point 1 m in front of it lies inside another building whose roof is above its top.
+    from shapely import STRtree, points
+    tree=STRtree([q for q,top in TOPS]);ROOF=np.array([top for q,top in TOPS])
+    def hidden(owner,xy,top):
+        if not len(xy):return np.zeros(0,bool)
+        xy=np.asarray(xy,dtype=float);found=np.zeros(len(xy),bool);pi,gi=tree.query(points(xy),predicate='within')
+        ok=(gi!=np.asarray(owner)[pi])&(ROOF[gi]>=np.asarray(top)[pi]);found[pi[ok]]=True
+        return found
+    unseen=hidden([w[1] for w in WINDOWS],[(w[2]+w[4]*.975,w[3]+w[5]*.975) for w in WINDOWS],[w[8]+1.78 for w in WINDOWS])
+    for w,out in zip(WINDOWS,unseen):
+        if out:continue
+        d,_,wx,wy,nx,ny,ux,uy,wz,ww,glass,balcony=w;fw=ww/2+.12
+        # Surround and glass as in full; no mullion or sill.
+        d.face([(wx-ux*fw,wy-uy*fw,wz-.12),(wx+ux*fw,wy+uy*fw,wz-.12),(wx+ux*fw,wy+uy*fw,wz+1.78),(wx-ux*fw,wy-uy*fw,wz+1.78)],LIGHT)
+        wx+=nx*.025;wy+=ny*.025
+        d.face([(wx-ux*ww/2,wy-uy*ww/2,wz),(wx+ux*ww/2,wy+uy*ww/2,wz),(wx+ux*ww/2,wy+uy*ww/2,wz+1.65),(wx-ux*ww/2,wy-uy*ww/2,wz+1.65)],glass)
+        if balcony:
+            # The slab as in full, the railing from flat bars.
+            n3=np.array([nx,ny,0.]);center=np.array([wx,wy])+np.array([nx,ny])*.55
+            cube(d,(*center,wz-.12),(ww+1,1.2,.18),LIGHT,math.atan2(uy,ux))
+            for offset in [-.5,.5]:
+                p0=center+np.array([ux,uy])*offset*(ww+1)+np.array([nx,ny])*.5
+                strip(d,(*p0,wz),(*p0,wz+.85),.04,METAL,n3)
+            p0=center-np.array([ux,uy])*(ww+1)*.5+np.array([nx,ny])*.5;p1=center+np.array([ux,uy])*(ww+1)*.5+np.array([nx,ny])*.5
+            strip(d,(*p0,wz+.85),(*p1,wz+.85),.055,METAL,n3)
+            for off in np.arange(-ww*.5,ww*.5+.1,.35):
+                pp=center+np.array([ux,uy])*off+np.array([nx,ny])*.5
+                strip(d,(*pp,wz),(*pp,wz+.85),.025,METAL,n3)
+    # A band goes when it is hidden at a quarter, half, and three quarters of its wall.
+    samples=[(a[0]+(b[0]-a[0])*t+nx,a[1]+(b[1]-a[1])*t+ny) for d,_,a,b,nx,ny,o,z0,z1 in BANDS for t in (.25,.5,.75)]
+    gone=hidden([bd[1] for bd in BANDS for t in range(3)],samples,[bd[8] for bd in BANDS for t in range(3)]).reshape(-1,3).all(axis=1) if BANDS else []
+    for (d,_,a,b,nx,ny,o,z0,z1),out in zip(BANDS,gone):
+        if not out:d.face([(a[0]+nx*o,a[1]+ny*o,z0),(b[0]+nx*o,b[1]+ny*o,z0),(b[0]+nx*o,b[1]+ny*o,z1),(a[0]+nx*o,a[1]+ny*o,z1)],LIGHT)
+    print('FACADE light: hidden windows',int(unseen.sum()),'of',len(WINDOWS),'bands',int(np.sum(gone)),'of',len(BANDS),flush=True)
 
 from architecture import Architecture
 ARCH=Architecture(globals())
@@ -425,6 +475,7 @@ def export_glb(path):
 stats=export_glb(OUT/'istanbul_halic.glb')
 stats.update(street_details=street_metadata['counts'],bridge_main_span_m=180,vegetation=vegetation_stats,buildings=len(records),estimated_building_heights=estimated,road_ways=road_count,trees=tree_count,dimensions_m=[round(BOUNDS[2]-BOUNDS[0]),round(BOUNDS[3]-BOUNDS[1])],land_area_km2=round(LAND.area/1e6,3),origin=[28.975,41.023],bbox=BBOX,mosques=sum(is_mosque(t) for p,t,wid in landmarks),cars=0,trams=0,elevation_min_m=float(HG.min()),elevation_max_m=float(HG.max()),elevation_source="Mapzen/Tilezen Terrain Tiles")
 if CELL:stats['detail_cell_m']=CELL
+if FACADE!='full':stats['facade']=FACADE
 (OUT/'buildings.json').write_text(json.dumps(records,ensure_ascii=False,indent=2))
 (OUT/'statistics.json').write_text(json.dumps(stats,indent=2))
 (OUT/'spawn.json').write_text(json.dumps({'bridge':[*bridge_xy(length*.78,17),bridge_z(length*.78)],'galata':[*ll(28.97417,41.02563),height(*ll(28.97417,41.02563))]},indent=2))

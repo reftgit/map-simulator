@@ -7,6 +7,10 @@ Exit code 0 when the GLBs are byte-identical, 1 otherwise.
 --grouped: --out was built with build_map.py --detail-cell and the reference without it
 (default build/maps/istanbul_halic); checks that only the grouping of the cell
 categories changed (exit code 0 when it did, 1 otherwise).
+--facade: --out was built with --facade light (or another variant) and the reference with
+--facade full and the same --detail-cell (default build/maps/istanbul_halic_cells); checks
+that only the Detail_* meshes changed and prints their triangle reduction (exit code 0
+when nothing else changed, 1 otherwise).
 """
 from pathlib import Path
 import argparse, collections, hashlib, json, struct
@@ -18,6 +22,7 @@ WIDTHS = {'SCALAR': 1, 'VEC3': 3, 'VEC4': 4}
 ATTRIBUTES = ['POSITION', 'NORMAL', 'COLOR_0']
 GROUPED = ['Detail', 'Trees', 'Shrubs']  # build_map.py CELLED
 PLAIN_RUN = REPO/'build/maps/istanbul_halic'
+CELLS_RUN = REPO/'build/maps/istanbul_halic_cells'
 
 
 class Glb:
@@ -176,6 +181,46 @@ def compare_grouping(a, b):
     return not failures
 
 
+def compare_facade(a, b):
+    """Whether `a` holds the meshes of `b` with only the Detail_* meshes changed (same names); prints their reduction."""
+    print(f'GLB out:       {a.path}  sha256 {sha256(a.path)}  {a.path.stat().st_size} bytes')
+    print(f'GLB reference: {b.path}  sha256 {sha256(b.path)}  {b.path.stat().st_size} bytes')
+    failures = []
+    for key in ['asset', 'extras']:
+        if a.json.get(key) != b.json.get(key):
+            failures.append(f'header {key} differs')
+    materials_a, materials_b = a.json['materials'], b.json['materials']
+    if materials_a[:len(materials_b)] != materials_b:
+        failures.append('the reference materials changed')
+    print(f'materials: {len(materials_a)} vs {len(materials_b)}, added: {[m["name"] for m in materials_a[len(materials_b):]]}')
+    detail = lambda name: name.startswith('Detail_')
+    others = [n for n in b.meshes if not detail(n)]
+    if sorted(n for n in a.meshes if not detail(n)) != sorted(others):
+        failures.append('the meshes outside Detail_* have other names')
+    same = lambda n: n in a.meshes and same_bytes(a, b, n) and a.meshes[n]['attributes'].keys() == b.meshes[n]['attributes'].keys() \
+        and a.meshes[n].get('material') == b.meshes[n].get('material')
+    identical = sum(1 for n in others if same(n))
+    colliders = [n for n in a.meshes if n.endswith('-col')]
+    print(f'meshes outside Detail_*: {identical} of {len(others)} byte-identical (attributes, indices, material); '
+          f'-col meshes {len(colliders)} vs {sum(1 for n in b.meshes if n.endswith("-col"))}')
+    if identical != len(others):
+        failures.append(f'{len(others) - identical} meshes outside Detail_* differ')
+    mine, theirs = [n for n in a.meshes if detail(n)], [n for n in b.meshes if detail(n)]
+    if sorted(mine) != sorted(theirs):
+        failures.append('the Detail_* meshes have other names')
+    ta, tb = sum(a.counts(n)[1] for n in mine), sum(b.counts(n)[1] for n in theirs)
+    va, vb = sum(a.counts(n)[0] for n in mine), sum(b.counts(n)[0] for n in theirs)
+    attributes = sorted({k for n in mine for k in a.meshes[n]['attributes']})
+    print(f'Detail_*: {len(mine)} meshes; triangles {ta} vs {tb} ({100 * (1 - ta / tb):.2f} % fewer), '
+          f'vertices {va} vs {vb} ({100 * (1 - va / vb):.2f} % fewer), attributes {attributes}')
+    totals = [(sum(g.counts(n)[1] for n in g.meshes), sum(g.counts(n)[0] for n in g.meshes)) for g in (a, b)]
+    print(f'all meshes: triangles {totals[0][0]} vs {totals[1][0]}, vertices {totals[0][1]} vs {totals[1][1]}')
+    for failure in failures:
+        print(f'FAIL {failure}')
+    print(f'only Detail_* changed: {"PASS" if not failures else "FAIL"}')
+    return not failures
+
+
 def compare_json(out_dir, reference_dir, reference_metadata):
     pairs = [(out_dir / f.name, f) for f in sorted(reference_dir.glob('*.json')) if f.name != 'map_metadata.json']
     pairs.append((out_dir / 'map_metadata.json', reference_metadata))
@@ -202,17 +247,19 @@ def main():
     cli.add_argument('--out', type=Path, default=PLAIN_RUN, help='generated folder (default: %(default)s)')
     cli.add_argument('--grouped', action='store_true', help='--out was built with --detail-cell: check that only the cell grouping changed '
                      f'(references default to the run without it, {PLAIN_RUN})')
+    cli.add_argument('--facade', action='store_true', help='--out was built with a --facade variant: check that only Detail_* changed '
+                     f'(references default to the full build with cells, {CELLS_RUN})')
     cli.add_argument('--reference-glb', type=Path, help='default: assets/istanbul_halic.glb')
     cli.add_argument('--reference-json', type=Path, help='default: maps/istanbul_halic/reference')
     cli.add_argument('--reference-metadata', type=Path, help='default: assets/map_metadata.json')
     opts = cli.parse_args()
-    plain = PLAIN_RUN if opts.grouped else None
+    plain = PLAIN_RUN if opts.grouped else CELLS_RUN if opts.facade else None
     a = Glb(opts.out/'istanbul_halic.glb')
     b = Glb(opts.reference_glb or (plain/'istanbul_halic.glb' if plain else REPO/'assets/istanbul_halic.glb'))
-    passed = compare_grouping(a, b) if opts.grouped else compare_glb(a, b)
+    passed = compare_grouping(a, b) if opts.grouped else compare_facade(a, b) if opts.facade else compare_glb(a, b)
     compare_json(opts.out, opts.reference_json or plain or REPO/'maps/istanbul_halic/reference',
                  opts.reference_metadata or (plain/'map_metadata.json' if plain else REPO/'assets/map_metadata.json'))
-    raise SystemExit(0 if (passed if opts.grouped else sha256(a.path) == sha256(b.path)) else 1)
+    raise SystemExit(0 if (passed if opts.grouped or opts.facade else sha256(a.path) == sha256(b.path)) else 1)
 
 
 if __name__ == '__main__':
