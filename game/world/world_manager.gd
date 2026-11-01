@@ -6,7 +6,14 @@ extends Node3D
 ## themselves) and places its NPCs. Knows nothing about input, camera, or UI.
 
 signal map_loaded(definition: MapDefinition)
+## unload_map_and_wait() has seen the map `id`, its vehicles, and its NPCs freed.
+signal map_unloaded(id: String)
 signal body_respawned(body: Node3D)
+
+## Frames unload_map_and_wait() waits after the old map's nodes are gone: the
+## rendering device keeps freed meshes and textures until the frames still in
+## flight (two by default) have finished with them.
+const RELEASE_FRAMES := 3
 
 var definition: MapDefinition
 var map_root: Node
@@ -42,6 +49,29 @@ func unload_map() -> void:
 		npc.queue_free()
 	npcs.clear()
 	definition = null
+
+
+## unload_map(), then waits until the map, its vehicles, and its NPCs are
+## freed (queue_free() frees them at the end of the frame) and RELEASE_FRAMES
+## more frames. A map switch loads the next map only after this, so two maps
+## are never in memory at once (loading one beside the other got the app
+## killed for memory on a 3 GB tablet). Returns the frames it waited.
+func unload_map_and_wait() -> int:
+	var freed := []
+	freed.append_array(vehicles)
+	freed.append_array(npcs)
+	if map_root:
+		freed.append(map_root)
+	var id := definition.id if definition else ""
+	unload_map()
+	var frames := 0
+	while freed.any(func(node: Variant) -> bool: return is_instance_valid(node)):
+		await get_tree().process_frame
+		frames += 1
+	for i in RELEASE_FRAMES:
+		await get_tree().process_frame
+	map_unloaded.emit(id)
+	return frames + RELEASE_FRAMES
 
 
 ## Parks a vehicle at each of the map's vehicle spawns: the spawn's type

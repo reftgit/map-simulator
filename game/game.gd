@@ -30,6 +30,8 @@ var quality_profile := QualityProfiles.NONE
 var startup := {}
 ## Debug builds: punching target near the spawn, toggled from the overlay.
 var training_dummy: TrainingDummy
+## A map switch is in progress (switch_map()).
+var switching := false
 
 var _view_index := 0
 ## Debug builds: the vehicle the CAR button walked up to last.
@@ -109,36 +111,51 @@ func _load_map(definition: MapDefinition) -> void:
 	hud.map_name = definition.id
 
 
-## Replaces the loaded map with `definition`: the old map, its vehicles and
-## NPCs, and the training dummy are freed, the player goes to the new spawn, and the
-## quality profile (and experiment) is applied to the new map. Refused while
-## driving. Returns whether the map was switched.
+## Replaces the loaded map with `definition`: the HUD shows its loading
+## screen and takes the controls away, the old map, its vehicles and NPCs,
+## and the training dummy are freed, and only once they are gone
+## (WorldManager.unload_map_and_wait()) is the new map loaded; the player goes
+## to the new spawn, and the quality profile (and experiment) is applied to
+## the new map. Refused while driving and while another switch is running.
+## A coroutine: returns whether the map was switched once it is loaded.
 func switch_map(definition: MapDefinition) -> bool:
 	if vehicle_interaction.is_driving():
 		print("MAP switch refused: get out of the vehicle first")
 		return false
+	if switching:
+		print("MAP switch refused: a switch is in progress")
+		return false
+	switching = true
 	var started := Time.get_ticks_msec()
+	hud.set_loading(true)
+	# Without a map under it the player would fall until the new one loads.
+	player.process_mode = Node.PROCESS_MODE_DISABLED
 	if training_dummy:
 		toggle_training_dummy()
 	# Back to the scene defaults, so that the new map's RenderSettings
 	# captures those and not the old map's profile values.
 	render_settings.apply({})
 	_static_bodies.clear()
-	hud.input.release_all_touches()
+	var old_id := map_definition.id
+	var frames: int = await world.unload_map_and_wait()
+	var freed_ms := Time.get_ticks_msec() - started
 	_load_map(definition)
+	player.process_mode = Node.PROCESS_MODE_INHERIT
 	if _experiment:
 		apply_runtime_settings(_experiment.runtime)
 	set_quality_profile(quality_profile)
 	_view_index = 0
 	hud.view_name = get_view_names()[0]
-	print("MAP %s loaded in %d ms" % [definition.id, Time.get_ticks_msec() - started])
+	hud.set_loading(false)
+	switching = false
+	print("MAP %s loaded in %d ms (%s freed after %d ms, %d frames)" % [definition.id, Time.get_ticks_msec() - started, old_id, freed_ms, frames])
 	map_changed.emit(definition)
 	return true
 
 
 ## Debug builds: loads the next map of the registry.
 func cycle_map() -> void:
-	switch_map(maps.next_after(map_definition))
+	await switch_map(maps.next_after(map_definition))
 
 
 ## While driving, the vehicle (not the hidden player) is the body that falls

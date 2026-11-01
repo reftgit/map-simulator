@@ -18,6 +18,9 @@ extends Node
 ## the safe area, and the stick once a second, then releases it.
 ## "extensibility" (Phase 5): the debug MAP button to the test district,
 ## the van there, punching an NPC, MAP back, then the "vehicle_sleep" steps.
+## "map_switch": holds each map for scenario_hold_s and switches straight to
+## the next map of scenario_maps (Main.switch_map()), for a host script that
+## samples the app's memory meanwhile (tools/perf/pss_trace.py).
 
 signal finished(results: Array)
 
@@ -51,6 +54,8 @@ func _run() -> void:
 			await _orientation()
 		"extensibility":
 			await _extensibility()
+		"map_switch":
+			await _map_switches()
 	var failed := results.filter(func(r: Dictionary) -> bool: return r.result == "FAIL").size()
 	var passed := results.filter(func(r: Dictionary) -> bool: return r.result == "PASS").size()
 	_log("done", "FAIL" if failed > 0 else "PASS", "passed=%d failed=%d" % [passed, failed])
@@ -207,7 +212,36 @@ func _extensibility() -> void:
 	await _vehicle_sleep()
 
 
-## Taps MAP until the map `id` is loaded (each switch loads synchronously).
+## Holds the first map, then switches to each map of scenario_maps in turn
+## and holds it (scenario_hold_s each). A switch passes when the map is loaded
+## with the player at its spawn and, on a map seen before, the node count it
+## had then; the log gives the time of each switch for the memory samples.
+func _map_switches() -> void:
+	var nodes := {}
+	var first: String = game.map_definition.id
+	_log("hold_" + first, "INFO", "unix %.3f" % Time.get_unix_time_from_system())
+	await _seconds(config.scenario_hold_s)
+	nodes[first] = _node_count()
+	for i in config.scenario_maps.size():
+		var id := config.scenario_maps[i]
+		var from: String = game.map_definition.id
+		_log("switch_%d_start" % (i + 1), "INFO", "%s -> %s, nodes %d, unix %.3f" % [from, id, _node_count(), Time.get_unix_time_from_system()])
+		var started := Time.get_ticks_msec()
+		var switched: bool = await game.switch_map(game.maps.find(id))
+		var took := Time.get_ticks_msec() - started
+		await _seconds(1.0)
+		var spawn: Vector3 = game.map_definition.player_spawn_position
+		var from_spawn := Vector2(game.player.global_position.x - spawn.x, game.player.global_position.z - spawn.z).length()
+		var count := _node_count()
+		var same_count: bool = not nodes.has(id) or nodes[id] == count
+		_check("switch_%d" % (i + 1), switched and game.map_definition.id == id and from_spawn < 0.5 and same_count,
+				"%s -> %s in %d ms, player %.2f m from its spawn, nodes %d (earlier on this map: %s), unix %.3f" % [from, game.map_definition.id, took,
+				from_spawn, count, str(nodes.get(id, "-")), Time.get_unix_time_from_system()])
+		nodes[id] = count
+		await _seconds(config.scenario_hold_s)
+
+
+## Taps MAP until the map `id` is loaded.
 func _switch_map(id: String) -> void:
 	var button: TouchButton = game.hud.get_node("SafeArea/Controls/DebugMapButton")
 	var started := Time.get_ticks_msec()

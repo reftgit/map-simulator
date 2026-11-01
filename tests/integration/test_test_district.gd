@@ -128,14 +128,82 @@ func test_map_switch_frees_the_test_district() -> void:
 	fixture.id = "fixture"
 	fixture.scene_path = "res://tests/fixtures/flat_map.tscn"
 	fixture.player_spawn_position = Vector3(2, 0.1, 3)
-	check(game.switch_map(fixture), "switched to the fixture map")
+	check(await game.switch_map(fixture), "switched to the fixture map")
 	await physics_frames(10)
 	check(not is_instance_valid(old_map) and game.world.vehicles.is_empty() and game.world.npcs.is_empty(), "test district, its vehicles, and its NPCs freed")
-	check(game.switch_map(game.maps.find("test_district")), "switched back")
+	check(await game.switch_map(game.maps.find("test_district")), "switched back")
 	await physics_frames(30)
 	check(game.world.map_root.name == &"TestDistrict" and game.world.vehicles.size() == game.map_definition.vehicle_spawns.size() and game.world.npcs.size() == 3, "test district, its vehicles, and its NPCs again")
 	check(_node_count() == before, "node count back to the start (%d, before %d)" % [_node_count(), before])
 	check(Vector2(player.global_position.x - SPAWN.x, player.global_position.z - SPAWN.z).length() < 0.2 and player.is_on_floor(), "player at the spawn")
+
+
+func test_map_switch_frees_the_old_map_before_loading_the_next() -> void:
+	# Two maps are never in memory at once: the old map, its vehicles, and its
+	# NPCs are freed, and its scene released, before the next map is
+	# instantiated; meanwhile the HUD shows the loading screen without
+	# controls, the player does not fall, and a second switch is refused.
+	await _setup()
+	var before := _node_count()
+	var old_map: Node = game.world.map_root
+	var old_nodes: Array = [old_map]
+	old_nodes.append_array(game.world.vehicles)
+	old_nodes.append_array(game.world.npcs)
+	var removed := 0
+	for node: Node in old_nodes:
+		removed += 1 + node.find_children("*", "", true, false).size()
+	var fixture := MapDefinition.new()
+	fixture.id = "fixture"
+	fixture.scene_path = "res://tests/fixtures/flat_map.tscn"
+	fixture.player_spawn_position = Vector3(2, 0.1, 3)
+	var at_unload := {}
+	game.world.map_unloaded.connect(func(id: String) -> void:
+		at_unload.merge({"id": id, "old_freed": not old_nodes.any(func(node: Variant) -> bool: return is_instance_valid(node)),
+				"map_root": game.world.map_root, "nodes": _node_count(), "cached": ResourceLoader.has_cached(game.maps.find("test_district").scene_path),
+				"loading": game.hud.is_loading(), "controls": input.visible, "player_y": player.global_position.y}), CONNECT_ONE_SHOT)
+	var entered := []
+	game.world.child_entered_tree.connect(func(node: Node) -> void:
+		if node.scene_file_path == fixture.scene_path:
+			entered.append(is_instance_valid(old_nodes[0])))
+	var spawn_y := player.global_position.y
+	var changed := [0]
+	game.map_changed.connect(func(_definition: MapDefinition) -> void: changed[0] += 1)
+	game.switch_map.call_deferred(fixture)
+	await process_frames(1)
+	check(game.switching and game.hud.is_loading() and not input.visible, "switching: loading screen up, controls hidden")
+	check(not (await game.switch_map(game.maps.find("test_district"))), "a second switch while one runs is refused")
+	while changed[0] == 0:
+		await process_frames(1)
+	check(at_unload.get("id") == "test_district" and at_unload.get("old_freed") and at_unload.get("map_root") == null,
+			"the test district, its vehicles, and its NPCs were freed first (%s)" % [at_unload])
+	check(at_unload.get("nodes") == before - removed, "%d nodes gone before the next map (%d of %d left)" % [removed, at_unload.get("nodes", -1), before])
+	check(at_unload.get("cached") == false, "the test district's scene released")
+	check(at_unload.get("loading") and not at_unload.get("controls"), "loading screen without controls while unloading")
+	check(absf(at_unload.get("player_y", 99.0) - spawn_y) < 0.01, "the player did not fall meanwhile")
+	check(entered == [false], "the fixture map entered after the test district was gone (%s)" % [entered])
+	check(not game.switching and not game.hud.is_loading() and input.visible, "loading screen gone, controls back")
+	check(game.map_definition == fixture and game.world.map_root.name == &"FlatMap", "fixture map loaded")
+	await physics_frames(10)
+	check(player.is_on_floor() and player.global_position.distance_to(Vector3(2, 0, 3)) < 0.3, "player on the new spawn's floor (%s)" % player.global_position)
+
+
+func test_device_scenario_map_switch() -> void:
+	# The scenario that switches maps while the host samples memory, here on
+	# the only map without a generated GLB: the test district reloaded twice,
+	# with the same node count each time.
+	await _setup()
+	var config := PerfConfig.from_dict({"experiment": "scenario_test", "scenario": {"name": "map_switch", "maps": ["test_district", "test_district"], "hold_s": 0.5, "quit_when_done": false}})
+	check(config != null and config.scenario_maps == (["test_district", "test_district"] as Array[String]), "map_switch config parsed (%s)" % PerfConfig.last_error)
+	var scenario: DeviceScenario = game.start_scenario(config)
+	var results: Array = await scenario.finished
+	var steps: Array[String] = []
+	for result: Dictionary in results:
+		steps.append(result.step)
+		check(result.result != "FAIL", "%s: %s (%s)" % [result.step, result.result, result.detail])
+	check(steps == (["start", "hold_test_district", "switch_1_start", "switch_1", "switch_2_start", "switch_2", "done"] as Array[String]), "steps %s" % [steps])
+	check(PerfConfig.from_dict({"scenario": {"name": "map_switch"}}) == null and PerfConfig.last_error.contains("needs maps"), "map_switch without maps rejected")
+	check(PerfConfig.from_dict({"scenario": {"name": "map_switch", "maps": ["nowhere"]}}) == null and PerfConfig.last_error.contains("unknown map"), "unknown map rejected")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(PerfBenchmark.RESULTS_PATH))
 
 
 func _tap(button: TouchButton, index: int) -> void:

@@ -32,8 +32,8 @@ const RUNTIME_KEYS := {
 	"vsync_mode": TYPE_STRING,
 }
 ## Device scenarios (DeviceScenario) and the keys of a "scenario" section.
-const SCENARIOS := ["vehicle_sleep", "orientation", "extensibility"]
-const _SCENARIO_KEYS := ["name", "rotate_hold_s", "quit_when_done"]
+const SCENARIOS := ["vehicle_sleep", "orientation", "extensibility", "map_switch"]
+const _SCENARIO_KEYS := ["name", "rotate_hold_s", "quit_when_done", "maps", "hold_s"]
 const VSYNC_MODES := {"disabled": DisplayServer.VSYNC_DISABLED, "enabled": DisplayServer.VSYNC_ENABLED,
 		"adaptive": DisplayServer.VSYNC_ADAPTIVE, "mailbox": DisplayServer.VSYNC_MAILBOX}
 
@@ -63,6 +63,10 @@ var scenario := ""
 ## Seconds the scenario holds the joystick while the device is turned; 0
 ## leaves the orientation steps out of "vehicle_sleep".
 var scenario_rotate_hold_s := 0.0
+## "map_switch": the maps (ids) to switch to in turn, and the seconds each
+## map is held before the next switch.
+var scenario_maps: Array[String] = []
+var scenario_hold_s := 20.0
 
 const _BENCH_KEYS := ["warmup_s", "measure_s", "views", "session_minutes", "session_view", "screenshots", "quit_when_done", "in_vehicle"]
 
@@ -132,6 +136,13 @@ static func _parse_scenario(data: Variant, config: PerfConfig) -> String:
 	config.scenario_rotate_hold_s = float(data.get("rotate_hold_s", 0.0))
 	if config.scenario == "orientation" and config.scenario_rotate_hold_s <= 0.0:
 		return "the orientation scenario needs rotate_hold_s > 0"
+	for id in data.get("maps", []):
+		if MapRegistry.load_default().find(str(id)) == null:
+			return "unknown map '%s'" % id
+		config.scenario_maps.append(str(id))
+	if config.scenario == "map_switch" and config.scenario_maps.is_empty():
+		return "the map_switch scenario needs maps"
+	config.scenario_hold_s = float(data.get("hold_s", config.scenario_hold_s))
 	config.quit_when_done = bool(data.get("quit_when_done", true))
 	return ""
 
@@ -224,4 +235,6 @@ func to_dict() -> Dictionary:
 		out.map = map
 	if not scenario.is_empty():
 		out.scenario = {"name": scenario, "rotate_hold_s": scenario_rotate_hold_s}
+		if not scenario_maps.is_empty():
+			out.scenario.merge({"maps": scenario_maps, "hold_s": scenario_hold_s})
 	return out

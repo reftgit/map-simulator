@@ -4,12 +4,12 @@ extends CanvasLayer
 ## corners, home indicator, cutouts, navigation bars; from a SafeAreaSource,
 ## re-applied when it changes), fades the roll button while the bound player's
 ## roll is on cooldown and the exit button while the bound vehicle is too fast
-## to get out, and, in debug builds only, shows a performance
-## overlay (with the player's or the driven vehicle's speed and whether each
-## vehicle is awake or asleep), logs the same numbers as "PERF" lines
-## (readable from adb logcat or the Xcode console), and offers VIEW
-## (measurement viewpoints), Q (quality profile), DUMMY (training dummy),
-## CAR (walk-up to the vehicle), and MAP (next map) buttons.
+## to get out, shows a loading screen while a map loads, and, in debug builds
+## only, shows a performance overlay (with the player's or the driven
+## vehicle's speed and whether each vehicle is awake or asleep), logs the same
+## numbers as "PERF" lines (readable from adb logcat or the Xcode console),
+## and offers VIEW (measurement viewpoints), Q (quality profile), DUMMY
+## (training dummy), CAR (walk-up to the vehicle), and MAP (next map) buttons.
 
 ## Emitted when the debug VIEW button is tapped.
 signal debug_view_requested
@@ -64,6 +64,7 @@ var _safe_area_check_in := SAFE_AREA_CHECK_INTERVAL
 @onready var _debug_car_button: TouchButton = $SafeArea/Controls/DebugCarButton
 @onready var _debug_map_button: TouchButton = $SafeArea/Controls/DebugMapButton
 @onready var _debug_timer: Timer = $DebugTimer
+@onready var _loading_screen: Control = $LoadingScreen
 
 
 func _ready() -> void:
@@ -93,6 +94,20 @@ func bind_player(player: PlayerController) -> void:
 ## The vehicle being driven, or null on foot.
 func bind_vehicle(vehicle: VehicleController) -> void:
 	_vehicle = vehicle
+
+
+## While a map loads (Main.switch_map()): shows the loading screen over
+## everything and hides and stops the controls, releasing every finger (and
+## again when they come back).
+func set_loading(on: bool) -> void:
+	_loading_screen.visible = on
+	input.release_all_touches()
+	input.visible = not on
+	input.process_mode = PROCESS_MODE_DISABLED if on else PROCESS_MODE_INHERIT
+
+
+func is_loading() -> bool:
+	return _loading_screen.visible
 
 
 func _process(delta: float) -> void:

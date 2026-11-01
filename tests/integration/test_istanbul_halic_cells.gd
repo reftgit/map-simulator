@@ -202,10 +202,10 @@ func test_map_switch_frees_the_cells_map() -> void:
 	fixture.scene_path = "res://tests/fixtures/flat_map.tscn"
 	fixture.player_spawn_position = Vector3(2, 0.1, 3)
 	fixture.bounds = Rect2(-20, -20, 40, 40)
-	check(game.switch_map(fixture), "switched to the fixture map")
+	check(await game.switch_map(fixture), "switched to the fixture map")
 	await physics_frames(30)
 	check(not is_instance_valid(old_map) and game.world.npcs.is_empty() and game.world.vehicles.is_empty(), "the cells map, its car, and its NPCs are freed")
-	check(game.switch_map(game.maps.find("istanbul_halic_cells")), "switched back")
+	check(await game.switch_map(game.maps.find("istanbul_halic_cells")), "switched back")
 	await physics_frames(60)
 	check(_on_bridge_deck() and game.world.vehicles.size() == 1 and game.world.npcs.size() == 2, "back on the bridge spawn with the car and the NPCs")
 	check(game.render_settings.occluder_report.get("source") == "baked", "baked occluders loaded again")

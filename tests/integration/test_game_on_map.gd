@@ -672,7 +672,11 @@ func test_map_switch_replaces_the_map_and_frees_the_old_one() -> void:
 	var old_vehicle := _vehicle()
 	var changed: Array[String] = []
 	game.map_changed.connect(func(definition: MapDefinition) -> void: changed.append(definition.id))
-	check(game.switch_map(_fixture_map()), "switched to the fixture map")
+	var released := []
+	game.world.map_unloaded.connect(func(_id: String) -> void:
+		released.append(not ResourceLoader.has_cached(MAP_MODEL) and not ResourceLoader.has_cached(game.maps.find("istanbul_halic").scene_path)), CONNECT_ONE_SHOT)
+	check(await game.switch_map(_fixture_map()), "switched to the fixture map")
+	check(released == [true], "İstanbul's map scene and GLB released before the fixture map loaded (%s)" % [released])
 	await physics_frames(30)
 	check(not is_instance_valid(old_map) and not is_instance_valid(old_vehicle), "the old map and its vehicle are freed")
 	check(game.world.map_root.name == &"FlatMap" and game.world.vehicles.is_empty() and game.world.npcs.is_empty(), "fixture map loaded, no vehicles or NPCs")
@@ -681,7 +685,7 @@ func test_map_switch_replaces_the_map_and_frees_the_old_one() -> void:
 	check(game.quality_profile == "low" and is_equal_approx(rig.camera.far, 400.0) and Engine.max_fps == 30, "the profile applied to the new map")
 	check(not input.interact_button.visible and game.vehicle_interaction.nearby_vehicle() == null, "no vehicle in reach")
 	check(game.hud.map_name == "fixture", "the overlay names the map")
-	check(game.switch_map(game.maps.find("istanbul_halic")), "switched back")
+	check(await game.switch_map(game.maps.find("istanbul_halic")), "switched back")
 	await physics_frames(60)
 	check(changed == (["fixture", "istanbul_halic"] as Array[String]), "map_changed for both switches (%s)" % [changed])
 	check(game.world.vehicles.size() == 1 and _vehicle().is_inside_tree() and game.world.npcs.size() == 2, "the vehicle parked and the NPCs placed again")
@@ -698,7 +702,7 @@ func test_map_switch_refused_while_driving() -> void:
 	await _setup()
 	await _get_in()
 	var map: Node = game.world.map_root
-	check(not game.switch_map(_fixture_map()), "refused while driving")
+	check(not (await game.switch_map(_fixture_map())), "refused while driving")
 	check(game.world.map_root == map and game.vehicle_interaction.is_driving(), "same map, still driving")
 
 
