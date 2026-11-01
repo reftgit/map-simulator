@@ -1,8 +1,10 @@
 """Deterministic Istanbul environment from the bundled OpenStreetMap extract.
 Python 3.11+; pip install -r requirements.txt (pinned versions)
-Run from anywhere: python build_map.py [--source DIR] [--out DIR]
+Run from anywhere: python build_map.py [--source DIR] [--out DIR] [--detail-cell METRES]
 Inputs are only read from --source (default: maps/istanbul_halic/source);
 every output goes to --out (default: build/maps/istanbul_halic, ignored by Git).
+--detail-cell groups facade detail, tree crowns, and shrubs into smaller cells
+inside each 150 m chunk (by object centre; no geometry changes); off by default.
 Coordinates inside this generator: east, north, up, in metres.
 Export: glTF/Godot +X east, +Y up, -Z north. Origin 28.975 E, 41.023 N.
 """
@@ -20,9 +22,12 @@ REPO = Path(__file__).resolve().parents[3]
 cli = argparse.ArgumentParser(description='Generate the Istanbul Halic map GLB and its JSON records.')
 cli.add_argument('--source', type=Path, default=REPO/'maps/istanbul_halic/source', help='input folder, only read (default: %(default)s)')
 cli.add_argument('--out', type=Path, default=REPO/'build/maps/istanbul_halic', help='output folder, created if missing (default: %(default)s)')
+cli.add_argument('--detail-cell', type=float, metavar='METRES', help='mesh Detail_*, Trees_*, and Shrubs_* per cell of this size inside each 150 m chunk, '
+                 'named <Category>_<cx>_<cy>_<i>_<j>; each building, tree, or shrub goes whole into the cell of its centre (default: off, one mesh per chunk)')
 opts = cli.parse_args()
-SOURCE = opts.source.resolve(); OUT = opts.out.resolve()
+SOURCE = opts.source.resolve(); OUT = opts.out.resolve(); CELL = opts.detail_cell
 if OUT == SOURCE or SOURCE in OUT.parents: cli.error('--out must not be inside --source')
+if CELL is not None and not 0 < CELL < 150: cli.error('--detail-cell must be more than 0 and less than 150 metres')
 OUT.mkdir(parents=True, exist_ok=True)
 RNG = random.Random(41023)
 SX = 111320 * math.cos(math.radians(41.023)); SY = 111320
@@ -84,7 +89,13 @@ M={}
 def mesh(name):
     if name not in M:M[name]=Mesh()
     return M[name]
-def chunk(cat,x,y,solid=False):return mesh(f'{cat}_{math.floor((x-BOUNDS[0])/150):02}_{math.floor((y-BOUNDS[1])/150):02}'+('-col' if solid else ''))
+# --detail-cell: these categories (never their -col meshes) get one mesh per cell inside the chunk.
+CELLED={'Detail','Trees','Shrubs'}
+def cell(offset):return min(max(math.floor(offset/CELL),0),math.ceil(150/CELL)-1)
+def chunk(cat,x,y,solid=False):
+    cx=math.floor((x-BOUNDS[0])/150);cy=math.floor((y-BOUNDS[1])/150);name=f'{cat}_{cx:02}_{cy:02}'
+    if CELL and cat in CELLED and not solid:name+=f'_{cell(x-BOUNDS[0]-cx*150)}_{cell(y-BOUNDS[1]-cy*150)}'
+    return mesh(name+('-col' if solid else ''))
 def surf(m,p,color,z):
     for tri in triangles(p):m.face([(x,y,z(x,y) if callable(z) else z) for x,y in tri],color)
 def extrude(m,p,z0,z1,color,cap=True):
@@ -413,6 +424,7 @@ def export_glb(path):
     return stats
 stats=export_glb(OUT/'istanbul_halic.glb')
 stats.update(street_details=street_metadata['counts'],bridge_main_span_m=180,vegetation=vegetation_stats,buildings=len(records),estimated_building_heights=estimated,road_ways=road_count,trees=tree_count,dimensions_m=[round(BOUNDS[2]-BOUNDS[0]),round(BOUNDS[3]-BOUNDS[1])],land_area_km2=round(LAND.area/1e6,3),origin=[28.975,41.023],bbox=BBOX,mosques=sum(is_mosque(t) for p,t,wid in landmarks),cars=0,trams=0,elevation_min_m=float(HG.min()),elevation_max_m=float(HG.max()),elevation_source="Mapzen/Tilezen Terrain Tiles")
+if CELL:stats['detail_cell_m']=CELL
 (OUT/'buildings.json').write_text(json.dumps(records,ensure_ascii=False,indent=2))
 (OUT/'statistics.json').write_text(json.dumps(stats,indent=2))
 (OUT/'spawn.json').write_text(json.dumps({'bridge':[*bridge_xy(length*.78,17),bridge_z(length*.78)],'galata':[*ll(28.97417,41.02563),height(*ll(28.97417,41.02563))]},indent=2))
