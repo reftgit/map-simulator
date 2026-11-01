@@ -206,6 +206,23 @@ func test_device_scenario_map_switch() -> void:
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(PerfBenchmark.RESULTS_PATH))
 
 
+func test_starts_on_the_registry_default() -> void:
+	# Without a requested map (as a normal release build, or --map left out)
+	# the game loads the shader facade map where its GLB is generated (D25),
+	# else İstanbul • Haliç where its GLB is copied in, else the test district.
+	game = (load("res://game/main.tscn") as PackedScene).instantiate()
+	add_node(game)
+	player = game.player
+	await physics_frames(60)
+	var registry := MapRegistry.load_default()
+	var expected := "test_district"
+	for id in ["istanbul_halic", "istanbul_halic_cells_shader"]:
+		if registry.find(id).is_available():
+			expected = id
+	check(game.map_definition.id == expected and registry.default_map().id == expected, "started on %s (expected %s)" % [game.map_definition.id, expected])
+	check(player.is_on_floor(), "the player stands at its spawn")
+
+
 func test_missing_default_map_falls_back_to_the_first_available() -> void:
 	# As in a fresh clone without the generated GLB: the registry's first map
 	# lacks its file, so the game starts on the next available map.

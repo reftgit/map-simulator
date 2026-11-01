@@ -1,6 +1,6 @@
 extends SceneTree
-## Physics step cost of the parked vehicle in each rest state on the real map
-## (headless, on this machine): awake (parking sleep off), asleep (the
+## Physics step cost of the parked vehicle in each rest state on İstanbul •
+## Haliç (headless, on this machine): awake (parking sleep off), asleep (the
 ## VehicleController parking rule: RigidBody3D.sleeping), frozen (freeze in
 ## static mode), and removed (out of the simulation: the Phase 4a
 ## "vehicles": false upper bound). The player's physics is paused so the
@@ -27,6 +27,7 @@ func _run() -> void:
 		elif arg.begins_with("--rounds="):
 			rounds = int(arg.trim_prefix("--rounds="))
 	var game: Node = (load("res://game/main.tscn") as PackedScene).instantiate()
+	game.requested_map = "istanbul_halic"
 	root.add_child(game)
 	await _frames(120)
 	game.player.set_physics_process(false)

@@ -1,1 +1,1 @@
-{"experiment": "lod_8", "profile": "none", "lod_threshold": 8.0, "bench": {}}
+{"experiment": "lod_8", "map": "istanbul_halic", "profile": "none", "lod_threshold": 8.0, "bench": {}}

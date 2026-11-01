@@ -28,7 +28,7 @@ func _game_with(registry: MapRegistry) -> Node:
 func test_registry_lists_the_maps() -> void:
 	var registry := MapRegistry.load_default()
 	check(registry != null and not registry.definitions.is_empty(), "registry loads with maps")
-	check(registry.definitions[0].id == "istanbul_halic", "İstanbul • Haliç is first, the default (%s)" % registry.definitions[0].id)
+	check(registry.definitions[0].id == "istanbul_halic_cells_shader", "the shader facade map is first, the default (D25; %s)" % registry.definitions[0].id)
 	var available := registry.definitions.filter(func(definition: MapDefinition) -> bool: return definition.is_available())
 	check(not available.is_empty() and registry.default_map() == available[0], "the default is the first available map (%s)" % registry.default_map().id)
 	var seen := {}
@@ -168,10 +168,12 @@ func test_imported_files_count_once_imported() -> void:
 	check(MapDefinition.is_loadable("res://tests/fixtures/flat_map.tscn") and not MapDefinition.is_loadable("res://tests/fixtures/none.tscn"), "a plain file counts when it exists")
 
 
-func test_istanbul_cells_map_is_registered_after_the_test_district() -> void:
+func test_registry_order_and_generated_files() -> void:
+	# The shader facade map first (the default, D25); İstanbul • Haliç, the
+	# test district, and the cells and light maps stay selectable.
 	var registry := MapRegistry.load_default()
 	var cells := registry.find("istanbul_halic_cells")
-	check(cells != null and registry.ids() == (["istanbul_halic", "test_district", "istanbul_halic_cells", "istanbul_halic_cells_light", "istanbul_halic_cells_shader"] as Array[String]), "registry order (%s)" % [registry.ids()])
+	check(cells != null and registry.ids() == (["istanbul_halic_cells_shader", "istanbul_halic", "test_district", "istanbul_halic_cells", "istanbul_halic_cells_light"] as Array[String]), "registry order (%s)" % [registry.ids()])
 	for variant in ["istanbul_halic_cells_light", "istanbul_halic_cells_shader"]:
 		check(registry.find(variant).required_files == (["res://assets/%s.glb" % variant] as Array[String]), "%s needs its generated GLB" % variant)
 		check(FileAccess.file_exists("res://assets/%s.glb.import" % variant), "%s: the GLB's import settings are committed" % variant)

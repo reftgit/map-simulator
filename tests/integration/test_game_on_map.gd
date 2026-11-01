@@ -23,7 +23,11 @@ func skip_reason() -> String:
 
 
 func _setup() -> void:
-	game = instantiate("res://game/main.tscn")
+	# İstanbul • Haliç is a selectable map since the shader facade map became
+	# the default (D25).
+	game = (load("res://game/main.tscn") as PackedScene).instantiate()
+	game.requested_map = "istanbul_halic"
+	add_node(game)
 	player = game.player
 	rig = game.camera_rig
 	input = game.hud.input
@@ -716,13 +720,17 @@ func test_debug_map_button_loads_the_next_map() -> void:
 	await physics_frames(30)
 	check(game.map_definition.id == "test_district" and not is_instance_valid(old_map), "MAP: İstanbul freed, test district loaded (%s)" % game.map_definition.id)
 	check(player.is_on_floor() and game.world.vehicles.size() == game.map_definition.vehicle_spawns.size(), "player standing, the test district's vehicles parked")
-	# Further presses go through the other available maps (the cells map
-	# when its GLB is generated) and back to İstanbul.
+	# Further presses go through the other available maps in registry order,
+	# wrapping around (the generated maps when their GLBs exist), back to İstanbul.
 	var expected: Array[String] = []
-	for definition in game.maps.definitions.slice(2):
+	var definitions: Array[MapDefinition] = game.maps.definitions
+	var district := definitions.find(game.maps.find("test_district"))
+	for step in range(1, definitions.size()):
+		var definition := definitions[(district + step) % definitions.size()]
 		if definition.is_available():
 			expected.append(definition.id)
-	expected.append("istanbul_halic")
+		if definition.id == "istanbul_halic":
+			break
 	var visited: Array[String] = []
 	for press in game.maps.definitions.size():
 		_tap(button, 1)

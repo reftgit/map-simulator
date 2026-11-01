@@ -5,7 +5,8 @@ extends SceneTree
 ## farther than Npc.far_distance from the player, who stands at the spawn),
 ## and all under the full controller ("npc_far_mode": false), the player's
 ## physics paused and the parked vehicles asleep. Prints one line per mode and
-## round and the cost per NPC against "off".
+## round and the cost per NPC against "off". On İstanbul • Haliç unless
+## --map=<id> names another map.
 ##   godot --headless --path . --script res://tools/perf/npc_cost.gd [-- --map=test_district --ticks=600 --rounds=3]
 
 
@@ -16,7 +17,7 @@ func _initialize() -> void:
 func _run() -> void:
 	var ticks := 600
 	var rounds := 3
-	var map := ""
+	var map := "istanbul_halic"
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--ticks="):
 			ticks = int(arg.trim_prefix("--ticks="))

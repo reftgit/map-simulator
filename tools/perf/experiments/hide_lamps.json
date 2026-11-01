@@ -1,1 +1,1 @@
-{"experiment": "hide_lamps", "profile": "none", "hide": ["lamps"], "bench": {}}
+{"experiment": "hide_lamps", "map": "istanbul_halic", "profile": "none", "hide": ["lamps"], "bench": {}}

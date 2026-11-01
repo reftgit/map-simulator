@@ -1,1 +1,1 @@
-{"experiment": "occlusion", "profile": "none", "occlusion": true, "bench": {}}
+{"experiment": "occlusion", "map": "istanbul_halic", "profile": "none", "occlusion": true, "bench": {}}
