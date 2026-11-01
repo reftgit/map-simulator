@@ -1,0 +1,26 @@
+# /usr/bin/time -l of the generator runs (Mac, Apple Silicon, 16 GB)
+## clean_run (cleaned input, no option, alone)
+156.78 real       141.03 user         9.94 sys
+3557474304  maximum resident set size
+5067083928  peak memory footprint
+exit 0
+## run_off (no option, in parallel with the 40 m run)
+173.06 real       153.43 user        12.25 sys
+2493480960  maximum resident set size
+5059006616  peak memory footprint
+exit 0
+## run_c40 (--detail-cell 40, in parallel with the run without option)
+173.71 real       154.17 user        12.38 sys
+4110680064  maximum resident set size
+5159112856  peak memory footprint
+exit 0
+## run_c75 (--detail-cell 75, alone)
+151.11 real       140.04 user         7.59 sys
+4092575744  maximum resident set size
+5149331656  peak memory footprint
+exit 0
+## run_c40_2 (--detail-cell 40, second run, alone)
+157.89 real       144.61 user         8.20 sys
+3913351168  maximum resident set size
+5117235400  peak memory footprint
+exit 0

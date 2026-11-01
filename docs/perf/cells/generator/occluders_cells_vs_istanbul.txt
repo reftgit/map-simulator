@@ -1,0 +1,4 @@
+DIFFERS Ground_04_07_440 vertices 380 indices_same=true nearest_vertex_max_m=0.000000477 back=0.000000477
+DIFFERS Ground_15_17_613 vertices 304 indices_same=true nearest_vertex_max_m=0.000007629 back=0.000007629
+DIFFERS Ataturk_Bridge_641 vertices 82 indices_same=true nearest_vertex_max_m=3.513625383 back=3.513625383
+OCCLUDERS a=643 b=643 same_names=643 same_indices=643 same_vertices=640 same_vertex_sets=640 max_vertex_diff_m=393.513580322 worst=Ataturk_Bridge_641

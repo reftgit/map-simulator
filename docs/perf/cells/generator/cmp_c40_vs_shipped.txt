@@ -1,0 +1,21 @@
+GLB out:       build/maps/istanbul_halic_cells40/istanbul_halic.glb  sha256 7973071a3ee900b0af4023fad310c250707d21ebbeea8161b334be4134053c9d  505589800 bytes
+GLB reference: assets/istanbul_halic.glb  sha256 8b00c94b240982488b755d85b78923b32158aaaeec716a576139bd55f21611b1  502541456 bytes
+meshes outside ['Detail', 'Trees', 'Shrubs']: 2025 of 2529 byte-identical; -col meshes 827 vs 827
+Detail: 245 chunk meshes -> 2465 cell meshes (largest 7335 triangles); chunks with the same triangles as their cells (position, normal, colour of every corner): 244 of 245; triangles 4187598 vs 4187598, vertices 8411182 vs 8411182, area 4936152.40 vs 4936152.40 m2
+Trees: 184 chunk meshes -> 870 cell meshes (largest 5655 triangles); chunks with the same triangles as their cells (position, normal, colour of every corner): 184 of 184; triangles 1045530 vs 1045530, vertices 2066610 vs 2066610, area 695001.20 vs 695001.20 m2
+Shrubs: 97 chunk meshes -> 265 cell meshes (largest 1080 triangles); chunks with the same triangles as their cells (position, normal, colour of every corner): 97 of 97; triangles 80568 vs 80568, vertices 161136 vs 161136, area 7500.13 vs 7500.13 m2
+mesh nodes: 6129 vs 3055
+FAIL the meshes outside the cell categories have other names
+FAIL 504 meshes outside the cell categories differ
+FAIL Detail: geometry differs from the reference
+grouping only: FAIL
+json bridge_metadata.json: byte-identical
+json buildings.json: byte-identical
+json mosques.json: byte-identical
+json spawn.json: byte-identical
+json statistics.json: DIFFERENT in keys ['detail_cell_m', 'mesh_nodes']
+  detail_cell_m: 40.0 vs reference None
+  mesh_nodes: 6129 vs reference 3055
+json street_details.json: byte-identical
+json vegetation.json: byte-identical
+json map_metadata.json: DIFFERENT in keys ['stats']

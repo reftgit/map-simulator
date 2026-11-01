@@ -2,11 +2,13 @@
 
 What actually exists in the repository and how it was verified. Plans and decisions belong in `PROJECT_CONTEXT.md`; code structure, build, and test commands are in `docs/ARCHITECTURE.md`.
 
-Last updated: 2026-11-01 (map generator in the repository, Claude Code)
+Last updated: 2026-11-01 (cell grouping and the cells map, Claude Code)
 
 ## Current phase
 
-**After Phase 5: the İstanbul • Haliç generator is in the repository and reproduces the current map (2026-11-01); the map, the game, the profiles, and the baselines are unchanged.** The package's Python scripts, their inputs, and the records of the shipped GLB were committed unchanged, then given `--source` / `--out` paths (output to the ignored `build/maps/istanbul_halic/`) and a pinned environment (Python 3.12, shapely 2.1.2). Two runs are byte-identical (157 s, 3.4–3.6 GiB peak resident each). The regenerated GLB is not byte-identical with the shipped one: 2,550 of 3,055 meshes match byte for byte, buildings, facades, trees, lamps, mosques, bridges, and terrain match (or differ in float noise), and the differences are the GEOS triangulation of roads, pavements, and quays (+1,148 triangles, +0.02 % area) and 6 of 223 traffic signal heads placed elsewhere. In Godot both import to 827 static bodies with the same 438,012 collision triangles. The shipped GLB has flat per-face normals on every mesh. Safranbolu is deferred. Details: "Map generator in the repository" below.
+**After Phase 5: the cells map is in the game for measurement (2026-11-01); İstanbul • Haliç, the profiles, and the game's behaviour are unchanged.** The generator can mesh facade detail, tree crowns, and shrubs per cell inside each 150 m chunk (`--detail-cell`; without it the output is byte-identical), and a grouping-only comparison proves that no triangle changed. The 40 m variant (chosen over 75 m on the Mac: no nearby building blanked within 50 m on the low profile, 8.7 % within 100 m against 18.0 %) is a separate registry map, `istanbul_halic_cells`, whose GLB is generated on each machine and ignored by Git; its tests SKIP without it. On the devices (Release Perf, three runs) it met every criterion: Tab A7 low 30.00 / 29.99 / 29.99 FPS with 1 % low 25.90 / 25.83 / 25.28, iPhone high 60.00 FPS with at most 0.08 % long frames; its near facades are drawn where İstanbul blanks them, at +128 MiB PSS and +1.2 s map ready on the tablet and +280 MiB footprint on the iPhone. An experiment with 150 m ranges and no fog on the tablet kept the median 1 % low (one run had long-frame windows). The OSM input lost its Wi-Fi password tags with the output unchanged. Details: "Cell grouping and the cells map" below.
+
+Before it: **the İstanbul • Haliç generator is in the repository and reproduces the current map (2026-11-01); the map, the game, the profiles, and the baselines are unchanged.** The package's Python scripts, their inputs, and the records of the shipped GLB were committed unchanged, then given `--source` / `--out` paths (output to the ignored `build/maps/istanbul_halic/`) and a pinned environment (Python 3.12, shapely 2.1.2). Two runs are byte-identical (157 s, 3.4–3.6 GiB peak resident each). The regenerated GLB is not byte-identical with the shipped one: 2,550 of 3,055 meshes match byte for byte, buildings, facades, trees, lamps, mosques, bridges, and terrain match (or differ in float noise), and the differences are the GEOS triangulation of roads, pavements, and quays (+1,148 triangles, +0.02 % area) and 6 of 223 traffic signal heads placed elsewhere (and, found later, the Atatürk bridge's seven piers 2.7–3.5 m away). In Godot both import to 827 static bodies with the same 438,012 collision triangles. The shipped GLB has flat per-face normals on every mesh. Safranbolu is deferred. Details: "Map generator in the repository" below.
 
 Before it: **Phase 5 (extensibility: second map, second vehicle type, NPCs) done; the specification's phases 0–5 are implemented.** A map registry picks the map (İstanbul • Haliç by default and always in normal release builds; `--map`, an experiment key, and a debug MAP button otherwise) and a switch rebuilds player, vehicles, NPCs, camera, and occluders with the node count back where it was; a second map built from Godot primitives (the test district) runs without the GLB; the van is the second vehicle type in the game; NPCs patrol on the player's own controller with an AI input source and play a hit reaction when punched. Of the eight core systems the task names, only `WorldManager` needed code (three additive changes). The device scenario passed all 25 steps on both devices; release measurements with the two İstanbul NPCs met both devices' criteria after the NPCs got a level of detail (two walking NPCs under the controller cost the tablet 2.3–2.9 ms per physics step and 1.6–2.6 FPS of its 1 % low). The iPhone orientation check is NOT RUN again (the user could not do it). Details: "Phase 5" below; status of every phase: "Specification status".
 
@@ -20,7 +22,7 @@ Before Phase 4b: **Phase 4a (release baseline and diagnosis, measurement only) d
 
 ## Current objective
 
-Review of the generator import; then the first source-level improvement of the İstanbul • Haliç map, after the user decides open questions 39 (replace or separate id) and 40 (storing large outputs) in `PROJECT_CONTEXT.md`. See "Recommended next task".
+Review of the cell grouping and the device results; the user's decision on when the cells map may become the default (open question 41 in `PROJECT_CONTEXT.md`, with proposed criteria); then the next source-level improvement (see "Recommended next task").
 
 ## Git
 
@@ -82,7 +84,11 @@ Review of the generator import; then the first source-level improvement of the �
 - `3d4bb1a`: İstanbul • Haliç generator scripts, inputs, and reference records imported byte-identical from the source package.
 - `87dee5e`: generator paths (`--source`, `--out`), pinned Python environment, `.gitignore` for `build/maps/` and `__pycache__/`.
 - `94c6e21`: `tools/maps/istanbul_halic/compare_outputs.py`.
-- Generator import results and documentation (D22, T39, Safranbolu deferred): the commit after `94c6e21` (`git log`).
+- `34d5d17`: generator import results and documentation (D22, T39, Safranbolu deferred).
+- `faed04b`: the Wi-Fi password tags removed from the OSM input (output unchanged).
+- `449dd32`: `build_map.py --detail-cell`, `compare_outputs.py --grouped`.
+- `3e00ada`: the cells map (`istanbul_halic_cells`), `MapDefinition.required_files`, its occluders and tests, `bake_occluders.gd --out`, the device experiments.
+- Cell grouping measurements and documentation (D23, T40): the commit after `3e00ada` (`git log`).
 
 ## Repository contents
 
@@ -90,8 +96,9 @@ Review of the generator import; then the first source-level improvement of the �
 |---|---|
 | `game/` | Game code: composition root, world, player (with Punch/Roll states and `CharacterVisual`), combat areas, vehicle (controller, definition, interaction, visual), camera, input, HUD with on-foot and vehicle control groups and a debug overlay. See `docs/ARCHITECTURE.md`. |
 | `maps/istanbul_halic/` | Game map scene (GLB + sky/ambient + sun + water shader + vertex-color fix) and its `MapDefinition` (two debug viewpoints, two NPC routes). |
+| `maps/istanbul_halic_cells/` | The cells map (2026-11-01): İstanbul's scene structure on the generated `assets/istanbul_halic_cells.glb` (facade detail, tree crowns, shrubs in 40 m cells), a `MapDefinition` with İstanbul's data and `required_files`, its own baked occluders (2,300,915 bytes). |
 | `maps/test_district/` | Second map (Phase 5): scene and box occluders generated from Godot primitives by `tools/build_test_district.gd`, `MapDefinition` (both vehicle types, three NPC routes, two viewpoints). |
-| `game/world/maps.tres` | The map registry: İstanbul • Haliç (default), the test district. |
+| `game/world/maps.tres` | The map registry: İstanbul • Haliç (default), the test district, the cells map (skipped while its GLB is missing). |
 | `game/npc/` | `Npc`, `AiPatrolInput`, `PatrolRoute`, `npc.tscn` (inherits the player scene). |
 | `project.godot` | Main scene `res://game/main.tscn`; Mobile renderer; sensor landscape; `expand` aspect; physics interpolation; input actions; mouse emulates touch; ETC2/ASTC import (required for Android export); placeholder icon. |
 | `export_presets.cfg` | "Android Debug" (arm64 APK, `com.mirongi.mapsimulator`), "Android Debug Compatibility" (same, with `--rendering-method gl_compatibility`), "iOS Debug" (`com.mirongi.mapsimulator.dev`, team `8N7RYA42S6`, project-only export), and the measurement-only "Android Release Perf", "Android Release Perf Jolt", "iOS Release Perf" (`perf_bench`; release templates). No passwords or keystore paths. |
@@ -106,7 +113,7 @@ Review of the generator import; then the first source-level improvement of the �
 | `tools/bake_occluders.gd` | Headless occluder bake. |
 | `tools/perf/` | Experiment definitions (`experiments/*.json`), device orchestration (`android_bench.sh`, `ios_bench.sh`, `run_batch.sh`, `android_rotate_on_cue.sh`), `parse_xctrace.py`, `summarize.py`, `median.py`, `collider_census.gd`, `vehicle_sleep_cost.gd`, `npc_cost.gd`. |
 | `tools/build_test_district.gd` | Generates the test district's scene and occluders (Phase 5). |
-| `tools/maps/istanbul_halic/` | İstanbul • Haliç generator (Python 3.12): `build_map.py` and its modules, `render_map.py` (Blender previews, not run), `compare_outputs.py`, `requirements.txt` (pinned), `.python-version`. Output goes to `build/maps/istanbul_halic/` (ignored). |
+| `tools/maps/istanbul_halic/` | İstanbul • Haliç generator (Python 3.12): `build_map.py` (with `--detail-cell`) and its modules, `render_map.py` (Blender previews, not run), `compare_outputs.py` (with `--grouped`), `blank_facades.py`, `requirements.txt` (pinned), `.python-version`. Output goes to `build/maps/` (ignored). |
 | `maps/istanbul_halic/source/` | Generator inputs (20.1 MB): OSM extract (19.4 MB), Terrarium tiles, building height overrides, OSM request metadata. `.gdignore`. |
 | `maps/istanbul_halic/reference/` | The records the package's run wrote for the shipped GLB and its validation records (3.0 MB), for comparison. `.gdignore`. |
 | `docs/perf/` | Diagnosis pass: raw results and conditions (`results/`), 480 px screenshots (`android/`, `ios/`). Profile validation: `profiles/`. Phase 2 regression and HUD screenshots: `phase2/`. Phase 3 three-run results and screenshots: `phase3/`. Phase 4a release, diagnosis, and pacing results plus headless Jolt / 30 Hz / collider census: `phase4a/`. Phase 4b results, the sleep-vs-freeze measurement, overlay screenshots, a tablet log excerpt, and the iPhone frames of the Phase 4b check (`phase4b/device_check/`): `phase4b/`. 4.3 MB in total. |
@@ -116,10 +123,13 @@ Review of the generator import; then the first source-level improvement of the �
 | `build/.gdignore` | Keeps Godot from scanning or packing build output (exports and `build/maps/`, the generator's output). Everything else in `build/` is ignored by Git. |
 | `main.tscn`, `scripts/` | Original explorer demo, unchanged. Desktop only. |
 | `assets/istanbul_halic.glb` | 502 MB, **not tracked**. Restore: `docs/maps/istanbul_halic/README.md`. |
+| `assets/istanbul_halic_cells.glb` | 506 MB, **not tracked**, generated on each machine (SHA-256 `7973071a…`); its `.import` is tracked. Steps: `docs/maps/istanbul_halic/README.md`, "The cells map". |
+| `docs/perf/cells/` | Cell grouping evidence: generator comparisons, hashes, run times, the blank-facade estimate, the occluder comparison (`generator/`), the desktop benchmarks and side-by-side shots (`desktop/`), three-run device results (`results/`), side-by-side device shots (`shots/`). |
 | `.vscode/settings.json` | The user's editor colors. Untracked, intentionally not committed. |
 
 ## Implemented features
 
+- **Cells map (2026-11-01; debug and Release Perf builds):** `istanbul_halic_cells` in the registry, loaded with `--map`, an experiment's `"map"` key, or the MAP button; skipped while its generated GLB is missing (`MapDefinition.required_files`). Generator: `build_map.py --detail-cell`, `compare_outputs.py --grouped`, `blank_facades.py`.
 - **Phase 5 (all builds):** map registry (`game/world/maps.tres`) with İstanbul • Haliç first; NPCs on both maps (patrol, hit reaction, far mode beyond 10 m from the player); the van parked on the test district; `WorldManager` places a vehicle type per spawn and the NPCs, and respawns NPCs at their own start. Debug and Release Perf builds: the start map from `--map=<id>` or an experiment's `"map"` key, the `"npcs"` / `"npc_far_mode"` runtime keys, `map` and `npcs` in `STARTUP` / `PERF` / results. Debug builds: MAP overlay button (`switch_map()`), CAR cycles through the map's vehicles, `DeviceScenario` "extensibility". The test district is packaged in every build but normal release builds never load it.
 - **Phase 4d:** `Platform` module (all builds); debug builds: `DeviceScenario` (`vehicle_sleep`, `orientation`) from a `scenario` experiment, gravity sensor on for evidence; host script `tools/perf/android_rotate_on_cue.sh`.
 - **Phase 4c (all builds):** the HUD's safe area comes from `SafeAreaSource` (DisplayServer on devices, unchanged), is re-applied when it changes without a resize (checked every 0.25 s), and such a change releases every finger; `SAFE_AREA` log lines in debug and Release Perf builds. The player wakes a parked car only while pushing into it.
@@ -176,7 +186,7 @@ Task of 2026-11-01 (user): bring the İstanbul • Haliç generation pipeline in
 | 2,550 of 3,055 | byte-identical |
 | `Road_*` (236), `Pavement_*` (234), `Quays_*` (3) | re-triangulated by GEOS: Road +568 triangles, area +0.02 %; Pavement +579, +0.02 %; Quays +1, same area. Delaunay triangles of each road buffer are kept when their centre lies inside it, so a different triangulation keeps a slightly different area |
 | `TrafficSignals_*` (4), `SignalGlow_*` (5 and the renamed one), `RoadPaint_*` (10) | the 6 signal heads and their stop lines (`STRtree.nearest` picks another of two equidistant roads at a junction); RoadPaint same triangles, −0.1 % area |
-| `Ataturk_Bridge-col` | same triangles and area; vertex order rotated (where GEOS starts the ring) |
+| `Ataturk_Bridge-col` | same triangle count and area; the deck is the same, but its seven piers stand 2.7–3.5 m along the deck from where the shipped GLB has them (56 of 82 distinct vertices; found by the occluder comparison on 2026-11-01, "Cell grouping and the cells map"; first recorded here as a rotated vertex order) |
 | `Ground_04_07-col`, `Ground_15_17-col`, `Detail_08_07`, 2 `Gardens_*`, 6 `MosqueDetail_*` | float noise: positions ≤ 7.6 × 10⁻⁶ m, normals ≤ 10⁻⁶ |
 
 - **Which shapely:** same machine and numpy, three versions (2.2.0 with the original, unmodified scripts in a copy of the package layout; the others with the parametrized scripts):
@@ -210,6 +220,129 @@ All 3,055 primitives carry `NORMAL` and `COLOR_0` (`build_map.py` writes one nor
 ### Safranbolu
 
 Deferred (`PROJECT_CONTEXT.md`, "Deferred map candidate: Safranbolu"). The eight screenshots of its audit, kept outside the repository, were deleted; the user's own Safranbolu downloads were not touched.
+
+## Cell grouping and the cells map (2026-11-01)
+
+Task of 2026-11-01 (user): split İstanbul's facade detail and trees into small cells in the generator, add the result as a separate map, and measure it on the devices; the current map, `assets/istanbul_halic.glb`, the quality profile values, and the game's behaviour do not change. Decisions: `PROJECT_CONTEXT.md`, D23 and T40. Guide: `docs/maps/istanbul_halic/README.md`, "Cell grouping" and "The cells map". Evidence: `docs/perf/cells/`.
+
+### What exists now
+
+- **Input cleaning** (`faed04b`): the Wi-Fi password of OSM node 4924038719 (`internet_access:password` and the same password as its `description`) is removed from the OSM extract; no other `*:password` tag existed. The run on the cleaned input wrote the same nine files byte for byte (GLB `68237c46…`, 156.8 s). The tags are still in the history of `3d4bb1a`.
+- **Generator option** (`449dd32`): `build_map.py --detail-cell METRES` and `compare_outputs.py --grouped`.
+- **The cells map** (`3e00ada`): `maps/istanbul_halic_cells/` (scene, `MapDefinition`, its own baked occluders), third in `game/world/maps.tres`; `assets/istanbul_halic_cells.glb` (40 m cells, `7973071a…`, 505,589,800 bytes) is generated and ignored by Git, its `.import` committed with the shipped GLB's settings. `MapDefinition.required_files` / `is_available()`; the MAP button skips unavailable maps, `--map` falls back. `tools/bake_occluders.gd --out=`. Experiments `profile_default_cells`, `profile_default_cells_pss`, `c_cells_low_vis150_nofog`.
+- `tools/maps/istanbul_halic/blank_facades.py` (the documentation commit after `3e00ada`): estimates the share of nearby buildings whose facade detail a visibility range hides.
+
+### Extensibility finding (code changes for the new map)
+
+| Where | Change | Why |
+|---|---|---|
+| `MapDefinition` | new exported `required_files`, `is_available()`, static `is_loadable()` (an imported file counts once the import result named in its `.import` exists) | the cells map's GLB is generated on each machine (D23); in a checkout without it the committed `.import` exists but nothing can be loaded |
+| `MapRegistry.next_after()` | skips unavailable maps | the MAP button would otherwise load a missing scene |
+| `Main._initial_map()` | an unavailable map from `--map` or an experiment falls back to the first map with a warning | as for an unknown id |
+| `RenderSettings` | comment only | the cells are a new kind of mesh node, handled by the existing prefixes |
+
+The scene and the `MapDefinition` are data (T5); `WorldManager`, the player, vehicle, NPC, camera, input, profile, and benchmark code are unchanged. The device scenario's `_switch_map()` already tapped MAP until the wanted map was loaded, so it now passes the cells map on its way back to İstanbul; the headless `test_device_scenario_extensibility` did that and passed.
+
+### Proof that only the grouping changed
+
+| Check (pinned environment) | Result |
+|---|---|
+| Without `--detail-cell` | all nine files byte-identical with the pinned run (GLB `68237c46…`) |
+| `--detail-cell 40` vs the run without it (`compare_outputs.py --grouped`) | PASS: header and 2,529 of 2,529 other meshes byte-identical, 827 `-col` meshes; `Detail` 245 chunk meshes → 2,465 cells, `Trees` 184 → 870, `Shrubs` 97 → 265; every chunk's cells hold exactly its triangles (245/245, 184/184, 97/97); triangles 4,187,598 / 1,045,530 / 80,568, vertices and area equal; 6,129 mesh nodes; JSON records byte-identical except `statistics.json` and `map_metadata.json` (`mesh_nodes`, `detail_cell_m`) |
+| `--detail-cell 75` | PASS the same way: 824 / 400 / 172 cells, 3,925 mesh nodes |
+| Negative check: 40 m against the shipped GLB | FAIL as it must (504 other meshes differ; `Detail_08_07`'s float noise caught by the triangle comparison: 244 of 245 chunks) |
+| Determinism | two 40 m runs byte-identical (all nine files); 157.9 s alone, peak resident 3.6 GiB, peak footprint 4.8 GiB |
+| Godot import (throwaway projects, the shipped GLB's import settings) | 827 `StaticBody3D`, 438,012 collision triangles, 7,071,605 render triangles in all three; `MeshInstance3D` 3,055 / 3,925 / 6,129 |
+
+### Choosing the cell size (Mac, before the device runs)
+
+Desktop: the game's benchmark (`docs/perf/cells/desktop/`), debug build on the Mac (Metal, Forward Mobile, 1280×800), 4 s warm-up and 6 s per viewpoint, one run each; the blank-facade estimate from `blank_facades.py` over 3,000 street points.
+
+| | 150 m chunks (pinned run) | 75 m cells | 40 m cells |
+|---|---|---|---|
+| Mesh nodes | 3,055 | 3,925 | 6,129 |
+| GLB / imported `.scn` | 502,651,324 / 195,394,864 B | 503,488,068 / 199,986,165 B | 505,589,800 / 201,392,178 B |
+| Import (throwaway project) | 10.8 s | 10.0 s | 11.6 s |
+| Low: draw calls Spawn / Karaköy / Galata | 111 / 102 / 66 | 112 / 103 / 69 | 112 / 106 / 70 |
+| Low: primitives (k) | 50.3 / 56.1 / 48.7 | 50.7 / 58.8 / 46.9 | 50.7 / 57.9 / 35.2 |
+| High: draw calls | 228 / 154 / 101 | 236 / 163 / 105 | 240 / 174 / 111 |
+| High: primitives (k) | 177.5 / 251.6 / 322.9 | 193.4 / 185.1 / 150.2 | 172.4 / 150.6 / 101.0 |
+| Video / static memory, low (MiB) | 532 / 192 | 546 / 210 | 717 / 256 |
+| Buildings within 50 m with blank facades (range 100 m) | 12.1 % | 0.0 % | 0.0 % |
+| Within 100 m (range 100 m) | 34.6 % | 18.0 % | 8.7 % |
+| Within 200 m (range 200 m, high) | 16.7 % | 8.8 % | 4.3 % |
+
+**Chosen: 40 m** (T40). At the three viewpoints both cell sizes show the facades that the chunks blank (`docs/perf/cells/desktop/desktop_low_plain_75m_40m.jpg`); over the street sample 40 m halves the buildings blanked within 100 m against 75 m and draws the fewest primitives on the high profile, for 1–4 (low) and 10–20 (high) more draw calls than the chunks and clearly more memory (+185 MiB video, +64 MiB static on the Mac; 75 m +14 / +18). The device runs below were made with 40 m only.
+
+### Occluders
+
+`tools/bake_occluders.gd` on the cells map: 643 occluders, 317,518 triangles, 206,048 shared vertices (the same counts as İstanbul's file). Against İstanbul's committed bake (`docs/perf/cells/generator/occluders_cells_vs_istanbul.txt`): 640 occluders identical; `Ground_04_07` and `Ground_15_17` differ by ≤ 7.6 µm; `Ataturk_Bridge` by up to 3.5 m: the regenerated bridge's seven piers stand elsewhere than in the shipped GLB (the "Reproduction" table above was corrected). So the cells map got its own bake (`maps/istanbul_halic_cells/istanbul_halic_cells_occluders.scn`, 2,300,915 bytes; a second bake to another path had identical occluders). `test_baked_occluders_match_this_maps_collision` checks it against the runtime build from the map's collision.
+
+### Tests
+
+| Run (2026-11-01) | Result |
+|---|---|
+| `godot --headless --path . --import` | exit 0, no errors or warnings |
+| `run_tests.gd`, both GLBs present | `RESULT 246 passed, 0 failed, 0 skipped`, exit 0 (509 s; again on the final tree with the documentation: 246 passed, exit 0, 510 s) |
+| without the cells GLB and its import result | `RESULT 237 passed, 0 failed, 9 skipped`, exit 2; the MAP button test visits only İstanbul and the test district |
+| without both GLBs | `RESULT 203 passed, 0 failed, 43 skipped`, exit 2 |
+| `-- unit` | `RESULT 190 passed, 0 failed, 0 skipped`, exit 0 (also without both GLBs) |
+| `tests/map/validate_scene.gd` | `VALIDATION PASS` |
+| Mutations (rule broken, unit suite, restored) | MAP not skipping unavailable maps → `test_maps_with_missing_generated_files_are_skipped` FAIL; `source/.gdignore` moved away → `test_generator_data_folders_carry_a_gdignore` FAIL |
+
+New tests: `test_istanbul_halic_cells.gd` (9: the GLB's hash, the same map data as İstanbul, spawn on the bridge with the car and two NPCs, scene setup and 827 colliders, every mesh in a render category and every cell named `<Category>_<cx>_<cy>_<i>_<j>`, the profiles' ranges on every cell, occluders against the map's collision, viewpoints on the ground, a switch away and back with the node count equal and no orphan nodes), in `test_map_registry.gd` (3: unavailable maps skipped and `--map` falling back, an imported file loadable only with its import result, the registry order and the ignored GLB), `test_map_data_folders.gd` (2: the `.gdignore` files and no `.import` files in the generator data folders). Changed: `test_debug_map_button_loads_the_next_map` walks through every available map.
+
+### Devices (Release Perf builds of `3e00ada` with both GLBs, three runs, medians)
+
+Protocol of Phase 5 (D17): cold start per experiment, 30 s warm-up + 60 s per viewpoint, the two İstanbul NPCs walking in the far mode; both maps in the same session, order alternated per run (tablet: İstanbul / cells / extra experiment, then cells / extra / İstanbul, then extra / İstanbul / cells; iPhone: İstanbul / cells, cells / İstanbul, İstanbul / cells). Tablet without PSS sampling, battery 28.5–34.0 °C (the first experiments hit the 900 s cool-down timeout at 30 °C, see "Incidents"); iPhone thermal Nominal at every probe. Every result has `debug_build: false`, `perf_feature: true`, and the expected `map`. The APK is 428,147,021 bytes and the iOS `.pck` 402,138,992 bytes with both maps (224 MB / 198 MB before). Raw data: `docs/perf/cells/results/`.
+
+| Criterion | Result | Evidence |
+|---|---|---|
+| Tab A7, low, cells map: average ≥ 29.9 at the three viewpoints | **PASS** | 30.00 / 29.99 / 29.99 |
+| Tab A7: 1 % low at most 1 FPS below İstanbul's Phase 5 medians (25.55 / 26.17 / 25.07) | **PASS** | 25.90 / 25.83 / 25.28 (same session İstanbul: 26.09 / 25.88 / 25.30) |
+| iPhone, high, cells map: average ≥ 59.5, long frames < 1 % | **PASS** | 60.00 / 60.00 / 60.00; long frames at most 3 of 3,600 per run and viewpoint (0.08 %) |
+| No blank facades within 100 m (screenshots of both maps from the same points) | **PASS at the three viewpoints** | `docs/perf/cells/shots/tablet_low_istanbul_vs_cells.jpg`: the Galata and Karaköy facades that İstanbul blanks on low have their windows on the cells map; over the 3,000 street points of the estimate no building within 50 m is blanked, but 8.7 % within 100 m still are (their cell's centre is beyond 100 m) |
+
+| Device, viewpoint | İstanbul: avg / 1 % low [runs] | Cells: avg / 1 % low [runs] | Draw calls | Primitives (k) | Physics ms |
+|---|---|---|---|---|---|
+| Tab A7, Spawn | 30.00 / 26.09 [23.59 / 26.09 / 26.57] | 30.00 / 25.90 [25.90 / 26.13 / 24.63] | 82 → 83 | 48.2 → 48.6 | 4.262 → 4.461 |
+| Tab A7, Karaköy | 30.00 / 25.88 [23.62 / 26.39 / 25.88] | 29.99 / 25.83 [25.83 / 26.35 / 25.53] | 72 → 76 | 54.8 → 56.6 | 4.453 → 4.664 |
+| Tab A7, Galata | 30.00 / 25.30 [22.67 / 25.37 / 25.30] | 29.99 / 25.28 [25.28 / 25.31 / 23.47] | 35 → 39 | 46.2 → 32.7 | 5.277 → 5.116 |
+| iPhone, Spawn | 60.00 / 57.87 [57.87 / 57.97 / 54.99] | 60.00 / 57.98 [57.98 / 57.45 / 58.07] | 248 → 261 | 207.0 → 201.9 | 1.218 → 1.035 |
+| iPhone, Karaköy | 60.00 / 57.04 [56.99 / 57.04 / 57.05] | 60.00 / 57.08 [56.55 / 57.08 / 57.09] | 141 → 167 | 262.1 → 171.4 | 1.225 → 1.249 |
+| iPhone, Galata | 60.00 / 55.90 [55.84 / 55.90 / 55.93] | 60.00 / 56.19 [56.03 / 56.24 / 56.19] | 72 → 90 | 322.7 → 115.8 | 1.391 → 1.374 |
+
+| Startup and memory | İstanbul | Cells |
+|---|---|---|
+| Tab A7, map ready (median of three launches) | 6,631 ms [6,687 / 6,631 / 6,604] | 7,843 ms [8,449 / 7,700 / 7,843] |
+| Tab A7, peak PSS (one launch each with sampling, `pss/`) | 512,901 kB (501 MiB) | 644,120 kB (629 MiB) |
+| iPhone, map ready | 1,366 ms [1,609 / 1,361 / 1,366] | 1,611 ms [1,626 / 1,611 / 1,594] |
+| iPhone, peak physical footprint (Instruments probes, three runs) | 999–1,003 MiB | 1,280 MiB in all three |
+| Video memory reported by the engine (tablet / iPhone) | 482 / 661 MiB | 477 / 845 MiB |
+
+- The tablet's 1 % low windows vary between runs as in Phase 5: one run per experiment had a window with 40–130 long frames (İstanbul in run 1, the extra experiment in run 2, the cells map at Galata in run 3); the medians are not affected by a single such run.
+- On Metal (the Mac and the iPhone) every extra mesh costs video memory (+184 MiB for the 3,074 extra meshes); on the tablet's Vulkan driver the reported video memory did not grow, and its PSS grew by 128 MiB.
+
+### Extra experiment: the tablet's low profile with 150 m ranges and no fog (cells map, no profile change)
+
+`c_cells_low_vis150_nofog`: the low profile with `visibility_end` 150 m for trees, lamps, decor, and facade detail and `fog: false` (the 400 m far plane stays); an experiment key only, the profile values are unchanged.
+
+| Tab A7, viewpoint | Cells, low (100 m, fog): 1 % low [runs] | 150 m, no fog: avg / 1 % low [runs] | Draw calls | Primitives (k) | Long frames per run |
+|---|---|---|---|---|---|
+| Spawn | 25.90 [25.90 / 26.13 / 24.63] | 30.00 / 26.09 [26.09 / 23.54 / 26.34] | 83 → 97 | 48.6 → 68.8 | 3 / 43 / 2 |
+| Karaköy | 25.83 [25.83 / 26.35 / 25.53] | 30.00 / 26.27 [26.66 / 23.79 / 26.27] | 76 → 86 | 56.6 → 73.4 | 0 / 21 / 4 |
+| Galata | 25.28 [25.28 / 25.31 / 23.47] | 30.00 / 25.03 [25.36 / 22.41 / 25.03] | 39 → 43 | 32.7 → 38.2 | 1 / 130 / 3 |
+
+The medians stay at the level of the low profile (and above the Phase 5 criterion) with 17–42 % more primitives, and the far facades, lamps, and trees up to 150 m are drawn (`docs/perf/cells/shots/tablet_low_cells_vs_vis150_nofog.jpg`); run 2 had long-frame windows at all three viewpoints (1 % low 22.4–23.8). Map ready 8,008 ms. Whether the low profile can be relaxed this way needs more runs and a longer session; a proposal, not applied.
+
+### Incidents and findings on the way
+
+- **Lamps keep the chunk granularity:** `StreetLamps_*` and `LampGlow_*` (and the decor category) are still one mesh per 150 m chunk, so on the low profile the lamp post beside the spawn is not drawn on either map (visible in the 150 m experiment's shot). Not in this task's scope.
+- **Tree trunks stay in chunks** (they are collision meshes, T40): no trunkless crown was seen in the benchmark screenshots, but it can happen on the low profile.
+- **The Atatürk bridge piers** of the regenerated GLB stand 2.7–3.5 m from the shipped ones (found by the occluder comparison; the earlier "rotated vertex order" in "Reproduction" was wrong and is corrected).
+- **Tablet batch restarted:** the first batch started on an idle tablet at 24.0 °C, so its cool-down target (24.5 °C) was out of reach while the tablet sat at about 30 °C on the charger; it was stopped after one and a half experiments (results kept outside the repository, not used) and restarted at 28.5 °C. The tablet had been locked with a PIN before the batch; the user unlocked it.
+- **adb restarts from another project:** during the batches another Godot project on this Mac (not this repository) ran headless Godot processes whose exits restarted the adb server repeatedly (the documented editor behaviour); the scripts tolerated it (every experiment has its results).
+- Godot 4.7.2 writes `gltf/naming_version=2` and `gltf/texture_map_mode=1` for a newly imported GLB; the cells GLB's `.import` was set to the shipped GLB's values (1 and 0) before committing.
 
 ## Phase 5 — extensibility: second map, second vehicle type, NPCs (2026-10-28)
 
@@ -1003,8 +1136,9 @@ Thermal state: Nominal at all 13 probes (0–601 s). App footprint 1,022–1,044
 | Behavior | Evidence |
 |---|---|
 | Project imports cleanly. | `godot --headless --path . --import`: exit 0, no errors or warnings (after adding `build/.gdignore`). |
-| Automated tests pass. | 2026-11-01, after the generator import (no game or test code changed): `run_tests.gd` → `RESULT 232 passed, 0 failed, 0 skipped`, exit 0 (491 s); `validate_scene.gd` → `VALIDATION PASS`; GLB SHA-256 unchanged. Phase 5: `run_tests.gd` → `RESULT 232 passed, 0 failed, 0 skipped`, exit 0; unit only → 185 passed, exit 0; without the GLB → `RESULT 198 passed, 0 failed, 34 skipped`, exit 2 (the 13 test district tests run without it) (2026-10-28, Phase 5; GLB SHA-256 re-verified afterwards). Phase 4d: 198; Phase 4c: 185; Phase 4b: 174; Phase 4a: 161. With Jolt (temporary `override.cfg`): 160 passed, 1 failed (the GodotPhysics3D pin). At 30 Hz physics: 148 passed, 13 failed (see "Phase 4a"). `tests/map/validate_scene.gd` → `VALIDATION PASS`. |
+| Automated tests pass. | 2026-11-01, with the cells map (`3e00ada` and the documentation commit after it): `run_tests.gd` → `RESULT 246 passed, 0 failed, 0 skipped`, exit 0 (510 s); without the cells GLB → 237 passed, 9 skipped, exit 2; without both GLBs → 203 passed, 43 skipped, exit 2; unit only → 190 passed, exit 0; `validate_scene.gd` → `VALIDATION PASS`; both GLBs' SHA-256 checked. 2026-11-01, after the generator import (no game or test code changed): `run_tests.gd` → `RESULT 232 passed, 0 failed, 0 skipped`, exit 0 (491 s); `validate_scene.gd` → `VALIDATION PASS`; GLB SHA-256 unchanged. Phase 5: `run_tests.gd` → `RESULT 232 passed, 0 failed, 0 skipped`, exit 0; unit only → 185 passed, exit 0; without the GLB → `RESULT 198 passed, 0 failed, 34 skipped`, exit 2 (the 13 test district tests run without it) (2026-10-28, Phase 5; GLB SHA-256 re-verified afterwards). Phase 4d: 198; Phase 4c: 185; Phase 4b: 174; Phase 4a: 161. With Jolt (temporary `override.cfg`): 160 passed, 1 failed (the GodotPhysics3D pin). At 30 Hz physics: 148 passed, 13 failed (see "Phase 4a"). `tests/map/validate_scene.gd` → `VALIDATION PASS`. |
 | İstanbul • Haliç generator. | See "Map generator in the repository": two runs byte-identical, the path change output-neutral, inputs and `assets/` unchanged, Godot import of the regenerated GLB in a throwaway project. |
+| Cell grouping and the cells map. | See "Cell grouping and the cells map": output without the option byte-identical, `--grouped` PASS for 40 and 75 m (and FAIL against the shipped GLB), two 40 m runs byte-identical, the cells map's tests and the mutation checks, three-run device results on both devices. |
 | Phase 5 maps, van, NPCs, far mode, scenario. | See "Phase 5", including the mutation checks. |
 | Phase 4b sleep, wake, overlay, iOS 60 Hz. | See "Phase 4b", including the mutation checks. |
 | Phase 4a gating and flags. | `test_build_features.gd` (feature logic, release HUD without debug controls, presets: `perf_bench` only in Release Perf presets, `perf_jolt` only in its preset and no `perf_60hz` preset left, keystore fields empty, no personal paths), `test_release_perf_build_runs_benchmarks_without_debug_ui`, `test_normal_release_ignores_experiments`, `test_runtime_experiment_keys_apply_on_the_map`, `test_runtime_keys_parse_and_reject_typos`, `test_frame_time_distribution`, `test_measurement_overrides_do_not_touch_defaults`. |
@@ -1022,6 +1156,7 @@ Thermal state: Nominal at all 13 probes (0–601 s). App footprint 1,022–1,044
 
 ## Unverified behaviors
 
+- Cells map (2026-11-01): the device scenarios (`vehicle_sleep`, `extensibility`) were not run on the devices with the cells map (headless only, where `test_device_scenario_extensibility` now passes through it); no 10-minute session, no in-vehicle runs, and no NPC A/B on it; the 150 m / no-fog experiment has one set of three runs; the trunk-under-crown case on the low profile was not looked for systematically; the blank-facade figures are a geometric estimate (AABB centres of the meshes, 3,000 street points), not counted on screen; the generator option and the GLB hash were checked only on macOS arm64; `render_map.py` was not run on the cells output.
 - Generator (2026-11-01): `render_map.py` was not run in Blender (paths checked with a stub `bpy` only); the generator ran only on macOS arm64 with Python 3.12.15; why the shipped GLB differs from every tried shapely version in the 6 signal heads and the road triangulation (the package's environment is unknown); the regenerated GLB was not run in the game, on devices, or measured.
 - Phase 5: two NPCs near the player at once were measured only as the A/B "all under the controller" (`c_npcs_full_*`), not by playing among them; more than two NPCs near the player were not measured. The far mode's behaviour where a route is blocked (it walks through) is by design and not tested. NPC behaviour on Jolt Physics: not tried. The 1 % low gap of the tablet's 40 s far-mode A/B windows in runs 2–3 (below) is unexplained.
 - iPhone: both landscape orientations with the joystick held through a turn (NOT RUN in Phases 4c, 4d, and 5; in Phase 5 the user answered that they could not do it; open question 33); the stutter while turning the camera and driving in the user's own words (only a prepared answer so far). The Phase 4b steps and the fix `5d6c8a7` are now verified on both devices by the device scenario (Phase 4d).
@@ -1063,6 +1198,7 @@ Thermal state: Nominal at all 13 probes (0–601 s). App footprint 1,022–1,044
 
 ## Known bugs and limitations
 
+- Cells map (2026-11-01): lamps, lamp glows, and decor keep their 150 m chunks, so on the low profile nearby lamp posts are not drawn (as on İstanbul); tree trunks stay in chunks while their crowns are in cells (T40); within 100 m about 8.7 % of the buildings still lose their facade detail on the low profile (estimate); the map costs +128 MiB PSS and +1.2 s to map ready on the tablet, +280 MiB footprint on the iPhone; a fresh clone must generate its GLB (about 2.5 minutes) before the map is offered.
 - NPCs (Phase 5): far NPCs (more than 10 m from the player) pass through walls, cars, and each other, so routes must be clear; moving vehicles pass through NPCs as through the player; getting out of a vehicle does not check for NPCs at the exit point (the player is pushed out of an NPC standing there); no damage, health, or reactions beyond the stagger; placeholder capsules.
 - Map switching (debug builds) blocks while the new map loads (back to İstanbul: 6.8 s on the tablet, 1.8 s on the iPhone) and is refused while driving.
 - Placeholder car (boxes and cylinders); no engine sound, damage, or traffic. Brake lights also light while parked (handbrake held).
@@ -1088,6 +1224,7 @@ Thermal state: Nominal at all 13 probes (0–601 s). App footprint 1,022–1,044
 
 ## Technical risks
 
+- **Memory per mesh (2026-11-01):** on Metal every extra mesh costs video memory (the cells map's 3,074 extra meshes: +184 MiB on the iPhone and the Mac); smaller cells or more categories in cells raise it further. The tablet's PSS rose by 128 MiB.
 - **Characters on the tablet (Phase 5):** a walking character under `PlayerController` costs about 1.1–1.4 ms per physics step on the Galaxy Tab A7 (three-run A/B; two steps per frame), mostly script and transform work; two NPCs near the player at once lower its 1 % low by about 2 FPS. The far mode keeps distant NPCs cheap; denser NPCs near the player need a cheaper character (open question 34).
 - **Tablet physics margin:** with the parked car asleep the physics step on foot is 3.8–4.8 ms (two per frame at 30 FPS); the player's `move_and_slide` (≈ 1 ms) and the trimesh map colliders remain (open question 30).
 - **Performance:** the profiles meet the iPhone criterion and the tablet's average; the tablet's 1 % low is marginal and its visual quality is low. Facade detail (64 % of triangles) remains the main geometry cost; the map-level work in `PROJECT_CONTEXT.md` is not started.
@@ -1102,10 +1239,11 @@ Thermal state: Nominal at all 13 probes (0–601 s). App footprint 1,022–1,044
 
 ## Required manual actions
 
-- **iPhone: set Auto-Lock back to its previous value**, if it is still on "Never". The Release Perf builds of `21196a3` are installed on both devices (the debug builds of the same commit ran the scenario).
+- **iPhone: set Auto-Lock back to its previous value**, if it is still on "Never". The Release Perf builds of `3e00ada` (both maps) are installed on both devices.
+- **The cells map as the default** (open question 41, `PROJECT_CONTEXT.md`): decide the criteria (a proposal is there) and look at the side-by-side shots (`docs/perf/cells/shots/`).
 - **iPhone rotation check** (open question 33): start `scenario_orientation` (commands in `docs/ARCHITECTURE.md`, "Device scenario"), hold the phone upright in landscape, and turn it 180° once during the 30 s; the gravity readings in the results file are the evidence.
 - The stutter while turning the camera and driving on the iPhone, in your own words.
-- Map pipeline decisions (`PROJECT_CONTEXT.md`): a regenerated map replaces the current one or gets a separate id (open question 39); how large outputs are stored (open question 40); before any release, how ODbL share-alike applies (open question 38).
+- Before any release: how ODbL share-alike applies (open question 38), and whether the cells map (and the test district, question 36) stay out of release packages. Open questions 39 and 40 were decided (D23).
 - The other directions after the specification (real models, store preparation) stay open: `PROJECT_CONTEXT.md`, "After the specification".
 - Open questions 2 (car model source), 12 (barriers), 22–24 (damage, NPC behaviour beyond Phase 5, roll immunity), 28–29 (camera distance, steering modes), 31–32 (test devices, button sizes), 33 (iPhone orientation), 34–37 (character cost, vehicle–character collisions, the test district in release packages, blocking map loads) remain.
 - Later, before any store release: the checklist in `PROJECT_CONTEXT.md`, "Before a store release" (new Apple account and Team ID, final bundle ID, release keystore, AAB build, store metadata; none created).
@@ -1113,19 +1251,21 @@ Thermal state: Nominal at all 13 probes (0–601 s). App footprint 1,022–1,044
 
 ## Current priorities
 
-1. Review of the generator import ("Map generator in the repository").
-2. The user's decisions on open questions 39 and 40, then the first source-level improvement (below).
+1. Review of the cell grouping, the cells map, and the device results ("Cell grouping and the cells map").
+2. The user's decision on the criteria for making the cells map the default (open question 41), then the next source-level improvement (below).
 
 ## Recommended next task
 
-The user chose the map-level work (D22); the generator is in the repository and reproduces the map deterministically (T39). Proposed order of the source-level improvements, each a separate task measured against the pinned regeneration (`68237c46…`) with `compare_outputs.py` and against the Phase 5 device baselines:
+Order of the remaining source-level improvements by what the cell grouping measured (each a separate task, measured against the pinned outputs with `compare_outputs.py` and against this task's three-run device results):
 
-| # | Improvement | Why in this place | Measurable acceptance |
+| # | Improvement | Why in this place (measurements of 2026-11-01) | Measurable acceptance |
 |---|---|---|---|
-| 1 | **Smaller cells and facade detail per building** (`Detail_*` and `Trees_*` split from 150 m chunks into per-building groups or ~40 m cells; geometry unchanged) | Facade detail is 64.2 % of the triangles, and 150 m chunks make the low profile's 100 m visibility range blank nearby facades (D12); regrouping changes no geometry, so it is the lowest-risk first step and the base for 2–5 | Without the new option the output stays `68237c46…`; with it the per-category triangle totals equal the pinned run and every non-regrouped mesh is byte-identical; Godot import 827 colliders; draw calls at the three viewpoints reported; Tab A7 low, three runs: average ≥ 29.9, 1 % low not more than 1 FPS below the Phase 5 medians, no blank facades within 100 m (screenshots); iPhone high: average ≥ 59.5, long frames < 1 % |
-| 2 | **Occluders from building footprints** (one box or prism per building, written by the generator) | Replaces the bake from trimesh collision (D13: 643 occluders, 317,518 triangles) with far fewer vertices; independent of the look | Occluder triangles and load time reported against D13; occlusion still culls at the Galata street view (draw calls within 10 % of the baked occluders) |
-| 3 | **Simple colliders** (building prisms as convex shapes where convex, boxes for trunks; ground stays trimesh) | Open question 30; Phase 5 found character cost mostly in script, so the gain is uncertain and must be measured | Same 827 bodies or fewer with documented names; tablet physics step on foot measured (three runs) against Phase 5; Phase 1–5 tests pass (camera collision, roll on the bridge, vehicle on the Karaköy street) |
-| 4 | **Normals and degenerate triangles** | Normals already exist (flat); 5,509 zero-area triangles and 113 flipped fan triangles could be dropped or fixed | Zero-area triangles 0, flipped 0; everything else byte-identical |
-| 5 | **Lighter facade geometry** (window quads to fewer triangles or a shader/texture) | The largest gain, but it changes the look and needs the user's visual approval | Facade triangles reduced by a stated share; screenshots for approval; device criteria as in 1 |
+| 1 | **Lighter facade geometry** (window quads to fewer triangles, or a shader/texture), on the cells map | Facade detail is still 4.54 M of the 7.07 M triangles; with the cells its near part is now drawn, so it sets what the tablet can afford: the 150 m / no-fog experiment drew 17–42 % more primitives at the same median 1 % low, but one of three runs had long-frame windows; the GLB, import, and memory are mostly facade | Facade triangles reduced by a stated share (target ≥ 50 %) with every other mesh byte-identical (`--grouped`-style proof); the user's visual approval of side-by-side shots; Tab A7, three runs: `profile_default_cells` and `c_cells_low_vis150_nofog` 1 % low not below 25.90 / 25.83 / 25.28 − 0.5, at most 1 % long frames per run; PSS below 629 MiB and iPhone footprint below 1,280 MiB |
+| 2 | **Streaming / loading the map in parts** | The cells map costs +128 MiB PSS and +1.2 s map ready on the tablet and +280 MiB footprint on the iPhone; the 200 MB imported scene loads at once and blocks a map switch (open question 37) | Tablet map ready ≤ İstanbul's 6.6 s and PSS ≤ 501 MiB; no frame over 50 ms while parts load at walking and driving speed; 1 % low unchanged within 0.5 FPS |
+| 3 | **Simple colliders** | The tablet's physics step (4.3–5.3 ms, two per frame) did not change with the cells and is the largest CPU cost measured; trunk colliders in boxes would let the trunks join their crowns in cells; Phase 5 found character cost mostly in script, so the gain is uncertain | Tablet physics step at the three viewpoints lower by ≥ 0.5 ms (three runs); body count and names documented; Phase 1–5 tests pass (camera collision, roll on the bridge, vehicle on the Karaköy street); trunks in cells |
+| 4 | **Occluders from building footprints** | Occlusion already works (Galata 35–39 draw calls on the tablet); the trimesh-based bake (643 occluders, 317,518 triangles) costs about 40 MiB and 89–136 ms at load | Occluder triangles −80 % or more; draw calls at the three viewpoints within 10 % of the baked collision occluders; load time and memory reported |
+| 5 | **Normals and degenerate triangles** | 5,509 zero-area and 113 flipped triangles of 7.07 M; no measurable effect | Zero-area 0, flipped 0, everything else byte-identical |
 
-**Recommendation:** task 1 first, as a separate map id if the user chooses that in open question 39 (A/B on the devices without touching the current map), with the outputs regenerated on each machine if the user so chooses in open question 40.
+Smaller follow-up of this task: lamps, lamp glows, and decor in cells too (the lamp post beside the spawn is not drawn on the low profile), measured for its video memory on Metal.
+
+**Recommendation:** task 1 on the cells map, once the user approves changing the facade look; the default-map decision (open question 41) can be taken independently.

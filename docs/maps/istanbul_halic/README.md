@@ -43,7 +43,7 @@ The generator is plain Python (no Blender, no network). It only reads its inputs
 
 | Path | Contents |
 |---|---|
-| `tools/maps/istanbul_halic/` | `build_map.py` (entry point) with its modules `terrain.py`, `architecture.py`, `bridge.py`, `vegetation.py`, `street_details.py`; `compare_outputs.py`; `render_map.py` (Blender previews, optional); `requirements.txt`, `.python-version` |
+| `tools/maps/istanbul_halic/` | `build_map.py` (entry point) with its modules `terrain.py`, `architecture.py`, `bridge.py`, `vegetation.py`, `street_details.py`; `compare_outputs.py`; `blank_facades.py`; `render_map.py` (Blender previews, optional); `requirements.txt`, `.python-version` |
 | `maps/istanbul_halic/source/` | Inputs, only read: `istanbul_extended_v4.osm` (OSM extract of 2026-09-26), `building_height_overrides.json`, `elevation/` (nine Terrarium tiles at zoom 14 and their `metadata.json`), `osm_v4_metadata.json` (the OSM API requests; documentation, not read by the scripts) |
 | `maps/istanbul_halic/reference/` | What the package's run wrote for the shipped GLB (`statistics.json`, `buildings.json`, `spawn.json`, `mosques.json`, `bridge_metadata.json`, `vegetation.json`, `street_details.json`) and its validation records (`validation.json`, `vegetation_validation.json`, `godot_validation.txt`); for comparison, never written |
 | `build/maps/istanbul_halic/` (default `--out`, ignored by Git) | `istanbul_halic.glb`, `map_metadata.json`, and the seven JSON records listed above |
@@ -72,7 +72,36 @@ Previews and the `.blend` (Blender 4.5; optional, not run in this repository so 
 blender --background --python tools/maps/istanbul_halic/render_map.py -- --out build/maps/istanbul_halic
 ```
 
-A regenerated GLB is not byte-identical with the shipped one: the GEOS geometry library triangulates roads, pavements, and quays differently, and a few traffic signal poles stand elsewhere (details in `PROJECT_STATE.md`). Using a regenerated map in the game is a separate decision (`PROJECT_CONTEXT.md`, open question 39).
+A regenerated GLB is not byte-identical with the shipped one: the GEOS geometry library triangulates roads, pavements, and quays differently, a few traffic signal poles stand elsewhere, and the Atatürk bridge's seven piers stand 2.7–3.5 m away from where the shipped GLB has them (details in `PROJECT_STATE.md`). The game uses a regenerated map only as the separate cells map below (`PROJECT_CONTEXT.md`, D23).
+
+### Cell grouping (`--detail-cell`)
+
+`--detail-cell METRES` (more than 0, less than 150) gives facade detail (`Detail_*`), tree crowns (`Trees_*`), and shrubs (`Shrubs_*`) one mesh per cell of that size inside each 150 m chunk, named `<Category>_<cx>_<cy>_<i>_<j>`; each building, tree, or shrub goes whole into the cell of its centre, so no triangle changes. Everything else keeps its mesh: the other chunked categories, the per-landmark meshes (`MosqueDetail_<id>`, `LandmarkDetail_<id>` are already one mesh per mosque or landmark), and every `-col` mesh, including the tree trunks (`TreeTrunks_*-col` are collision bodies). Without the option the output is unchanged (`68237c46…`). `statistics.json` and `map_metadata.json` record `detail_cell_m` and the larger `mesh_nodes`.
+
+```bash
+<VENV>/bin/python -B tools/maps/istanbul_halic/build_map.py --detail-cell 40 --out build/maps/istanbul_halic_cells
+<VENV>/bin/python -B tools/maps/istanbul_halic/compare_outputs.py --grouped --out build/maps/istanbul_halic_cells   # vs build/maps/istanbul_halic
+```
+
+`--grouped` compares with a run without the option (default `build/maps/istanbul_halic`, so generate that first) and passes (exit code 0) only when the header and every mesh outside the three categories are byte-identical, the cells of each chunk hold exactly the chunk's triangles (position, normal, and colour of every corner, as a multiset), and the triangle, vertex, and area totals per category match.
+
+`<VENV>/bin/python -B tools/maps/istanbul_halic/blank_facades.py --cells 40 build/maps/istanbul_halic_cells` estimates, for 3,000 street points, the share of nearby buildings whose facade detail a visibility range hides (Godot measures the range to the centre of a mesh's bounding box), for the run without the option and each given cell run; the cell size was chosen with it (`PROJECT_STATE.md`, "Cell grouping and the cells map").
+
+### The cells map (`istanbul_halic_cells`)
+
+A second map in the registry (`maps/istanbul_halic_cells/`): the same spawn, bounds, viewpoints, vehicle spawn, NPC routes, and scene setup as İstanbul • Haliç, with the GLB built with `--detail-cell 40`. It is loaded only with `--map=istanbul_halic_cells`, an experiment's `"map"` key, or the debug MAP button (debug and Release Perf builds); İstanbul • Haliç stays the default. Its GLB is generated on each machine and ignored by Git; its import settings (`assets/istanbul_halic_cells.glb.import`, the same values as the shipped GLB's) and its baked occluders (`maps/istanbul_halic_cells/istanbul_halic_cells_occluders.scn`) are committed. Until the GLB is generated and imported the map counts as unavailable: the MAP button skips it, `--map` falls back to İstanbul • Haliç with a warning, and its tests report SKIP.
+
+On a clean machine, after the setup above:
+
+```bash
+<VENV>/bin/python -B tools/maps/istanbul_halic/build_map.py --detail-cell 40 --out build/maps/istanbul_halic_cells
+shasum -a 256 build/maps/istanbul_halic_cells/istanbul_halic.glb
+# expected: 7973071a3ee900b0af4023fad310c250707d21ebbeea8161b334be4134053c9d (505,589,800 bytes)
+cp build/maps/istanbul_halic_cells/istanbul_halic.glb assets/istanbul_halic_cells.glb
+godot --headless --path . --import
+```
+
+A run took 157.9 s on the Mac (Apple Silicon, 16 GB) with a peak resident size of 3.6 GiB (peak memory footprint 4.8 GiB), and two runs are byte-identical; the import takes about 12 s. `tests/integration/test_istanbul_halic_cells.gd` checks the hash. After any change to the map's collision, re-bake its occluders: `godot --headless --path . --script res://tools/bake_occluders.gd -- --map=res://maps/istanbul_halic_cells/istanbul_halic_cells.tres`.
 
 ## Attribution
 

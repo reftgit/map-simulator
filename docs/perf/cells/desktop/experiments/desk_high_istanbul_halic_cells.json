@@ -1,0 +1,1 @@
+{"experiment": "desk_high_istanbul_halic_cells", "profile": "high", "map": "istanbul_halic_cells", "bench": {"warmup_s": 4, "measure_s": 6, "screenshots": true, "quit_when_done": true}}
