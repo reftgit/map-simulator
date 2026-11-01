@@ -1,11 +1,12 @@
 """Deterministic Istanbul environment from the bundled OpenStreetMap extract.
 Python 3.11+; pip install -r requirements.txt (pinned versions)
-Run from anywhere: python build_map.py [--source DIR] [--out DIR] [--detail-cell METRES] [--facade full|light]
+Run from anywhere: python build_map.py [--source DIR] [--out DIR] [--detail-cell METRES] [--facade full|light|shader]
 Inputs are only read from --source (default: maps/istanbul_halic/source);
 every output goes to --out (default: build/maps/istanbul_halic, ignored by Git).
 --detail-cell groups facade detail, tree crowns, and shrubs into smaller cells
 inside each 150 m chunk (by object centre; no geometry changes); off by default.
---facade light draws the facade detail with fewer triangles (full: unchanged).
+--facade light draws the facade detail with fewer triangles, shader draws windows,
+cornices, and string courses on one panel per wall for a shader (full: unchanged).
 Coordinates inside this generator: east, north, up, in metres.
 Export: glTF/Godot +X east, +Y up, -Z north. Origin 28.975 E, 41.023 N.
 """
@@ -25,9 +26,10 @@ cli.add_argument('--source', type=Path, default=REPO/'maps/istanbul_halic/source
 cli.add_argument('--out', type=Path, default=REPO/'build/maps/istanbul_halic', help='output folder, created if missing (default: %(default)s)')
 cli.add_argument('--detail-cell', type=float, metavar='METRES', help='mesh Detail_*, Trees_*, and Shrubs_* per cell of this size inside each 150 m chunk, '
                  'named <Category>_<cx>_<cy>_<i>_<j>; each building, tree, or shrub goes whole into the cell of its centre (default: off, one mesh per chunk)')
-cli.add_argument('--facade', choices=['full', 'light'], default='full',
-                 help='facade detail of ordinary buildings: full (the original geometry) or light (no windows facing a taller neighbour within '
-                 '1 m, no mullions or sills, flat railings); everything else is unchanged (default: %(default)s)')
+cli.add_argument('--facade', choices=['full', 'light', 'shader'], default='full',
+                 help='facade detail of ordinary buildings: full (the original geometry), light (no windows facing a taller neighbour within '
+                 '1 m, no mullions or sills, flat railings), or shader (one panel per wall with UVs for facade_windows.gdshader instead of '
+                 'cornices, string courses, and windows; flat railings); everything else is unchanged (default: %(default)s)')
 opts = cli.parse_args()
 SOURCE = opts.source.resolve(); OUT = opts.out.resolve(); CELL = opts.detail_cell; FACADE = opts.facade
 if OUT == SOURCE or SOURCE in OUT.parents: cli.error('--out must not be inside --source')
@@ -81,12 +83,15 @@ ROOFS=list(map(rgb,['A66049','B07457','965442','B57D61','835E50','777D7D']))
 STONE=rgb('C8BEA3'); LIGHT=rgb('E0D6BA'); DARK=rgb('3A5057'); METAL=rgb('526970'); GOLD=rgb('C7A555')
 
 class Mesh:
-    def __init__(self):self.v=[];self.n=[];self.c=[];self.f=[]
-    def face(self,pts,color):
+    # uv: per vertex (u, v, u2, v2) once a face brings them (the shader facade's panels); other faces get zeros.
+    def __init__(self):self.v=[];self.n=[];self.c=[];self.f=[];self.uv=None
+    def face(self,pts,color,uv=None):
         if len(pts)<3:return
         a,b,c=np.array(pts[:3],dtype=float);n=np.cross(b-a,c-a);l=np.linalg.norm(n)
         if l<1e-8:return
         n/=l;start=len(self.v)
+        if uv is not None and self.uv is None:self.uv=[(0,0,0,0)]*start
+        if self.uv is not None:self.uv.extend(uv if uv is not None else [(0,0,0,0)]*len(pts))
         self.v.extend(pts);self.n.extend([n]*len(pts));self.c.extend([color]*len(pts))
         for k in range(1,len(pts)-1):self.f.extend([start,start+k,start+k+1])
 M={}
@@ -130,6 +135,18 @@ def strip(m,a,b,r,col,n):
     # A flat bar of width 2r facing n (the light facade's railings).
     a=np.array(a);b=np.array(b);w=np.cross(n,b-a);w=w/np.linalg.norm(w)*r
     m.face([a-w,b-w,b+w,a+w],col)
+def flat_balcony(d,wx,wy,nx,ny,ux,uy,wz,ww):
+    # The full facade's balcony slab with its railing from flat bars; (wx, wy) is the glass, 5 cm in front of the wall.
+    n3=np.array([nx,ny,0.]);center=np.array([wx,wy])+np.array([nx,ny])*.55
+    cube(d,(*center,wz-.12),(ww+1,1.2,.18),LIGHT,math.atan2(uy,ux))
+    for offset in [-.5,.5]:
+        p0=center+np.array([ux,uy])*offset*(ww+1)+np.array([nx,ny])*.5
+        strip(d,(*p0,wz),(*p0,wz+.85),.04,METAL,n3)
+    p0=center-np.array([ux,uy])*(ww+1)*.5+np.array([nx,ny])*.5;p1=center+np.array([ux,uy])*(ww+1)*.5+np.array([nx,ny])*.5
+    strip(d,(*p0,wz+.85),(*p1,wz+.85),.055,METAL,n3)
+    for off in np.arange(-ww*.5,ww*.5+.1,.35):
+        pp=center+np.array([ux,uy])*off+np.array([nx,ny])*.5
+        strip(d,(*pp,wz),(*pp,wz+.85),.025,METAL,n3)
 def bar(m,a,b,r,col):
     a=np.array(a);b=np.array(b);d=b-a;d/=np.linalg.norm(d)
     up=np.array([0.,0.,1.]);u=np.cross(d,up)
@@ -248,7 +265,13 @@ for p,t,wid in buildings:
     nx,ny=dy/length,-dx/length;ux,uy=dx/length,dy/length
     ncol=max(1,int(length/3.3));nfloor=max(1,int((zt-zg-1)/3.3))
     # Thin cornice and regularly spaced low-cost window quads.
-    if FACADE=='light':BANDS.append((d,len(TOPS)-1,a,b,nx,ny,.12,zt-.45,zt-.13))
+    if FACADE=='shader':
+        # One panel 3 cm in front of the wall; facade_windows.gdshader draws the cornice, string courses, and windows of the full facade
+        # from UV (metres along the wall, above zg) and UV2 (column width, wall height); colour alpha is a seed for the glass tints.
+        z0=zg+1;z1=zt-.1;cw=length/ncol;o=.03
+        d.face([(a[0]+nx*o,a[1]+ny*o,z0),(b[0]+nx*o,b[1]+ny*o,z0),(b[0]+nx*o,b[1]+ny*o,z1),(a[0]+nx*o,a[1]+ny*o,z1)],color[:3]+((int(wid)*7+j)%251+2,),
+               uv=[(0,1,cw,zt-zg),(length,1,cw,zt-zg),(length,z1-zg,cw,zt-zg),(0,z1-zg,cw,zt-zg)])
+    elif FACADE=='light':BANDS.append((d,len(TOPS)-1,a,b,nx,ny,.12,zt-.45,zt-.13))
     else:d.face([(a[0]+nx*.12,a[1]+ny*.12,zt-.45),(b[0]+nx*.12,b[1]+ny*.12,zt-.45),(b[0]+nx*.12,b[1]+ny*.12,zt-.13),(a[0]+nx*.12,a[1]+ny*.12,zt-.13)],LIGHT)
     for floor in range(nfloor):
      wz=zg+1.3+floor*3.3
@@ -257,6 +280,9 @@ for p,t,wid in buildings:
         glass=DARK if RNG.random()<.88 else rgb('80918E')
         if FACADE=='light':
             WINDOWS.append((d,len(TOPS)-1,wx,wy,nx,ny,ux,uy,wz,ww,glass,j==0 and floor in [1,2] and col%3==0 and int(wid)%7==0));continue
+        if FACADE=='shader':
+            if j==0 and floor in [1,2] and col%3==0 and int(wid)%7==0:flat_balcony(d,wx+nx*.025,wy+ny*.025,nx,ny,ux,uy,wz,ww)
+            continue
         # Contrasting surround, recessed glass, a thin sill and central mullion.
         fw=ww/2+.12
         d.face([(wx-ux*fw,wy-uy*fw,wz-.12),(wx+ux*fw,wy+uy*fw,wz-.12),(wx+ux*fw,wy+uy*fw,wz+1.78),(wx-ux*fw,wy-uy*fw,wz+1.78)],LIGHT)
@@ -278,6 +304,7 @@ for p,t,wid in buildings:
                 pp=center+np.array([ux,uy])*off+np.array([nx,ny])*.5
                 bar(d,(*pp,wz),(*pp,wz+.85),.025,METAL)
     for zz in np.arange(zg+3.1,zt-1,6.6):
+        if FACADE=='shader':continue
         if FACADE=='light':BANDS.append((d,len(TOPS)-1,a,b,nx,ny,.045,zz,zz+.13));continue
         d.face([(a[0]+nx*.045,a[1]+ny*.045,zz),(b[0]+nx*.045,b[1]+ny*.045,zz),(b[0]+nx*.045,b[1]+ny*.045,zz+.13),(a[0]+nx*.045,a[1]+ny*.045,zz+.13)],LIGHT)
     if j==0:
@@ -309,18 +336,7 @@ if FACADE=='light':
         d.face([(wx-ux*fw,wy-uy*fw,wz-.12),(wx+ux*fw,wy+uy*fw,wz-.12),(wx+ux*fw,wy+uy*fw,wz+1.78),(wx-ux*fw,wy-uy*fw,wz+1.78)],LIGHT)
         wx+=nx*.025;wy+=ny*.025
         d.face([(wx-ux*ww/2,wy-uy*ww/2,wz),(wx+ux*ww/2,wy+uy*ww/2,wz),(wx+ux*ww/2,wy+uy*ww/2,wz+1.65),(wx-ux*ww/2,wy-uy*ww/2,wz+1.65)],glass)
-        if balcony:
-            # The slab as in full, the railing from flat bars.
-            n3=np.array([nx,ny,0.]);center=np.array([wx,wy])+np.array([nx,ny])*.55
-            cube(d,(*center,wz-.12),(ww+1,1.2,.18),LIGHT,math.atan2(uy,ux))
-            for offset in [-.5,.5]:
-                p0=center+np.array([ux,uy])*offset*(ww+1)+np.array([nx,ny])*.5
-                strip(d,(*p0,wz),(*p0,wz+.85),.04,METAL,n3)
-            p0=center-np.array([ux,uy])*(ww+1)*.5+np.array([nx,ny])*.5;p1=center+np.array([ux,uy])*(ww+1)*.5+np.array([nx,ny])*.5
-            strip(d,(*p0,wz+.85),(*p1,wz+.85),.055,METAL,n3)
-            for off in np.arange(-ww*.5,ww*.5+.1,.35):
-                pp=center+np.array([ux,uy])*off+np.array([nx,ny])*.5
-                strip(d,(*pp,wz),(*pp,wz+.85),.025,METAL,n3)
+        if balcony:flat_balcony(d,wx,wy,nx,ny,ux,uy,wz,ww)
     # A band goes when it is hidden at a quarter, half, and three quarters of its wall.
     samples=[(a[0]+(b[0]-a[0])*t+nx,a[1]+(b[1]-a[1])*t+ny) for d,_,a,b,nx,ny,o,z0,z1 in BANDS for t in (.25,.5,.75)]
     gone=hidden([bd[1] for bd in BANDS for t in range(3)],samples,[bd[8] for bd in BANDS for t in range(3)]).reshape(-1,3).all(axis=1) if BANDS else []
@@ -461,11 +477,16 @@ def export_glb(path):
         colors=np.rint(colors*255).astype(np.uint8)
         pa=array(v,5126,'VEC3',34962);na=array(n,5126,'VEC3',34962);ca=array(colors,5121,'VEC4',34962)
         ia=array(np.array(m.f,dtype=np.uint32),5125,'SCALAR',34963)
-        meshes.append({'name':name,'primitives':[{'attributes':{'POSITION':pa,'NORMAL':na,'COLOR_0':ca},'indices':ia,'material':1 if name=='Water' else 2 if name.startswith('LampGlow') else 3 if name.startswith('SignalGlow_red') else 4 if name.startswith('SignalGlow_green') else 5 if name.startswith('BridgeGlass') else 0}]})
+        attributes={'POSITION':pa,'NORMAL':na,'COLOR_0':ca}
+        if m.uv is not None:
+            t=np.array(m.uv,dtype=np.float32);attributes['TEXCOORD_0']=array(np.ascontiguousarray(t[:,:2]),5126,'VEC2',34962);attributes['TEXCOORD_1']=array(np.ascontiguousarray(t[:,2:]),5126,'VEC2',34962)
+        meshes.append({'name':name,'primitives':[{'attributes':attributes,'indices':ia,'material':6 if m.uv is not None else 1 if name=='Water' else 2 if name.startswith('LampGlow') else 3 if name.startswith('SignalGlow_red') else 4 if name.startswith('SignalGlow_green') else 5 if name.startswith('BridgeGlass') else 0}]})
         gnodes.append({'name':name,'mesh':len(meshes)-1})
         stats['triangles']+=len(m.f)//3;stats['vertices']+=len(m.v);stats['mesh_nodes']+=1
+    materials=[{'name':'Istanbul_VertexPalette','doubleSided':False,'pbrMetallicRoughness':{'baseColorFactor':[1,1,1,1],'metallicFactor':0,'roughnessFactor':.88}}, {'name':'Halic_Water','doubleSided':False,'pbrMetallicRoughness':{'baseColorFactor':[1,1,1,1],'metallicFactor':.12,'roughnessFactor':.26}}, {'name':'Warm_Lamp_Lenses','pbrMetallicRoughness':{'baseColorFactor':[1,1,1,1],'metallicFactor':0,'roughnessFactor':.4},'emissiveFactor':[1,.83,.48]}, {'name':'Signal_Red','doubleSided':True,'pbrMetallicRoughness':{'baseColorFactor':[1,1,1,1],'metallicFactor':0,'roughnessFactor':.35},'emissiveFactor':[1,.025,.012]}, {'name':'Signal_Green','doubleSided':True,'pbrMetallicRoughness':{'baseColorFactor':[1,1,1,1],'metallicFactor':0,'roughnessFactor':.35},'emissiveFactor':[.015,.8,.15]}, {'name':'Bridge_Canopy_Glass','doubleSided':True,'pbrMetallicRoughness':{'baseColorFactor':[1,1,1,1],'metallicFactor':.15,'roughnessFactor':.27}}]
+    if any(m.uv is not None for m in M.values()):materials.append({'name':'Istanbul_FacadeWindows','doubleSided':False,'pbrMetallicRoughness':{'baseColorFactor':[1,1,1,1],'metallicFactor':0,'roughnessFactor':.88}})
     j={'asset':{'version':'2.0','generator':'Istanbul Halic expanded bridge and streets v4'},'scene':0,'scenes':[{'nodes':list(range(len(gnodes)))}],'nodes':gnodes,'meshes':meshes,
-       'materials':[{'name':'Istanbul_VertexPalette','doubleSided':False,'pbrMetallicRoughness':{'baseColorFactor':[1,1,1,1],'metallicFactor':0,'roughnessFactor':.88}}, {'name':'Halic_Water','doubleSided':False,'pbrMetallicRoughness':{'baseColorFactor':[1,1,1,1],'metallicFactor':.12,'roughnessFactor':.26}}, {'name':'Warm_Lamp_Lenses','pbrMetallicRoughness':{'baseColorFactor':[1,1,1,1],'metallicFactor':0,'roughnessFactor':.4},'emissiveFactor':[1,.83,.48]}, {'name':'Signal_Red','doubleSided':True,'pbrMetallicRoughness':{'baseColorFactor':[1,1,1,1],'metallicFactor':0,'roughnessFactor':.35},'emissiveFactor':[1,.025,.012]}, {'name':'Signal_Green','doubleSided':True,'pbrMetallicRoughness':{'baseColorFactor':[1,1,1,1],'metallicFactor':0,'roughnessFactor':.35},'emissiveFactor':[.015,.8,.15]}, {'name':'Bridge_Canopy_Glass','doubleSided':True,'pbrMetallicRoughness':{'baseColorFactor':[1,1,1,1],'metallicFactor':.15,'roughnessFactor':.27}}],
+       'materials':materials,
        'accessors':access,'bufferViews':views,'buffers':[{'byteLength':len(blob)}],
        'extras':{'attribution':'© OpenStreetMap contributors — ODbL 1.0','origin_lon_lat':[28.975,41.023],'units':'meters','elevation':'Terrain Tiles DEM, smoothed; waterfront corrected to 1.5 m'}}
     js=json.dumps(j,separators=(',',':')).encode();js+=b' '*((-len(js))%4);blob+=b'\x00'*((-len(blob))%4)

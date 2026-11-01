@@ -18,7 +18,7 @@ import numpy as np
 
 REPO = Path(__file__).resolve().parents[3]
 COMPONENTS = {5126: np.float32, 5125: np.uint32, 5121: np.uint8}
-WIDTHS = {'SCALAR': 1, 'VEC3': 3, 'VEC4': 4}
+WIDTHS = {'SCALAR': 1, 'VEC2': 2, 'VEC3': 3, 'VEC4': 4}
 ATTRIBUTES = ['POSITION', 'NORMAL', 'COLOR_0']
 GROUPED = ['Detail', 'Trees', 'Shrubs']  # build_map.py CELLED
 PLAIN_RUN = REPO/'build/maps/istanbul_halic'
