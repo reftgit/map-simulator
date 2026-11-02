@@ -4,6 +4,10 @@ Planning context and decision rationale. This file does not describe implemented
 
 Last updated: 2026-11-02 (the shader facade map as the default, Claude Code)
 
+## Main goal (D26, 2026-11-02, user decision)
+
+**The project is a map infrastructure.** Any map (GLB) a user provides that follows the documented map contract (`docs/MAP_CONTRACT.md`) must become playable automatically: the character walks, punches, and rolls, the car drives, NPCs patrol, and the quality profiles apply. For a map that does not follow the contract, the import tool reports what is missing and how to fix it, and fixes what it can by itself. Every later task, the streaming loader included, is designed for maps in general, not for one map.
+
 ## Product vision and goals
 
 Source: the user's application specification of 2026-10-24 ("Godot 3D mobil oyun — başlangıç promptu").
@@ -232,6 +236,11 @@ PlayerController, PlayerStateMachine, PlayerCombat, PlayerAnimation, ThirdPerson
 - **Result (2026-11-01):** 2, 3, and 4 passed; **1 failed** (one of three runs had 46 and 107 long frames at Spawn and Galata), so **the default did not change**: İstanbul • Haliç stays first. The failure was measured to be a pacing state of single launches on the tablet that also hits İstanbul, the cells map, and the panels without a shader, not the window shader (`PROJECT_STATE.md`, "Shader facade toward the default"); its remedy would change the low profile's frame pacing (open question 43). Criterion 5 is with the user (`docs/perf/facade_v2/`).
 - **Update (2026-11-02, user decision):** criterion 1 became relative: on the Galaxy Tab A7's low profile the shader map must not be worse than İstanbul • Haliç measured with the same protocol: (a) at least 9 launches of each, alternating, three viewpoints per launch; (b) the shader map's bad launches (a viewpoint with more than 1 % long frames) at most one more than İstanbul's; (c) its median 1 % low at most 0.5 FPS below İstanbul's at every viewpoint; (d) average FPS ≥ 29.9. Criterion 5: the user delegated the visual decision to the reviewer, and the reviewer approved the footprint filter after looking at `docs/perf/facade_v2/far_windows_high.jpg` and the pan GIFs ("kullanıcı görsel kararı reviewer'a devretti; reviewer onayladı"). Criteria 2–4 passed on 2026-11-01 and were not measured again. The tablet's frame pacing settings do not change (open question 43 is only recorded).
 - **Result (2026-11-02):** the relative criterion passed: nine launches of each, one bad launch each, median 1 % low +0.03 / −0.03 / +0.19 FPS against İstanbul at Spawn / Karaköy / Galata, average 30.00–30.01 FPS (`docs/perf/default_map/`). With criteria 2–5 met, **the shader map became the default** in its own commit (`b80c205`): first in the registry, so normal release builds start on it; İstanbul • Haliç, the test district, the cells map, and the light map stay selectable. `git revert b80c205` undoes it alone (the registry order, the experiments pinned to İstanbul, the tests that follow the default; `git apply -R --check` of that commit passed on the final HEAD; the revert itself was not applied). Where the shader GLB is missing (a fresh clone) the game starts on the first available map with a warning (`edadb59`).
+
+### D26 — The project is a map infrastructure (2026-11-02, user decision)
+
+- **Decision:** any GLB that follows the map contract becomes playable without hand work (walk, punch, roll, drive, NPC patrol, quality profiles); for one that does not, the import tool names what is missing and how to fix it, and fixes what it can. Later tasks (streaming included) are designed for maps in general. Written at the top of this file as the main goal.
+- **Task of 2026-11-02 (Phase 6a):** the map contract (`docs/MAP_CONTRACT.md`), the render categories moved from `RenderSettings` into each map's data, a general import tool, and the proof on three maps: the user's Safranbolu package (test input only, not added to the game), the shipped `istanbul_halic.glb` under a test id (robustness; it does not replace İstanbul • Haliç), and a CC0 model. The existing maps, the default map, their look and measurements, the quality profile values, the physics, and the gameplay do not change; the İstanbul generator stays as it is. Large test GLBs stay out of Git; a CC0 test map under 10 MB and its licence may be committed.
 
 ## Application technical decisions
 
