@@ -275,9 +275,11 @@ A `VehicleBody3D` at rest is never put to sleep by GodotPhysics3D: the engine's 
 | `map_geometry.gd` | Face statistics (area by orientation, zero-area and flipped triangles), flat normals, baked transforms (mirroring reverses the winding), connected parts, closed-shell check. Godot's front faces wind clockwise: front normal `(c − a) × (b − a)`. |
 | `map_classifier.gd` | The default vocabulary (as `words` rules), the group rules, configured rules, the shape rules. |
 | `map_colliders.gd` | Collision node suffixes (`-col`, `-colonly`, `-convcol`, `-convcolonly`) and the collider types (`trimesh` per mesh, `convex` or `box` per connected part; parts under 0.5 m or flatter than 2 cm are skipped). A `StaticBody3D` (layer 1) under the mesh, as Godot's GLB import makes it. |
+| `map_placement.gd` | C4 and C8 with rays and shape queries against the generated colliders (the model in the tree): walkable samples on a grid (extent / 100, 2–10 m), the player spawn (nearest the walkable centre with the longest clear walk), the vehicle (a clear, flat 7 m × 5 m area with a clear drive), the NPC route, three viewpoints facing the centre, a sloped viewpoint, the bounds (walkable extent, 1 m inside), the kill height (10 m below the lowest geometry); points from the configuration replace the search. |
+| `map_writer.gd` | The map scene (text: `Model` instance, the İstanbul sky and sun), the `MapDefinition` (saved with `ResourceSaver`), the registry entry (appended to `game/world/maps.tres` as text, so the other entries keep their ids). |
 | `import_report.gd` | The Markdown report. |
 
-Outputs (`--out`, default `maps/<id>/`): `<id>_model.scn` (compressed; above 10 MB the tool writes a `.gitignore` for it), `<id>_categories.tres`, `<id>_occluders.scn`; the report goes to `docs/maps/imported/<id>.md` (`--report`). Exit code 0 written, 1 a mandatory check failed (`--force` writes anyway), 2 bad arguments. Tests: `tests/unit/test_map_import.gd` (synthetic scenes).
+Outputs (`--out`, default `maps/<id>/`): `<id>_model.scn` (compressed; above 10 MB the tool writes a `.gitignore` for it), `<id>_categories.tres`, `<id>_occluders.scn`, `<id>.tscn`, `<id>.tres`, and the registry entry (not with `--no-register`); the report goes to `docs/maps/imported/<id>.md` (`--report`). Nothing is written while a mandatory check fails (`--force` writes anyway); exit code 0 written, 1 not written, 2 bad arguments. Tests: `tests/unit/test_map_import.gd` and `test_map_placement.gd` (synthetic scenes).
 
 ### Adding a vehicle type (the steps followed for the van)
 

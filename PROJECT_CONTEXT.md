@@ -491,6 +491,11 @@ Decisions made by the implementing agent (Claude Code, 2026-10-24). None was spe
 - **Colliders:** with collision nodes only those (the author decided); otherwise ground trimesh, buildings one convex hull per connected part (a courtyard is filled; `"colliders"` can choose `box` or `trimesh`), nothing for trees, lamps, decor, facade detail, water. Occluders come from the buildings and ground colliders with the existing bake (`RenderSettings.build_occluders`), which now also takes the hull faces of convex and box shapes (an extensibility finding: a core change).
 - **Rationale:** D26; the import must work without hand work and say what it could not fix.
 
+### T47 — Placement by physics queries against the generated colliders (2026-11-02, Phase 6a)
+
+- **Decision:** the tool finds the spawn, the vehicle place, the NPC route, the viewpoints, the bounds, and the kill height with rays and shape queries against the colliders it generated, not from the meshes: a point counts only where the game's own physics would hold the player or the car. Walkable means the first hit from above is a `ground` collider no steeper than 35° (spawn 20°, car 8°); the player's capsule must fit (so a road that runs through a building, as in the Safranbolu package, is passed over: the ray hits the roof, or the capsule overlaps the walls); the spawn needs a 2 m clear circle and 20 m of walk (capped at 40 m, the 10 s walk test), the car a clear 7 m × 5 m area (room to get out on either side) and 25 m of drive (the 5 s throttle test), the NPC route 8–16 m away from where the player walks and the car drives. Candidates are tried nearest first (the walkable centre for the spawn, the spawn for the others), at most 400 per item. Thresholds: `docs/MAP_CONTRACT.md`, "Placement".
+- **Rationale:** the acceptance tests of D26 (walk, punch, roll, drive, patrol) must pass on any map without hand-placed points; the configuration can still fix any point.
+
 ## Performance findings and proposed measures
 
 Status: **measured on 2026-10-24, nothing applied.** Full tables and protocol: `PROJECT_STATE.md`, "Performance diagnosis pass". Raw data and screenshots: `docs/perf/`.

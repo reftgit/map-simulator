@@ -2,14 +2,17 @@ extends SceneTree
 ## Imports a map GLB into the game (rules: docs/MAP_CONTRACT.md): checks the
 ## map contract, fixes what it can (normals, vertex colours, scale and axes
 ## when configured), puts every mesh into a render category, builds
-## colliders and occluders, and writes the processed model, the category
-## rules, the occluders, and a report.
+## colliders and occluders, places the player spawn, a vehicle, an NPC route,
+## and viewpoints, and writes the processed model, the category rules, the
+## occluders, the map scene, its MapDefinition, the registry entry, and a report.
 ##   godot --headless --path . --script res://tools/import_map.gd -- --glb=<file.glb> [--config=<file.json>] [--id=<id>]
-##       [--out=res://maps/<id>] [--report=res://docs/maps/imported/<id>.md] [--force]
+##       [--out=res://maps/<id>] [--report=res://docs/maps/imported/<id>.md] [--no-register] [--force]
 ## The GLB is only read. Exit code 0 when the map was written, 1 when a
 ## mandatory rule failed (the report says what to fix), 2 for bad arguments.
 
 const MapImporter := preload("res://tools/map_import/map_importer.gd")
+const MapPlacement := preload("res://tools/map_import/map_placement.gd")
+const MapWriter := preload("res://tools/map_import/map_writer.gd")
 const ImportReport := preload("res://tools/map_import/import_report.gd")
 
 ## Models larger than this stay out of Git (a .gitignore in the map folder).
@@ -29,7 +32,7 @@ func _run() -> void:
 		elif arg.begins_with("--"):
 			args[arg.trim_prefix("--")] = true
 	if not args.has("glb"):
-		printerr("usage: --glb=<file.glb> [--config=<file.json>] [--id=<id>] [--out=res://maps/<id>] [--report=<path.md>] [--force]")
+		printerr("usage: --glb=<file.glb> [--config=<file.json>] [--id=<id>] [--out=res://maps/<id>] [--report=<path.md>] [--no-register] [--force]")
 		quit(2)
 		return
 	var glb := ProjectSettings.globalize_path(str(args.glb))
@@ -61,7 +64,14 @@ func _run() -> void:
 		root.add_child(importer.model)
 		await physics_frame
 		await physics_frame
-		info.written = _write(importer, id, out, info)
+		var placement := _place(importer)
+		info.placement = {"lines": placement.lines}
+		if not importer.failed() or args.has("force"):
+			info.written = _write(importer, placement, id, out, info)
+			if info.written and not args.has("no-register"):
+				var registered := MapWriter.register(ProjectSettings.globalize_path(MapRegistry.PATH), out.path_join("%s.tres" % id))
+				info.registered = registered in ["added", "present"]
+				print("IMPORT registry: ", registered)
 	info.seconds = (Time.get_ticks_msec() - started) / 1000.0
 	_save_text(report_path, ImportReport.markdown(importer, info))
 	for check: Dictionary in importer.checks:
@@ -74,8 +84,26 @@ func _run() -> void:
 	quit(0 if info.written else 1)
 
 
-## Writes the processed model, the category rules, and the occluders to `out`.
-func _write(importer: RefCounted, id: String, out: String, info: Dictionary) -> bool:
+## C4 and C8: the placement against the model's colliders; its checks join
+## the importer's.
+func _place(importer: RefCounted) -> RefCounted:
+	var started := Time.get_ticks_msec()
+	var categories := {}
+	for body in importer.model.find_children("*", "StaticBody3D", true, false):
+		var owner_node: Node = body.get_parent()
+		var record: Dictionary = importer.meshes.get(str(owner_node.name), {})
+		categories[body.get_instance_id()] = record.category if record.has("category") else importer.rules.category_of(owner_node)
+	var placement := MapPlacement.new()
+	placement.run(importer.model.get_world_3d().direct_space_state, categories, importer.summary.bounds, importer.config)
+	importer.checks.append_array(placement.checks)
+	importer.timings.placement = Time.get_ticks_msec() - started
+	print("IMPORT stage placement %d ms" % importer.timings.placement)
+	return placement
+
+
+## Writes the processed model, the category rules, the occluders, the map
+## scene, and the MapDefinition to `out`.
+func _write(importer: RefCounted, placement: RefCounted, id: String, out: String, info: Dictionary) -> bool:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(out))
 	var model_path := out.path_join("%s_model.scn" % id)
 	var rules_path := out.path_join("%s_categories.tres" % id)
@@ -100,6 +128,17 @@ func _write(importer: RefCounted, id: String, out: String, info: Dictionary) -> 
 	if not saved:
 		return false
 	info.outputs.append([occluders_path, FileAccess.get_file_as_bytes(occluders_path).size(), true])
+	var scene_path := out.path_join("%s.tscn" % id)
+	_save_text(scene_path, MapWriter.scene_text(id, model_path))
+	info.outputs.append([scene_path, FileAccess.get_file_as_bytes(scene_path).size(), true])
+	var paths := {"scene": scene_path, "model": model_path, "rules": rules_path, "occluders": occluders_path}
+	var definition := MapWriter.definition(id, str(importer.config.get("display_name", id)), paths, placement)
+	var definition_path := out.path_join("%s.tres" % id)
+	error = ResourceSaver.save(definition, definition_path)
+	if error != OK:
+		printerr("IMPORT could not save ", definition_path, ": ", error_string(error))
+		return false
+	info.outputs.append([definition_path, FileAccess.get_file_as_bytes(definition_path).size(), true])
 	return true
 
 
