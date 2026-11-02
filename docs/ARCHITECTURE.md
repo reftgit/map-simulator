@@ -25,21 +25,25 @@ game/
   quality/                  RenderSettings (applies render settings), QualityProfile, QualityProfiles, profiles/high.tres, low.tres
   debug/                    PerfConfig (experiments), PerfBenchmark, DeviceScenario, TrainingDummy, BuildFeatures
   platform/                 Platform: the only code that asks the OS which platform this is (Phase 4d)
-maps/<map_name>/            One folder per map: scene, MapDefinition (.tres), map script, occluders
+maps/<map_name>/            One folder per map: scene, MapDefinition (.tres), category rules, map script, occluders
                             (istanbul_halic: the GLB map; test_district: Godot primitives, Phase 5;
                             istanbul_halic_cells: the regenerated GLB with facade detail in cells;
                             istanbul_halic_cells_shader: the shader facade, the default since 2026-11-02;
-                            istanbul_halic_cells_light: the experimental light facade)
+                            istanbul_halic_cells_light: the experimental light facade;
+                            kenney_town: the CC0 town made by the import tool, Phase 6a, source in source/)
   istanbul_halic/source/    Generator inputs: OSM extract, Terrarium tiles, height overrides (.gdignore)
   istanbul_halic/reference/ The package's generated records, for comparison (.gdignore; never written)
 assets/                     Map models and metadata (the GLBs are not in Git: the shipped one is restored,
                             the istanbul_halic_cells*.glb are generated; their .import files are tracked)
 scripts/, main.tscn         Original explorer demo from the map package (desktop only, not used by the game)
-tests/                      Headless test runner, unit and integration suites, fixtures (flat map, fake platform)
+tests/                      Headless test runner, unit and integration suites, fixtures (flat map, fake platform, the old
+                            category table, import configurations); imported/: test imports (ignored by Git, not exported)
 tools/                      Development tools (screenshot capture, iOS debug build, occluder bake, test district generator, perf scripts)
+  import_map.gd, map_import/  The map import tool (Phase 6a; docs/MAP_CONTRACT.md, "Import tool" below)
+  maps/kenney_town/         The CC0 test town's composer (Kenney pieces into one GLB)
   maps/istanbul_halic/      İstanbul • Haliç generator (Python): build_map.py and modules, compare_outputs.py,
                             render_map.py (Blender), requirements.txt; see "Map generation (İstanbul • Haliç)"
-docs/                       This file, map documentation
+docs/                       This file, the map contract (MAP_CONTRACT.md), map documentation and import reports (maps/imported/)
 build/                      Export and map generator output, ignored by Git except build/.gdignore (keeps Godot from importing it)
 export_presets.cfg          Six presets: Android/iOS debug, Android compatibility, three Release Perf (see "Export presets")
 ```
@@ -121,7 +125,7 @@ The specification suggested these modules. Status as of Phase 5:
 
 ## Extension points
 
-- **New map:** add `maps/<name>/<name>.tscn`, a `MapDefinition` resource, and an entry in `game/world/maps.tres`; see "Adding a map". Player, vehicle, NPC, camera, and input code stay unchanged.
+- **New map:** run the import tool on a GLB that follows `docs/MAP_CONTRACT.md` (it writes `maps/<id>/` and the registry entry), or make the scene, `MapDefinition`, and category rules by hand; see "Adding a map". Player, vehicle, NPC, camera, input, profile, and scenario code stay unchanged.
 - **New player action:** add a `PlayerState` child under `Player/StateMachine` and a one-shot field on `PlayerIntent`; buffer its press in `PlayerController._physics_process()` and start it from `PlayerState.start_buffered_action()`. States switch with `machine.transition_to(&"Name")`. Punch and roll are the worked examples (see "Character actions").
 - **Character model and animations:** replace the `Visual` node of `player.tscn` with a `CharacterVisual` subclass (see "CharacterVisual extension point"). `PlayerController` and the states stay unchanged.
 - **Hit targets (NPCs, props):** give the target a `Hurtbox` (physics layer 3) and react to `hit_received(attacker)`. Damage and reactions belong to the target (`Npc` starts its `HitReactionState`).
@@ -257,13 +261,19 @@ A `VehicleBody3D` at rest is never put to sleep by GodotPhysics3D: the engine's 
 - **Map categories** (2026-11-02, Phase 6a): `MapDefinition.category_rules` (`CategoryRules`, `game/world/category_rules.gd`) says which render category (`CategoryRules.CATEGORIES`: facade_detail, decor, lamps, trees, buildings, ground, water) each mesh belongs to, which categories' collision becomes occluders (`occluder_categories`, buildings and ground), and the category of meshes no rule matches (`default_category`, none by default). Its `rules` (`CategoryRule`) are tried in order, the first match wins: `prefix` (node name starts with), `regex` (found in the node name), `words` (a word of the node name starts with a listed word; `CategoryRules.words_of()` splits at non-letters and lower-to-upper case changes), `material` (regex on a surface material's name), `group` (a Godot group). `RenderSettings` takes the rules from `Main._load_map()` and holds no map's names (`test_render_settings_has_no_map_specific_names`). The four İstanbul maps share `maps/istanbul_halic/istanbul_halic_categories.tres` (the 29 prefixes RenderSettings had built in), the test district has its own; `test_map_categories_unchanged.gd` proves every mesh of the five maps kept its category (against the old table, `tests/fixtures/legacy_categories.gd`).
 - **The cells map** (`maps/istanbul_halic_cells/`): the İstanbul scene structure (`Model`, `WorldEnvironment`, `Sun`, the same map script `istanbul_halic_map.gd`) on `assets/istanbul_halic_cells.glb`, and a copy of İstanbul's `MapDefinition` data with its own id, scene, occluders (`istanbul_halic_cells_occluders.scn`, baked from its collision), and `required_files`. Generating its GLB: `docs/maps/istanbul_halic/README.md`, "The cells map". Measured with `profile_default_cells.json` (memory: `profile_default_cells_pss.json`) beside `profile_default.json`, and `c_cells_low_vis150_nofog.json` (the low profile with 150 m ranges and no fog, an experiment only).
 
-### Adding a map (the steps followed for the test district)
+### Adding a map
 
-1. Make the map scene, `maps/<id>/<id>.tscn`: any Node3D scene with walkable static bodies on layer 1 (world). Give it category rules (`CategoryRules`, below: `maps/test_district/test_district_categories.tres` maps the prefixes `Ground_`, `Road_`, `Buildings_`) so the quality profiles' visibility ranges apply, and give it a `WorldEnvironment` and a `DirectionalLight3D` named `Sun` as direct children if the profiles should change fog and shadows. The test district is generated from Godot primitives by `tools/build_test_district.gd` (box shapes and one convex ramp instead of trimesh colliders).
-2. Occluders (optional): a scene of `OccluderInstance3D` nodes with `ArrayOccluder3D` occluders, referenced by `occluders_path`. `tools/bake_occluders.gd -- --map=res://maps/<id>/<id>.tres` builds them from trimesh collision (İstanbul); the test district's generator writes one box per building. Without the file, a profile with occlusion builds occluders from the collision at load and logs a warning (trimesh faces, and since 2026-11-02 the hull faces of convex and box shapes, `RenderSettings.shape_faces()`).
-3. Write `maps/<id>/<id>.tres` (`MapDefinition`): a unique `id`, the scene path, spawn and yaw, bounds (a ground-plane `Rect2`: x is world X, y is world Z), kill height, vehicle spawns (transforms face −Z) and their types, NPC routes (points on the floor, at least 10 m from where tests walk), the occluder path, and viewpoints. Exported arrays must be typed arrays, not packed arrays (T16).
-4. Add it to `game/world/maps.tres` (`definitions`). Nothing in the player, vehicle, NPC, camera, or input code changes.
-5. Test it: `tests/integration/test_test_district.gd` is the model (spawn, colliders, bounds and kill height, viewpoints on the floor, profiles and occluders, a switch round trip, vehicles, NPCs); measure a viewpoint with an experiment that names the map (`profile_default_test_district.json`).
+Since Phase 6a (2026-11-02) a map is added with the import tool; the map contract says what a GLB must and should provide (`docs/MAP_CONTRACT.md`, which also has the user's steps):
+
+1. Put the GLB anywhere on disk (it is read, never copied or changed). Optionally write a configuration JSON (scale, up axis, category rules, collider types, fixed points).
+2. Run `godot --headless --path . --script res://tools/import_map.gd -- --glb=<file> [--config=<file>] [--id=<id>]` (exit 0 written, 1 a mandatory rule failed, 2 bad arguments).
+3. Read `docs/maps/imported/<id>.md`: every FAIL says what to change in the model or the configuration; run the command again.
+4. The map is in the registry (after the existing maps; the default does not change): press MAP in a debug build, or start with `--map=<id>` (debug and Release Perf builds).
+5. Test it: a file in `tests/integration/` that extends `imported_map_case.gd` with the definition path and the expected categories runs the spawn, the 10 s walk, punch and roll, the vehicle, the NPC, the profiles, a map switch, and the device scenario on it (`test_imported_kenney_town.gd` is the model).
+
+What the game reads is the same for an imported map and a hand-made one: `maps/<id>/<id>.tscn` (a `Model`, a `WorldEnvironment`, a `Sun`), the `MapDefinition` (`maps/<id>/<id>.tres`: spawn, bounds, kill height, vehicle spawns and types, NPC routes, occluders, category rules, required files, viewpoints, the sloped viewpoint), and an entry in `game/world/maps.tres`. Player, vehicle, NPC, camera, input, profile, and scenario code stay unchanged.
+
+**A map by hand** (as the test district, `tools/build_test_district.gd`): any Node3D scene with walkable static bodies on layer 1 under its meshes, a `CategoryRules` resource for its mesh names, optional baked occluders (`tools/bake_occluders.gd -- --map=res://maps/<id>/<id>.tres`, from trimesh, convex, and box collision), a hand-written `MapDefinition` (typed arrays, not packed arrays, T16; NPC routes at least 10 m from where tests walk), and the registry entry.
 
 ### Import tool (Phase 6a, 2026-11-02)
 
@@ -409,6 +419,7 @@ godot --headless --path . --script res://tests/map/validate_scene.gd # original 
 - Collider census (types, triangles, bodies near each viewpoint): `godot --headless --path . --script res://tools/perf/collider_census.gd`.
 - Comparison shots of map variants from fixed camera positions (spawn, the two viewpoints, two near streets, a raised view, two street-level views of buildings 100–250 m away `far_bridge` and `far_avenue`; HUD hidden): `godot --path . --resolution 960x540 --script res://tools/capture_views.gd -- --map=<id> --quality=<none|high|low> --out=/abs/dir`; `--views=a,b` takes some, `--facade-shader=<path>` draws the shader facade map with another shader file (before/after), `--pan=N --pan-step=<deg>` adds N frames of each free camera turning (shimmering check with `tools/perf/pan_flicker.py`, which needs the generator's environment for Pillow).
 - `tests/unit/` runs without the map. `tests/integration/test_game_on_map.gd` loads İstanbul • Haliç (requested; it is a selectable map since 2026-11-02); when `assets/istanbul_halic.glb` is missing its tests are reported as `SKIP` (via the file's `skip_reason()`), and the full run exits 2. `test_starts_on_the_registry_default` (test district file) starts the game without a requested map and expects the shader map where its GLB exists, else İstanbul, else the test district; `test_missing_default_map_falls_back_to_the_first_available` does the same with a registry whose first map lacks its file. `tests/integration/test_test_district.gd` starts the game on the test district (`Main.requested_map`) and runs without the GLB. `tests/integration/test_istanbul_halic_cells.gd` needs the generated `assets/istanbul_halic_cells.glb` (SKIP without it; it also checks the GLB's SHA-256), and the MAP button test visits the cells map only when it is available. `tests/unit/test_map_data_folders.gd` checks the generator data folders' `.gdignore` files.
+- Imported maps (Phase 6a): `tests/integration/imported_map_case.gd` is shared by `test_imported_kenney_town.gd` (runs in every checkout: the town's model is committed), `test_imported_safranbolu.gd`, and `test_imported_istanbul_halic.gd` (SKIP until the maps are imported into `tests/imported/` with the commands in their reports, `docs/maps/imported/`). `test_map_categories_unchanged.gd` compares every mesh's category on the five maps with the old built-in table (SKIP per map without its GLB, `skip()`).
 - NPC physics cost headless: `godot --headless --path . --script res://tools/perf/npc_cost.gd [-- --map=test_district]`.
 - Test district: `godot --headless --path . --script res://tools/build_test_district.gd` regenerates its scene and occluders (then `--import`).
 - Tests send touches through `Input.parse_input_event`, the same pipeline device touches use, with positions converted from canvas units to window pixels.

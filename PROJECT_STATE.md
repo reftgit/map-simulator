@@ -2,11 +2,13 @@
 
 What actually exists in the repository and how it was verified. Plans and decisions belong in `PROJECT_CONTEXT.md`; code structure, build, and test commands are in `docs/ARCHITECTURE.md`.
 
-Last updated: 2026-11-02 (the shader facade map as the default, Claude Code)
+Last updated: 2026-11-02 (Phase 6a, the map infrastructure, Claude Code)
 
 ## Current phase
 
-**After Phase 5: the shader facade map is the default (2026-11-02).** With D25's criterion 1 made relative by the user (the shader map no worse than İstanbul • Haliç under the same protocol) it passed on the Galaxy Tab A7: nine alternating launches each, one bad launch each, median 1 % low within +0.03 / −0.03 / +0.19 FPS of İstanbul's, average 30.0; the reviewer, to whom the user delegated it, approved the distant windows. So `istanbul_halic_cells_shader` became the first map in the registry in its own revertable commit (`b80c205`), and plain launches of debug and Release Perf builds start on it on both devices (STARTUP logs); İstanbul • Haliç, the test district, the cells map, and the light map stay selectable. A clone without the generated GLB starts on the first available map with a warning (İstanbul where its GLB is copied in, else the test district), and with no map available the game shows an error (`edadb59`). The tablet's presented frames, recorded without changing any setting, show that a bad launch's 28 → 42 → 30 ms loop cycle does not reach the screen, while every launch has about one 16.7 / 50 ms pair per second on the screen that the game loop does not see (open question 43). The `vehicle_sleep` and `extensibility` device scenarios passed again on both devices, starting on the default map (13 / 13 and 25 / 25 each). Details: "The shader facade map is the default" below.
+**Phase 6a: the project is a map infrastructure (2026-11-02, D26).** A map contract (`docs/MAP_CONTRACT.md`) says what a GLB must and should provide; the render categories moved from `RenderSettings` into each map's data (every one of the five existing maps' 21,458 mesh categories unchanged, the default map's Mac benchmark identical); a general import tool (`tools/import_map.gd`, one command) checks a GLB against the contract, fixes what it can (scale and axes when configured, normals, vertex colours), classifies its meshes, builds colliders and occluders, places the spawn, a vehicle, an NPC route, and viewpoints with physics queries, and writes the map files, the registry entry, and a report. Three maps were imported with configuration only: a CC0 town composed from Kenney's kits (in the game), the user's Safranbolu package (test input only), and the shipped İstanbul GLB under a test id (its 827 collision bodies and 643 occluders reproduced exactly); on each the player spawns, walks 10 s, punches and rolls, the car drives, the NPC patrols, the profiles apply, and a map switch leaves no nodes behind. The device scenario reads its positions from the map and passed on the imported town on both devices. Details: "Phase 6a" below.
+
+Before it: **the shader facade map is the default (2026-11-02).** With D25's criterion 1 made relative by the user (the shader map no worse than İstanbul • Haliç under the same protocol) it passed on the Galaxy Tab A7: nine alternating launches each, one bad launch each, median 1 % low within +0.03 / −0.03 / +0.19 FPS of İstanbul's, average 30.0; the reviewer, to whom the user delegated it, approved the distant windows. So `istanbul_halic_cells_shader` became the first map in the registry in its own revertable commit (`b80c205`), and plain launches of debug and Release Perf builds start on it on both devices (STARTUP logs); İstanbul • Haliç, the test district, the cells map, and the light map stay selectable. A clone without the generated GLB starts on the first available map with a warning (İstanbul where its GLB is copied in, else the test district), and with no map available the game shows an error (`edadb59`). The tablet's presented frames, recorded without changing any setting, show that a bad launch's 28 → 42 → 30 ms loop cycle does not reach the screen, while every launch has about one 16.7 / 50 ms pair per second on the screen that the game loop does not see (open question 43). The `vehicle_sleep` and `extensibility` device scenarios passed again on both devices, starting on the default map (13 / 13 and 25 / 25 each). Details: "The shader facade map is the default" below.
 
 Before it: **the shader facade was the chosen variant (D25) but did not become the default (2026-11-01).** A map switch now frees the old map before loading the next, behind a loading screen; on the Galaxy Tab A7 six switches between the shader map, İstanbul, and the cells map passed without the low-memory kills of before, and the `extensibility` and `vehicle_sleep` scenarios passed on both devices, but the cells map's load still peaked 64 MiB above the target. The tablet's long frames turned out to be a pacing state of single launches that hits any map (the shader map, İstanbul, the cells map, the panels without a shader), not the window shader; a 31 FPS cap did not remove it, and no fix was applied. The shader's distant windows are now filtered over the pixel footprint instead of fading (closer to the full facade, no more shimmering in a pan). D25's criteria: iPhone (60.00 FPS, 0 long frames, 10 minutes Nominal), the scenarios, and memory (tablet 641 MiB peak, iPhone 854–860 MiB) passed; the tablet's long-frame criterion failed in one of three runs (46 and 107 long frames), so İstanbul • Haliç stays the default; the visual approval is with the user. Details: "Shader facade toward the default" below.
 
@@ -28,7 +30,7 @@ Before Phase 4b: **Phase 4a (release baseline and diagnosis, measurement only) d
 
 ## Current objective
 
-Review of the default change and its measurements; then the next task (see "Recommended next task"): the streaming loader, and, if the user wants it, a presented-frame measurement of the tablet's display pairs (open question 43).
+Review of Phase 6a; then the next task (see "Recommended next task"): the streaming loader, designed for any imported map (D26), and, if the user wants it, a presented-frame measurement of the tablet's display pairs (open question 43).
 
 ## Git
 
@@ -105,7 +107,14 @@ Review of the default change and its measurements; then the next task (see "Reco
 - `17f1a78`: measurements and documentation (D25, T43). No stutter fix and no default change were committed ("Shader facade toward the default").
 - `edadb59`: the default is the first available map (fallback with a warning, an error screen when none is available); İstanbul's `required_files`.
 - `b80c205`: the shader facade map first in the registry, the default (D25); experiments measured on İstanbul pin it; tests follow. Revertable on its own.
-- Measurements and documentation (D25 update, T44, open question 43): the commit after `b80c205` (`git log`).
+- `69357a7`: measurements and documentation (D25 update, T44, open question 43).
+- `cbaf661`: the map contract (`docs/MAP_CONTRACT.md`), D26.
+- `e7e2c51`: the render categories as map data (`CategoryRules`), equivalence and scan tests, per-test skip.
+- `6edfbf1`: the import tool: checks, fixes, categories, colliders, occluders, report.
+- `7737eb9`: the import tool's placement and map files (scene, `MapDefinition`, registry).
+- `5264d9a`: the three imported maps (the Kenney town in the game, Safranbolu and the İstanbul import as test imports) and their tests.
+- `0e542f9`: the device scenario on each map's own points (`sloped_viewpoint`, `scenario.maps`).
+- Phase 6a measurements and documentation: the commit after `0e542f9` (`git log`).
 
 ## Repository contents
 
@@ -116,12 +125,19 @@ Review of the default change and its measurements; then the next task (see "Reco
 | `maps/istanbul_halic_cells_light/`, `maps/istanbul_halic_cells_shader/` | The facade maps (2026-11-01, D24; the shader map is the default since 2026-11-02, D25): the cells map's scene structure and data on their generated GLBs; the shader map adds `facade_windows.gdshader` (filtered over the pixel footprint since 2026-11-01, T43), a script that puts it on the facade surfaces and reads the measurement-only facade keys, and `facade_windows_simple.gdshader` (measurement only). They share the cells map's occluders. |
 | `maps/istanbul_halic_cells/` | The cells map (2026-11-01): İstanbul's scene structure on the generated `assets/istanbul_halic_cells.glb` (facade detail, tree crowns, shrubs in 40 m cells), a `MapDefinition` with İstanbul's data and `required_files`, its own baked occluders (2,300,915 bytes). |
 | `maps/test_district/` | Second map (Phase 5): scene and box occluders generated from Godot primitives by `tools/build_test_district.gd`, `MapDefinition` (both vehicle types, three NPC routes, two viewpoints). |
-| `game/world/maps.tres` | The map registry: the shader facade map (the default since 2026-11-02), İstanbul • Haliç, the test district, the cells map, the light facade map; a map whose GLB is missing is skipped, and the default is then the first available one. |
+| `game/world/maps.tres` | The map registry: the shader facade map (the default since 2026-11-02), İstanbul • Haliç, the test district, the cells map, the light facade map, the Kenney town (Phase 6a); a map whose GLB is missing is skipped, and the default is then the first available one. |
+| `game/world/category_rules.gd`, `category_rule.gd` | A map's render categories (Phase 6a): ordered rules (prefix, regex, words, material, group), a default category, the occluder categories. `maps/istanbul_halic/istanbul_halic_categories.tres` (shared by the four İstanbul maps), `maps/test_district/test_district_categories.tres`. |
+| `docs/MAP_CONTRACT.md` | The map contract (Phase 6a): rules C1–C8 and R1–R8, vocabulary, placement, configuration, outputs, user steps. |
+| `tools/import_map.gd`, `tools/map_import/` | The map import tool (Phase 6a): importer, geometry, classifier, colliders, placement, writer, report. |
+| `maps/kenney_town/` | The CC0 Kenney town made by the import tool: scene, `MapDefinition`, category rules, processed model (919,683 B), occluders; `source/` (`.gdignore`): the composed GLB (2,463,348 B), its configuration, Kenney's licence. Composer: `tools/maps/kenney_town/compose_town.gd`. |
+| `docs/maps/imported/` | Import reports of the Kenney town, Safranbolu, and the İstanbul import, the Kenney town's sources and licence, four shots (`shots/`, `.gdignore`). |
+| `docs/perf/phase6a/` | Phase 6a evidence: device scenario results and logs, the tablet measurements, the Mac benchmarks of the default map, the category dump (`.gdignore`). 0.35 MB. |
+| `tests/imported/` | **Not tracked**: the test imports of Safranbolu and of the shipped İstanbul GLB (regenerated with the commands in their reports); excluded from every export with the rest of `tests/`. |
 | `game/npc/` | `Npc`, `AiPatrolInput`, `PatrolRoute`, `npc.tscn` (inherits the player scene). |
 | `project.godot` | Main scene `res://game/main.tscn`; Mobile renderer; sensor landscape; `expand` aspect; physics interpolation; input actions; mouse emulates touch; ETC2/ASTC import (required for Android export); placeholder icon. |
 | `export_presets.cfg` | "Android Debug" (arm64 APK, `com.mirongi.mapsimulator`), "Android Debug Compatibility" (same, with `--rendering-method gl_compatibility`), "iOS Debug" (`com.mirongi.mapsimulator.dev`, team `8N7RYA42S6`, project-only export), and the measurement-only "Android Release Perf", "Android Release Perf Jolt", "iOS Release Perf" (`perf_bench`; release templates). No passwords or keystore paths. |
 | `icon.svg` | Placeholder app icon (capsule character over water). |
-| `tests/` | Headless runner, 195 unit tests, 84 integration tests (2026-11-02; 18 run on the test district without any GLB, the rest SKIP without their map's GLB), fixtures (flat map, fake platform), original map validation. The test van moved into the game in Phase 5. |
+| `tests/` | Headless runner (a single test can `skip()`), 221 unit tests, 116 integration tests (2026-11-02, Phase 6a; in a clean clone without any GLB 250 run, among them the test district's and the Kenney town's, and 87 SKIP), fixtures (flat map, fake platform, the old category table, import configurations), original map validation; `imported/` holds the test imports (not tracked). The test van moved into the game in Phase 5. |
 | `tools/capture_screenshot.gd` | Windowed render to PNG with render stats. |
 | `tools/capture_views.gd` | Fixed-camera comparison shots of map variants (eight views, a profile, no HUD; `--views`, `--facade-shader`, `--pan`). |
 | `tools/build_ios_debug.sh` | iOS debug build without contacting the Apple Developer portal; optional `devicectl` install. |
@@ -152,6 +168,7 @@ Review of the default change and its measurements; then the next task (see "Reco
 
 ## Implemented features
 
+- **Map infrastructure (Phase 6a, 2026-11-02):** render categories from each map's `CategoryRules` (all builds; behaviour of the existing maps unchanged); the import tool (`tools/import_map.gd`, desktop tool, not in builds); the Kenney town in the registry (debug and Release Perf builds can select it; normal release builds load only the default); the device scenario on any map's points (debug builds).
 - **Default map (2026-11-02; all builds):** the shader facade map (`istanbul_halic_cells_shader`) is first in the registry and the map plain launches and normal release builds load; the default is the first available map, so without its GLB the game starts on İstanbul • Haliç or the test district with a warning, and with no map available it shows "Harita yüklenemedi: harita dosyaları eksik." Host tools: presented frames (`present_trace.py`), the relative criterion (`relative_check.py`), the log lines of a plain launch on both platforms.
 - **Map switch (2026-11-01; debug and Release Perf builds, where switches happen):** the old map is freed before the next loads, behind a loading screen; a second switch during one is refused. Debug builds: the `map_switch` scenario. Traced benchmarks and the facade runtime keys (debug and Release Perf builds).
 - **Facade maps (2026-11-01; debug and Release Perf builds):** `istanbul_halic_cells_light` and `istanbul_halic_cells_shader` in the registry, skipped while their GLBs are missing; the shader map draws its facades with `facade_windows.gdshader`. Generator: `build_map.py --facade`, `compare_outputs.py --facade`; tool: `tools/capture_views.gd`.
@@ -173,6 +190,99 @@ Review of the default change and its measurements; then the next task (see "Reco
 - **Quality profiles (all builds):** high (60 FPS cap, occlusion, 200 m visibility range for trees/lamps/decor/facade detail) and low (occlusion, 400 m far plane + depth fog, 100 m ranges, 0.6 render scale, shadows off, LOD threshold 4, 30 FPS cap). Default: iOS → high, Android → low, desktop → none. `--quality=<name>` overrides; debug builds can cycle profiles with the Q button.
 - **Baked occluders** loaded from `maps/istanbul_halic/istanbul_halic_occluders.scn` when a profile enables occlusion; runtime building from collision remains as a fallback with a warning.
 - Debug builds only: performance experiment flags (`PerfConfig`) layered on top of the profile (experiment > profile > defaults), and an automatic benchmark (`PerfBenchmark`) driven by host scripts in `tools/perf/`. Off unless an experiment file or `--perf-config` is given.
+
+## Phase 6a — map infrastructure: contract, categories as map data, import tool, three maps (2026-11-02)
+
+Task of 2026-11-02 (user, after the reviewer): make the project a map infrastructure (D26): a documented map contract, the render categories moved from `RenderSettings` into each map's data, a general import tool (checks, fixes, categories, colliders, occluders, placement, map files, report), and the proof on three maps imported without hand work (configuration only): the user's Safranbolu package (test input only), the shipped `istanbul_halic.glb` under a test id, and a CC0 model; the device scenario generalized and run on an imported map on both devices; an informational tablet measurement. The existing maps, the default map, their look and measurements, the profile values, the physics, and the gameplay unchanged; the İstanbul generator unchanged. Decisions: `PROJECT_CONTEXT.md`, D26, T45–T48, open questions 44–47. Contract: `docs/MAP_CONTRACT.md`; tool: `docs/ARCHITECTURE.md`, "Import tool"; reports: `docs/maps/imported/`.
+
+### What exists now
+
+- **Map contract** (`docs/MAP_CONTRACT.md`, `cbaf661`): mandatory rules C1–C8 (glTF, metres, +Y up, walkable ground, coordinates, triangle budget, closed one-sided geometry, room to play) and recommended rules R1–R8 (names or category rules, collision nodes, separate objects, normals, colour, single-sided materials, water, only meshes), each with its check, message, and fix; the category vocabulary, the default name vocabulary, the shape classification, the placement requirements, the configuration keys, the files written, the user's steps, and the three examples.
+- **Categories as map data** (`e7e2c51`): `CategoryRules` / `CategoryRule` (`game/world/`), `MapDefinition.category_rules`; the İstanbul maps share `maps/istanbul_halic/istanbul_halic_categories.tres`, the test district has its own; `RenderSettings` holds no map names (scan test) and fades the fog to the map's sky horizon colour.
+- **Import tool** (`6edfbf1`, `7737eb9`): `tools/import_map.gd` + `tools/map_import/` (importer, geometry, classifier, colliders, placement, writer, report); one command, the GLB only read; `RenderSettings.build_occluders` now also takes convex and box shapes.
+- **Three imported maps** (`5264d9a`): the CC0 Kenney town in the game (`maps/kenney_town/`, last registry entry, source in `maps/kenney_town/source/`), Safranbolu and the İstanbul import in `tests/imported/` (ignored by Git, not exported); `tests/integration/imported_map_case.gd` and one test file per map.
+- **Generalized device scenario** (`0e542f9`): positions from the map's definition, `MapDefinition.sloped_viewpoint` (1 on the İstanbul maps), the extensibility scenario's visited map from `scenario.maps`; experiments `scenario_vehicle_sleep_kenney_town`, `scenario_extensibility_kenney_town`, `profile_default_kenney_town`.
+
+### Acceptance criteria (task of 2026-11-02)
+
+| Criterion | Result | Evidence |
+|---|---|---|
+| `docs/MAP_CONTRACT.md` exists; every check of the tool belongs to a contract rule | **PASS** | every `checks` entry of the importer and the placement carries a contract id (C1–C8, R1–R8); the reports list them |
+| Categories in the map's data; the five existing maps' assignments identical; no İstanbul-specific constant left in `RenderSettings` | **PASS** | all 21,458 mesh assignments byte-identical before and after (dump from `cbaf661` vs `e7e2c51`), `test_map_categories_unchanged.gd` (5 maps), `test_render_settings_has_no_map_specific_names` |
+| One command, documented; a report per map in `docs/maps/imported/` | **PASS** | `kenney_town.md`, `safranbolu_test.md`, `istanbul_halic_import.md` (+ `kenney_town_source.md`); command in `docs/MAP_CONTRACT.md` |
+| §2.D tests of the three maps | **PASS** | 8 shared tests per map (spawn, 10 s walk, punch and roll, vehicle, NPC, profiles, switch, device scenario) plus map-specific ones: Kenney town 10, Safranbolu 8, İstanbul import 9, all PASS (Safranbolu and the İstanbul import where their generated files exist; SKIP otherwise) |
+| Generalized device scenario on an imported map on both devices | **PASS** | `vehicle_sleep` 9 / 9 and `extensibility` 21 / 21 on the Kenney town, on the Galaxy Tab A7 and the iPhone 13 Pro (debug builds of `0e542f9`); the default map's `vehicle_sleep` 13 / 13 on both (slope steps from `sloped_viewpoint`) |
+| Phase 1–5 and existing map tests, Platform / preset / `.gdignore` tests; the default map's Mac benchmark unchanged | **PASS** | full suite 337 passed (exit 0), unit 221, a clean clone 250 passed and 87 skipped (exit 2), `validate_scene.gd` PASS; the platform, export preset, build feature, and `.gdignore` tests among them; Mac benchmark of the default map (low and high, three viewpoints) identical before (`69357a7`), after the category move, and at the final HEAD |
+
+### The three maps
+
+| | Kenney town (CC0) | Safranbolu (test input) | İstanbul • Haliç import (test id) |
+|---|---|---|---|
+| Source | composed GLB, 2,463,348 B, 269 nodes, 52,942 triangles | the package's GLB, 13,848,844 B, 1,173 meshes, 929,216 triangles | `assets/istanbul_halic.glb`, 502,541,456 B, 3,055 meshes, 7,070,457 triangles |
+| Configuration | `"scale": 10`, a display name | none | `category_rules_resource`: the İstanbul rules, a display name |
+| Contract FAIL before fixing | C2 (12.6 × 12.6 units; the tool suggested scale 10) | — | — |
+| Fixed by the tool | C2 (scale, by configuration) | R4: flat normals on all 1,173 meshes | R5: vertex colours on the 6 materials |
+| Warnings | R6 2 double-sided materials; C7 9 of 32 houses open, 580 zero-area triangles | R6 17 double-sided materials; C7 83 of 600 building meshes open (roofs), 322 zero-area triangles | R6 3; C6 7.07 M triangles; R3 487 meshes wider than 150 m (the 150 m chunks); C7 371 of 371 building chunks open, 5,700 zero-area triangles |
+| Categories | buildings 32, decor 32, ground 144, lamps 20, trees 41 (vocabulary) | buildings 600, facade detail 523, ground 50 (vocabulary) | as the shipped map, every mesh (configured rules) |
+| Colliders | generated: 144 ground trimeshes, 299 building hulls (176 bodies; 152 flat or small parts skipped) | generated: 50 ground trimeshes (217,247 triangles), 600 building hulls | the 827 `-col` trimesh bodies, 438,012 triangles (= shipped) |
+| Occluders | 443, 14,134 triangles | 650, 237,177 triangles | 643, 317,518 triangles (= the shipped bake) |
+| Placement | walkable 63.4 %; spawn with 40 m of walk; car 8 m away with 40 m of road; NPC route 16 m; 3 viewpoints; no slope | walkable 72.9 %; spawn 40 m walk; car 70 m away, 40 m of road; route 12 m; 3 viewpoints; a 6.5° sloped street | walkable 49.3 %; spawn 40 m walk; car 11 m away, 40 m of road; route 12 m; 3 viewpoints; an 8.7° sloped street |
+| Gameplay tests (headless) | 10 PASS: walk 44.4 m in 10 s, 5 s of throttle 44.1 m, scenario 9 / 9 and extensibility 21 / 21 | 8 PASS: walk 43.6 m, throttle 43.2 m, scenario with the slope steps | 9 PASS: walk 44.9 m, throttle 41.7 m, scenario with the slope steps, collision and categories equal the shipped map |
+| Tool run (Mac) | 0.3 s | 1.5–1.7 s | 9.0–9.4 s, 1.75 GB peak resident |
+| Model file | 919,683 B (in Git) | 15,892,138 B (ignored) | 102,286,085 B (ignored) |
+
+### Extensibility finding (core changes)
+
+| Change | Where | Why |
+|---|---|---|
+| The category table, occluder categories, and fog colour constant removed; categories come from the map | `RenderSettings` (and its callers: `Main._load_map()` passes the rules, one line; `tools/bake_occluders.gd`, `collider_census.gd`) | D26: a map other than İstanbul says what its meshes are without code (T45) |
+| New resources `CategoryRules`, `CategoryRule`; `MapDefinition.category_rules`, `MapDefinition.sloped_viewpoint` | `game/world/` | the categories and the scenario's sloped point as map data |
+| Occluders also from convex and box colliders (`RenderSettings.shape_faces()`) | `RenderSettings.build_occluders` | the tool's building colliders are convex hulls (T46) |
+| Experiments validate categories against `CategoryRules.CATEGORIES` | `PerfConfig` | the table moved |
+| Positions from the map's definition; `scenario.maps` for extensibility | `DeviceScenario` | the scenario on any map |
+| A single test can report SKIP (`skip()`) | `tests/test_case.gd`, `tests/run_tests.gd` | per-map skips |
+| The Kenney town appended to the registry | `game/world/maps.tres` | the CC0 map in the game |
+
+Unchanged: `PlayerController` and its states, the vehicle, NPC, camera, input, HUD, `WorldManager`, `MapRegistry`, the quality profiles, the physics settings.
+
+### Proof that the existing maps did not change
+
+- Categories: a dump of every mesh's category on the five maps (21,458 lines) from the old code (`cbaf661`, `RenderSettings.category_of`) and from the maps' rules (`e7e2c51`) is byte-identical (SHA-256 `2d6996e6…` both); `test_map_categories_unchanged.gd` checks each mesh against the old table (`tests/fixtures/legacy_categories.gd`) and the low profile's fog colour.
+- Default map on the Mac (Metal, 960×540, the game started with an experiment: 5 s warm-up, 6 s per viewpoint), before (`69357a7`, two runs), after the category move, and at the final HEAD: low 114 / 107 / 70 draw calls and 51,142 / 52,464 / 23,465 primitives (Spawn / Karaköy / Galata), high 218 / 178 / 116 and 135,639 / 101,720 / 59,619, objects 427 / 460 / 419 and 535 / 535 / 471: identical in every run.
+- The default map's device scenario after the generalization: `vehicle_sleep` 13 / 13 on both devices with the slope steps on Galata (12.6°), as before.
+
+### Devices (debug builds of `0e542f9`: APK 677,421,535 B, iOS `.pck` 649,601,780 B)
+
+| Scenario | Galaxy Tab A7 | iPhone 13 Pro |
+|---|---|---|
+| `scenario_vehicle_sleep_kenney_town` | 9 / 9 PASS (slope steps skipped: no sloped viewpoint), map ready 3.9 s, peak PSS 338 MiB | 9 / 9 PASS, map ready 0.6 s, footprint 327 MiB, Nominal |
+| `scenario_extensibility_kenney_town` (test district visited directly) | 21 / 21 PASS; town → test district 0.4 s, back 0.5 s; node count 1,435 before and after | 21 / 21 PASS; 0.1 s and 0.2 s; footprint 306 MiB |
+| `scenario_vehicle_sleep` (the default map, regression) | 13 / 13 PASS, slope 12.6° on Galata | 13 / 13 PASS, footprint 874 MiB |
+
+Raw files: `docs/perf/phase6a/`.
+
+### Tablet measurement (Release Perf, one run each, informational; `docs/perf/phase6a/`)
+
+| Map | Average FPS (4–5 viewpoints) | 1 % low | Draw calls | Primitives | Peak PSS | Map ready |
+|---|---|---|---|---|---|---|
+| Kenney town (committed tree) | 29.83–29.91 | 25.40–26.25 | 61–91 | 15–28 k | 260 MiB | 2.2 s |
+| Safranbolu (temporary measurement build, not committed) | 29.84–29.88 | 23.48 (sloped street) – 25.71 | 68–189 | 174–208 k | 328 MiB | 3.6 s |
+
+Low profile, PSS sampling on (single 100+ ms frames, minimum FPS 7.6–9.8), battery 30.0–35.5 °C, thermal status 0; the default map for comparison: 615 MiB stable PSS, 5.8 s to map ready. Safranbolu was measured with its test import temporarily written to `maps/safranbolu_test/` and registered for that one APK, then removed (`game/world/maps.tres` restored byte for byte), because test imports are not exported (T48). Tool run times: 0.3 s (Kenney), 1.5–1.7 s (Safranbolu), 9.0–9.4 s (İstanbul, 1.75 GB peak resident).
+
+### Tests (2026-11-02)
+
+| Run | Result |
+|---|---|
+| `godot --headless --path . --import` | exit 0, no errors or warnings |
+| Full suite at the final code (all four GLBs, the test imports present) | `RESULT 337 passed, 0 failed, 0 skipped`, exit 0 (279 before the task: 58 new tests) |
+| Unit suite | `RESULT 221 passed, 0 failed, 0 skipped`, exit 0 |
+| A clean clone of `0e542f9` (no GLB, no test import) | full `RESULT 250 passed, 0 failed, 87 skipped`, exit 2 (the Kenney town's 10 tests run there); unit 221 passed, exit 0 |
+| Per commit | `e7e2c51` 291 passed; `6edfbf1` 304; `7737eb9` unit 221 (only tools and a unit test changed; integration not re-run); `5264d9a` 333; `0e542f9` 337 (each exit 0) |
+| `tests/map/validate_scene.gd` | `VALIDATION PASS` |
+| The four GLBs' SHA-256 | unchanged at start and end (`8b00c94b…`, `7973071a…`, `6531ca28…`, `60b9f729…`) |
+
+New tests: `test_category_rules.gd` (7: rule kinds, order, validation, word splitting, the İstanbul rules against the old table, the scan of `RenderSettings`), `test_map_categories_unchanged.gd` (5 maps), `test_map_import.gd` (13: configuration, vocabulary, shape rules, flat normals, shells and parts, scale and axis checks and fixes, classification and groups, colliders, collision nodes, materials, occluders, bounds), `test_map_placement.gd` (6: the synthetic town, a road through a building, no ground, no room for a car, configured points, the written files), `imported_map_case.gd` (8 per imported map) with `test_imported_kenney_town.gd` (+2), `test_imported_safranbolu.gd`, `test_imported_istanbul_halic.gd` (+1).
 
 ## The shader facade map is the default (2026-11-02)
 
@@ -1407,7 +1517,8 @@ Thermal state: Nominal at all 13 probes (0–601 s). App footprint 1,022–1,044
 | Behavior | Evidence |
 |---|---|
 | Project imports cleanly. | `godot --headless --path . --import`: exit 0, no errors or warnings (after adding `build/.gdignore`). |
-| Automated tests pass. | 2026-11-02, the shader facade map as the default (`edadb59`, `b80c205`, and the documentation commit after them): `run_tests.gd` → `RESULT 279 passed, 0 failed, 0 skipped`, exit 0; unit only → 195 passed, exit 0; a clean clone without any GLB → 213 passed, 66 skipped, exit 2; with only İstanbul's GLB → 247 passed, 32 skipped, exit 2; `validate_scene.gd` → `VALIDATION PASS`; all four GLBs' SHA-256 checked. 2026-11-01, shader facade toward the default (`d8f78fb`, `4242efe`, `56aaf0d`, and the documentation commit after them): `run_tests.gd` → `RESULT 274 passed, 0 failed, 0 skipped`, exit 0; without the generated GLBs → 242 passed, 32 skipped, exit 2; without any GLB → 208 passed, 66 skipped, exit 2; unit only → 193 passed, exit 0; `validate_scene.gd` → `VALIDATION PASS`; all four GLBs' SHA-256 checked. 2026-11-01, with the facade maps (`83c8f0a` and the documentation commit after it): `run_tests.gd` → `RESULT 267 passed, 0 failed, 0 skipped`, exit 0 (550 s); without the generated GLBs → 237 passed, 30 skipped, exit 2; without any GLB → 203 passed, 64 skipped, exit 2; unit only → 190 passed, exit 0; `validate_scene.gd` → `VALIDATION PASS`; all four GLBs' SHA-256 checked. 2026-11-01, with the cells map (`3e00ada` and the documentation commit after it): `run_tests.gd` → `RESULT 246 passed, 0 failed, 0 skipped`, exit 0 (510 s); without the cells GLB → 237 passed, 9 skipped, exit 2; without both GLBs → 203 passed, 43 skipped, exit 2; unit only → 190 passed, exit 0; `validate_scene.gd` → `VALIDATION PASS`; both GLBs' SHA-256 checked. 2026-11-01, after the generator import (no game or test code changed): `run_tests.gd` → `RESULT 232 passed, 0 failed, 0 skipped`, exit 0 (491 s); `validate_scene.gd` → `VALIDATION PASS`; GLB SHA-256 unchanged. Phase 5: `run_tests.gd` → `RESULT 232 passed, 0 failed, 0 skipped`, exit 0; unit only → 185 passed, exit 0; without the GLB → `RESULT 198 passed, 0 failed, 34 skipped`, exit 2 (the 13 test district tests run without it) (2026-10-28, Phase 5; GLB SHA-256 re-verified afterwards). Phase 4d: 198; Phase 4c: 185; Phase 4b: 174; Phase 4a: 161. With Jolt (temporary `override.cfg`): 160 passed, 1 failed (the GodotPhysics3D pin). At 30 Hz physics: 148 passed, 13 failed (see "Phase 4a"). `tests/map/validate_scene.gd` → `VALIDATION PASS`. |
+| Automated tests pass. | 2026-11-02, Phase 6a (`cbaf661` … `0e542f9` and the documentation commit after them): `run_tests.gd` → `RESULT 337 passed, 0 failed, 0 skipped`, exit 0; unit only → 221 passed, exit 0; a clean clone without any GLB or test import → 250 passed, 87 skipped, exit 2; `validate_scene.gd` → `VALIDATION PASS`; all four GLBs' SHA-256 checked. 2026-11-02, the shader facade map as the default (`edadb59`, `b80c205`, and the documentation commit after them): `run_tests.gd` → `RESULT 279 passed, 0 failed, 0 skipped`, exit 0; unit only → 195 passed, exit 0; a clean clone without any GLB → 213 passed, 66 skipped, exit 2; with only İstanbul's GLB → 247 passed, 32 skipped, exit 2; `validate_scene.gd` → `VALIDATION PASS`; all four GLBs' SHA-256 checked. 2026-11-01, shader facade toward the default (`d8f78fb`, `4242efe`, `56aaf0d`, and the documentation commit after them): `run_tests.gd` → `RESULT 274 passed, 0 failed, 0 skipped`, exit 0; without the generated GLBs → 242 passed, 32 skipped, exit 2; without any GLB → 208 passed, 66 skipped, exit 2; unit only → 193 passed, exit 0; `validate_scene.gd` → `VALIDATION PASS`; all four GLBs' SHA-256 checked. 2026-11-01, with the facade maps (`83c8f0a` and the documentation commit after it): `run_tests.gd` → `RESULT 267 passed, 0 failed, 0 skipped`, exit 0 (550 s); without the generated GLBs → 237 passed, 30 skipped, exit 2; without any GLB → 203 passed, 64 skipped, exit 2; unit only → 190 passed, exit 0; `validate_scene.gd` → `VALIDATION PASS`; all four GLBs' SHA-256 checked. 2026-11-01, with the cells map (`3e00ada` and the documentation commit after it): `run_tests.gd` → `RESULT 246 passed, 0 failed, 0 skipped`, exit 0 (510 s); without the cells GLB → 237 passed, 9 skipped, exit 2; without both GLBs → 203 passed, 43 skipped, exit 2; unit only → 190 passed, exit 0; `validate_scene.gd` → `VALIDATION PASS`; both GLBs' SHA-256 checked. 2026-11-01, after the generator import (no game or test code changed): `run_tests.gd` → `RESULT 232 passed, 0 failed, 0 skipped`, exit 0 (491 s); `validate_scene.gd` → `VALIDATION PASS`; GLB SHA-256 unchanged. Phase 5: `run_tests.gd` → `RESULT 232 passed, 0 failed, 0 skipped`, exit 0; unit only → 185 passed, exit 0; without the GLB → `RESULT 198 passed, 0 failed, 34 skipped`, exit 2 (the 13 test district tests run without it) (2026-10-28, Phase 5; GLB SHA-256 re-verified afterwards). Phase 4d: 198; Phase 4c: 185; Phase 4b: 174; Phase 4a: 161. With Jolt (temporary `override.cfg`): 160 passed, 1 failed (the GodotPhysics3D pin). At 30 Hz physics: 148 passed, 13 failed (see "Phase 4a"). `tests/map/validate_scene.gd` → `VALIDATION PASS`. |
+| Phase 6a: categories as map data, the import tool, the three imported maps, the generalized scenario. | See "Phase 6a": the category dump and equivalence test, the scan test, the unit tests of the tool on synthetic scenes, the gameplay tests and the device scenario on each imported map, the scenarios on both devices, the default map's Mac benchmark. |
 | İstanbul • Haliç generator. | See "Map generator in the repository": two runs byte-identical, the path change output-neutral, inputs and `assets/` unchanged, Godot import of the regenerated GLB in a throwaway project. |
 | The shader facade map is the default; the fallback to the first available map. | See "The shader facade map is the default": the registry and startup tests, the fallback tests with and without the files, a clean clone, the STARTUP lines of plain launches of four device builds, the scenarios from the default map. |
 | Map switch frees the old map first; shader facade's filter and diagnosis keys. | See "Shader facade toward the default": the switch tests (node counts, resource cache, loading screen, refusal) and a mutation check, the map switch scenario on the tablet and the device scenarios on both devices, the window shaders compile, the facade keys and traced benchmarks on the shader map. |
@@ -1429,6 +1540,8 @@ Thermal state: Nominal at all 13 probes (0–601 s). App footprint 1,022–1,044
 | Phase 1 behaviors (routing, speeds, camera collision on 192 street samples, respawn, safe-area math). | Unit and integration suites; see `docs/ARCHITECTURE.md`. |
 
 ## Unverified behaviors
+
+- Phase 6a (2026-11-02): the import tool only on the three maps and synthetic scenes (no Z-up or centimetre GLB from another tool, no GLB with lights, skins, or line primitives, no `.gltf` with external files); the shape classification only on synthetic meshes (every real mesh matched a name rule); the placement's choice is functional, not good-looking (the Kenney town's car stands in a courtyard among trees, which have no colliders); Safranbolu on the tablet only in a temporary build, not on the iPhone; the imported maps' look checked only in four Mac shots and the benchmark frames; occluders from convex hulls can hide what stands in a concave building's courtyard (not looked for); `--force` (writing a map that fails a mandatory rule) not exercised; `.scn` outputs are not byte-identical between runs (same size).
 
 - The shader facade map as the default (2026-11-02): the presented frames were recorded on the tablet only (no presented-frame data on the iPhone); what in the display path makes the 16.7 / 50 ms pairs (SurfaceFlinger's latch, Swappy, the panel) and whether a setting removes them; whether players notice them; two of the 18 launches (the shader map's runs 7 and 8) have no presented trace for their measurement windows; criteria 2 and 4 were not measured again on the builds of `b80c205` (only the startup map and the scenarios); a release preset that packs only the default map does not exist, so a normal release build with the fallback was checked only headless and through the Release Perf builds.
 - Shader facade toward the default (2026-11-01): what in the tablet's frame delivery causes the per-launch pacing state (Swappy, the display, the system; presented frame times were not recorded); whether the jitter is visible to a player; the shimmering check is a Mac pan at 960×540 (Metal), not a device recording; the footprint filter on devices was looked at only in the 640 px benchmark frames; the map switch memory was measured in a debug build (its stable PSS is 46–82 MiB above the Release Perf build's); the iPhone's footprint during switches comes from 45 s probes only; switches on the iPhone and in release builds with the loading screen were not timed separately; the user's visual approval of the filter is open. (2026-11-02: the presented frames were recorded and the approval was given through the reviewer; see "The shader facade map is the default".)
@@ -1475,6 +1588,8 @@ Thermal state: Nominal at all 13 probes (0–601 s). App footprint 1,022–1,044
 
 ## Known bugs and limitations
 
+- Import tool (Phase 6a): building colliders are convex hulls per connected part, so courtyards and concave shells are filled (`"colliders": {"buildings": "trimesh"}` keeps the exact shape); trees, lamps, decor, and facade detail have no colliders (the player walks through Kenney's fences and trees); double-sided materials stay double-sided unless configured; zero-area triangles are kept; the placement picks the nearest valid points, not the nicest; a map is written only when every mandatory rule passes (or with `--force`); reruns rewrite the binary scenes with other bytes.
+
 - Map switches (2026-11-01): fixed so that two maps are never in memory at once; loading a big map still holds 15–115 MiB of temporary data above its stable PSS (the tablet peaked at 810 MiB loading the cells map in a debug build, 64 MiB above the task's target), and the load blocks for 6.8–9.5 s on the tablet behind the loading screen. The tablet's low-memory killer reclaims other apps' processes during such loads.
 - Tablet frame pacing (2026-11-01/02): some launches on the Galaxy Tab A7 (4 of 18 in the A/B and 3 of 9 in the device runs of 2026-11-01, 2 of 18 on 2026-11-02) run with game-loop frame times cycling about 28 → 42 → 30 ms (0.7–12 % long frames per viewpoint, 1 % low 22.3–24.1 at 30.00 FPS) on any map. That cycle does not reach the screen; instead every launch has about one 16.7 / 50 ms pair of presented intervals per second (2.6 % of the intervals on the shader map, 3.5 % on İstanbul), which the game loop does not see (open question 43).
 - Facade maps (2026-11-01): light has no mullions or sills; shader is flat (no relief) and uses other glass tints (its distant windows are filtered since T43, no longer faded); builds with all five maps are 675 MB (APK) and 649 MB (iOS `.pck`).
@@ -1504,6 +1619,8 @@ Thermal state: Nominal at all 13 probes (0–601 s). App footprint 1,022–1,044
 
 ## Technical risks
 
+- **Any map now enters the game (Phase 6a):** every imported map registered in `maps.tres` is packed into every build (the Kenney town 1 MB; a city-sized import hundreds of MB); a release preset that packs only the default map (open questions 36, 46) becomes more urgent the more maps are imported. Memory scales with the mesh count on the tablet: Safranbolu's 1,173 meshes already peak at 328 MiB; streaming (next task) must work on the tool's output.
+
 - **Memory on the tablet (2026-11-01):** the PSS follows the mesh count, not the geometry (the facade variants keep the cells map's 6,129 meshes and its PSS within 18 MiB); a switch no longer holds two maps, but a big map's load peaks 15–115 MiB above its stable PSS, and the low-memory killer reclaims other processes meanwhile; any bigger map would need streaming.
 - **Memory per mesh (2026-11-01):** on Metal every extra mesh costs video memory (the cells map's 3,074 extra meshes: +184 MiB on the iPhone and the Mac); smaller cells or more categories in cells raise it further. The tablet's PSS rose by 128 MiB.
 - **Characters on the tablet (Phase 5):** a walking character under `PlayerController` costs about 1.1–1.4 ms per physics step on the Galaxy Tab A7 (three-run A/B; two steps per frame), mostly script and transform work; two NPCs near the player at once lower its 1 % low by about 2 FPS. The far mode keeps distant NPCs cheap; denser NPCs near the player need a cheaper character (open question 34).
@@ -1520,6 +1637,9 @@ Thermal state: Nominal at all 13 probes (0–601 s). App footprint 1,022–1,044
 
 ## Required manual actions
 
+- **Review Phase 6a**, in particular the contract's thresholds (`docs/MAP_CONTRACT.md`) and the default name vocabulary; decide on open questions 44 (how much more the tool should fix), 45 (the default map and streaming), 46 (the Kenney town in release packages), 47 (Safranbolu as a real map).
+- The test imports are not in Git: to run their tests on another machine, import the Safranbolu GLB and `assets/istanbul_halic.glb` with the commands in `docs/maps/imported/safranbolu_test.md` and `istanbul_halic_import.md`.
+
 - **Decide whether the tablet's display pairs deserve a task** (open question 43): about one 16.7 / 50 ms pair of presented intervals per second in every launch on the Galaxy Tab A7, not seen by the game loop (`docs/perf/default_map/`); a measurement task would test Swappy's mode or frame pacing off, one change at a time, against presented-frame criteria.
 - **iPhone: set Auto-Lock back to its previous value**, if it is still on "Never". The debug builds of `b80c205` (all five maps, starting on the shader map) are installed on both devices.
 - **iPhone rotation check** (open question 33): start `scenario_orientation` (commands in `docs/ARCHITECTURE.md`, "Device scenario"), hold the phone upright in landscape, and turn it 180° once during the 30 s; the gravity readings in the results file are the evidence.
@@ -1532,8 +1652,8 @@ Thermal state: Nominal at all 13 probes (0–601 s). App footprint 1,022–1,044
 
 ## Current priorities
 
-1. Review of the default change and its measurements ("The shader facade map is the default").
-2. The streaming loader (below; definition in `PROJECT_CONTEXT.md`, "Planned features"), before any further map is added to the registry.
+1. Review of Phase 6a ("Phase 6a").
+2. The streaming loader for any imported map (below; definition in `PROJECT_CONTEXT.md`, "Planned features"), before maps much larger than the Kenney town are added to the registry.
 3. If the user wants it, a presented-frame measurement of the tablet's display pairs (open question 43).
 
 ## Recommended next task
@@ -1542,7 +1662,7 @@ Order of the remaining work by the measurements of 2026-11-01/02 (each a separat
 
 | # | Work | Why in this place | Measurable acceptance |
 |---|---|---|---|
-| 1 | **Streaming loader** (definition: `PROJECT_CONTEXT.md`, "Planned features") | The default map now holds the cells map's 6,129 meshes: tablet stable PSS 615 MiB against İstanbul's 502, map ready 5.8 s, a switch 6.8–9.5 s (debug) with 15–115 MiB of temporary data (810 MiB peak); the PSS follows the mesh count | Tablet (Release Perf, three runs): stable PSS ≤ 502 MiB, map ready ≤ 4.0 s, switch peak ≤ the larger map's stable PSS + 50 MiB with no low-memory reclaim of this app, no frame over 50 ms from part loading, long frames by D25's relative criterion, 1 % low within 0.5 FPS of 25.80 / 25.89 / 25.17; iPhone footprint ≤ 860 MiB, 60 FPS with 0 long frames, map ready ≤ 1.2 s; look, collision, and tests unchanged |
+| 1 | **Streaming loader for any imported map** (definition: `PROJECT_CONTEXT.md`, "Planned features"): the import tool writes the visibility-range categories as cell scenes plus a resident part and an index; a streaming node loads the cells in range | The default map holds the cells map's 6,129 meshes: tablet stable PSS 615 MiB against İstanbul's 502, map ready 5.8 s, a switch 6.8–9.5 s (debug) with up to 810 MiB peak; the PSS follows the mesh count, also on imported maps (Safranbolu 328 MiB); D26 requires one design for every map | Tablet (Release Perf, three runs): the default map's stable PSS ≤ 502 MiB, map ready ≤ 4.0 s, switch peak ≤ the larger map's stable PSS + 50 MiB with no low-memory reclaim, no frame over 50 ms from part loading, long frames by D25's relative criterion, 1 % low within 0.5 FPS of 25.80 / 25.89 / 25.17; iPhone footprint ≤ 860 MiB, 60 FPS with 0 long frames, map ready ≤ 1.2 s; the Kenney town, Safranbolu, and the İstanbul import split by the same tool command with their Phase 6a tests passing unchanged, Safranbolu's tablet PSS below 328 MiB; look, collision, and tests unchanged |
 | 2 | **The tablet's display pairs** (open question 43; only if the user wants it; measurement first, then at most one setting change) | Every launch shows about one 16.7 / 50 ms pair of presented intervals per second (2.6 % of the intervals on the shader map, 3.5 % on İstanbul) that the game loop does not see; the per-launch loop cycle is not visible | With `present_trace.py`, nine launches per variant: presented 50 ms intervals at most half of today's share (away from polls) at every viewpoint, the game loop's averages and 1 % low not worse, the iPhone unchanged |
 | 3 | **Simple colliders** | The tablet's physics step (4.4–5.5 ms) is unchanged on every map and variant and the largest CPU cost | Physics step ≥ 0.5 ms lower at the three viewpoints (three runs); Phase 1–5 tests pass |
 | 4 | **Occluders from building footprints** | Occlusion works (39 draw calls at Galata on the tablet); the bake costs about 40 MiB and 86–220 ms at load | Occluder triangles −80 %; draw calls within 10 %; load time and memory reported |
@@ -1551,4 +1671,4 @@ Order of the remaining work by the measurements of 2026-11-01/02 (each a separat
 
 Smaller follow-up: lamps, lamp glows, and decor in cells (the lamp post beside the spawn is still missing on the low profile).
 
-**Recommendation:** task 1, the streaming loader: the largest remaining memory and startup gain on the tablet, now on the default map.
+**Recommendation:** task 1, the streaming loader, built on the import tool's output so it serves every map (D26): the largest remaining memory and startup gain on the tablet, on the default map and on imported maps.

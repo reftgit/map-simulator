@@ -1,0 +1,66 @@
+--------- beginning of main
+11-02 16:41:09.802 13543 13573 I godot   : Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+11-02 16:41:09.870 13543 13573 I godot   : Vulkan 1.1.128 - Forward Mobile - Using Device #0: Qualcomm - Adreno (TM) 610
+11-02 16:41:10.225 13543 13573 I godot   : 
+11-02 16:41:11.633 13543 13573 I godot   : SAFE_AREA window=(2000, 1200) safe=[P: (0, 0), S: (2000, 1200)] canvas=[P: (0.0, 0.0), S: (1500.0, 900.0)] viewport=(1500.0, 900.0)
+11-02 16:41:12.041 13543 13573 I godot   : QUALITY profile=low experiment=scenario_extensibility_kenney_town occluders={"ms":18,"occluders":443,"source":"baked","triangles":14134} effective={"camera_far":400.0,"fog":true,"hide":[],"lod_threshold":4.0,"max_fps":30,"occlusion":true,"render_scale":0.6,"scaling_mode":"bilinear","shadows":"off","visibility_end":{"decor":100.0,"facade_detail":100.0,"lamps":100.0,"trees":100.0}}
+11-02 16:41:12.076 13543 13573 I godot   : SCENARIO step=start result=INFO t=0.0 scenario=extensibility rotate_hold_s=0
+11-02 16:41:12.192 13543 13573 I godot   : STARTUP map_ready_ms=2439 first_frame_ms=2587 map=kenney_town profile=low occluders={"ms":18,"occluders":443,"source":"baked","triangles":14134} physics_3d=GodotPhysics3D (setting DEFAULT) vehicles=awake npcs=1 build={"android_frame_pacing":true,"debug_build":true,"display_refresh_rate":60.0000038146973,"ios_allow_high_refresh_rate":false,"max_fps":30,"perf_feature":false,"physics_engine_setting":"DEFAULT","physics_interpolation":true,"physics_ticks":60,"screen_refresh_rate":60.0000038146973,"vsync_mode":1} user_dir=/data/data/com.mirongi.mapsimulator/files
+11-02 16:41:13.513 13543 13573 I godot   : QUALITY profile=low experiment=scenario_extensibility_kenney_town occluders={"ms":2,"occluders":7,"source":"baked","triangles":84} effective={"camera_far":400.0,"fog":true,"hide":[],"lod_threshold":4.0,"max_fps":30,"occlusion":true,"render_scale":0.6,"scaling_mode":"bilinear","shadows":"off","visibility_end":{"decor":100.0,"facade_detail":100.0,"lamps":100.0,"trees":100.0}}
+11-02 16:41:13.514 13543 13573 I godot   : MAP test_district loaded in 420 ms (kenney_town freed after 373 ms, 4 frames)
+11-02 16:41:13.515 13543 13573 I godot   : SCENARIO step=map_test_district result=INFO t=1.4 loaded after 0.4 s
+11-02 16:41:14.043 13543 13573 I godot   : PERF map=test_district profile=low view="Spawn" fps=21 draw_calls=89 primitives=7072 objects=334 video_mem_mb=71 static_mem_mb=51 static_peak_mb=59 vehicles=awake,awake
+11-02 16:41:14.542 13543 13573 I godot   : SCENARIO step=map_switch result=PASS t=2.5 map test_district, player 0.00 m from its spawn, vehicles 2, NPCs 3, nodes 220 (on kenney_town: 1435)
+11-02 16:41:15.904 13543 13573 I godot   : VEHICLE PlaceholderCar asleep
+11-02 16:41:16.044 13543 13573 I godot   : PERF map=test_district profile=low view="Spawn" fps=29 draw_calls=88 primitives=7056 objects=331 video_mem_mb=71 static_mem_mb=51 static_peak_mb=59 vehicles=asleep,awake
+11-02 16:41:16.202 13543 13573 I godot   : VEHICLE PlaceholderVan asleep
+11-02 16:41:16.206 13543 13573 I godot   : SCENARIO step=van_parked result=PASS t=4.1 PlaceholderVan (Van (placeholder)), asleep
+11-02 16:41:16.241 13543 13573 I godot   : CAR walk-up PlaceholderCar
+11-02 16:41:16.736 13543 13573 I godot   : CAR walk-up PlaceholderVan
+11-02 16:41:17.208 13543 13573 I godot   : SCENARIO step=van_walk_up result=PASS t=5.1 beside PlaceholderVan, interact button true
+11-02 16:41:17.239 13543 13573 I godot   : VEHICLE PlaceholderVan awake
+11-02 16:41:17.709 13543 13573 I godot   : SCENARIO step=van_get_in result=PASS t=5.6 driving PlaceholderVan, awake, camera on it true
+11-02 16:41:18.044 13543 13573 I godot   : PERF map=test_district profile=low view="Spawn" fps=30 draw_calls=92 primitives=5382 objects=343 video_mem_mb=72 static_mem_mb=53 static_peak_mb=59 vehicles=asleep,awake
+11-02 16:41:19.674 13543 13573 I godot   : SCENARIO step=van_throttle result=PASS t=7.6 forward speed 5.0 m/s (max 14)
+11-02 16:41:20.039 13543 13573 I godot   : PERF map=test_district profile=low view="Spawn" fps=30 draw_calls=83 primitives=4938 objects=334 video_mem_mb=72 static_mem_mb=53 static_peak_mb=59 vehicles=asleep,awake
+11-02 16:41:21.195 13543 13573 I godot   : SCENARIO step=van_get_out result=PASS t=9.1 speed when stopped 0.06 m/s
+11-02 16:41:21.686 13543 13573 I godot   : VEHICLE PlaceholderVan asleep
+11-02 16:41:21.691 13543 13573 I godot   : SCENARIO step=van_asleep_after_getting_out result=PASS t=9.6 PlaceholderVan asleep
+11-02 16:41:22.022 13543 13573 I godot   : PERF map=test_district profile=low view="Spawn" fps=29 draw_calls=76 primitives=5468 objects=321 video_mem_mb=72 static_mem_mb=53 static_peak_mb=59 vehicles=asleep,asleep
+11-02 16:41:24.022 13543 13573 I godot   : PERF map=test_district profile=low view="Spawn" fps=30 draw_calls=76 primitives=5472 objects=323 video_mem_mb=72 static_mem_mb=53 static_peak_mb=59 vehicles=asleep,asleep
+11-02 16:41:24.696 13543 13573 I godot   : SCENARIO step=npc_patrols result=PASS t=12.6 Npc3 moved 6.8 m in 3 s, 0 arrivals, state Walk
+11-02 16:41:26.026 13543 13573 I godot   : PERF map=test_district profile=low view="Spawn" fps=30 draw_calls=63 primitives=5160 objects=310 video_mem_mb=72 static_mem_mb=53 static_peak_mb=59 vehicles=asleep,asleep
+11-02 16:41:27.455 13543 13573 I godot   : SCENARIO step=npc_hit_reaction result=PASS t=15.4 Npc3 hit after 1 punch(es), state HitReaction
+11-02 16:41:28.024 13543 13573 I godot   : PERF map=test_district profile=low view="Spawn" fps=30 draw_calls=63 primitives=5164 objects=312 video_mem_mb=72 static_mem_mb=53 static_peak_mb=59 vehicles=asleep,asleep
+11-02 16:41:28.457 13543 13573 I godot   : SCENARIO step=npc_one_hit_per_punch result=PASS t=16.4 1 hit(s) for the punch that landed
+11-02 16:41:30.025 13543 13573 I godot   : PERF map=test_district profile=low view="Spawn" fps=30 draw_calls=63 primitives=5160 objects=310 video_mem_mb=72 static_mem_mb=53 static_peak_mb=59 vehicles=asleep,asleep
+11-02 16:41:31.952 13543 13573 I godot   : SCENARIO step=npc_patrol_resumes result=PASS t=19.9 Npc3 state Idle, moved 0.6 m, heading for point 1 (was 0)
+11-02 16:41:32.033 13543 13573 I godot   : PERF map=test_district profile=low view="Spawn" fps=30 draw_calls=11 primitives=1030 objects=271 video_mem_mb=164 static_mem_mb=52 static_peak_mb=59 vehicles=
+11-02 16:41:32.467 13543 13573 I godot   : QUALITY profile=low experiment=scenario_extensibility_kenney_town occluders={"ms":17,"occluders":443,"source":"baked","triangles":14134} effective={"camera_far":400.0,"fog":true,"hide":[],"lod_threshold":4.0,"max_fps":30,"occlusion":true,"render_scale":0.6,"scaling_mode":"bilinear","shadows":"off","visibility_end":{"decor":100.0,"facade_detail":100.0,"lamps":100.0,"trees":100.0}}
+11-02 16:41:32.468 13543 13573 I godot   : MAP kenney_town loaded in 515 ms (test_district freed after 132 ms, 4 frames)
+11-02 16:41:32.468 13543 13573 I godot   : SCENARIO step=map_kenney_town result=INFO t=20.4 loaded after 0.5 s
+11-02 16:41:33.494 13543 13573 I godot   : SCENARIO step=map_back result=PASS t=21.4 map kenney_town, player 0.00 m from its spawn, vehicles 1, NPCs 1, nodes 1435 (before the switches 1435)
+11-02 16:41:34.326 13543 13573 I godot   : PERF map=kenney_town profile=low view="Spawn" fps=30 draw_calls=92 primitives=17352 objects=319 video_mem_mb=76 static_mem_mb=61 static_peak_mb=61 vehicles=awake
+11-02 16:41:35.057 13543 13573 I godot   : VEHICLE PlaceholderCar asleep
+11-02 16:41:35.085 13543 13573 I godot   : SCENARIO step=parked_car_asleep result=PASS t=23.0 car asleep
+11-02 16:41:35.118 13543 13573 I godot   : CAR walk-up PlaceholderCar
+11-02 16:41:36.091 13543 13573 I godot   : SCENARIO step=car_button result=PASS t=24.0 distance 2.4 m, car asleep, interact button true
+11-02 16:41:36.322 13543 13573 I godot   : PERF map=kenney_town profile=low view="Spawn" fps=30 draw_calls=109 primitives=20123 objects=340 video_mem_mb=76 static_mem_mb=61 static_peak_mb=61 vehicles=asleep
+11-02 16:41:36.457 13543 13573 I godot   : VEHICLE PlaceholderCar awake
+11-02 16:41:36.486 13543 13573 I godot   : SCENARIO step=walk_into_car_wakes_it result=PASS t=24.4 player on a wall true, car awake
+11-02 16:41:37.786 13543 13573 I godot   : VEHICLE PlaceholderCar asleep
+11-02 16:41:37.790 13543 13573 I godot   : SCENARIO step=asleep_after_stopping result=PASS t=25.7 after 1.3 s
+11-02 16:41:38.322 13543 13573 I godot   : PERF map=kenney_town profile=low view="Spawn" fps=30 draw_calls=118 primitives=20493 objects=349 video_mem_mb=76 static_mem_mb=61 static_peak_mb=61 vehicles=asleep
+11-02 16:41:40.321 13543 13573 I godot   : PERF map=kenney_town profile=low view="Spawn" fps=30 draw_calls=118 primitives=20493 objects=349 video_mem_mb=76 static_mem_mb=61 static_peak_mb=61 vehicles=asleep
+11-02 16:41:40.818 13543 13573 I godot   : SCENARIO step=stays_asleep_beside_it result=PASS t=28.7 player touched the car true, distance 1.25 m
+11-02 16:41:40.854 13543 13573 I godot   : VEHICLE PlaceholderCar awake
+11-02 16:41:41.321 13543 13573 I godot   : SCENARIO step=get_in_wakes_it result=PASS t=29.2 driving true, car awake
+11-02 16:41:42.321 13543 13573 I godot   : PERF map=kenney_town profile=low view="Spawn" fps=30 draw_calls=120 primitives=20939 objects=355 video_mem_mb=76 static_mem_mb=61 static_peak_mb=61 vehicles=awake
+11-02 16:41:42.490 13543 13573 I godot   : SCENARIO step=throttle result=PASS t=30.4 forward speed 5.1 m/s
+11-02 16:41:43.859 13543 13573 I godot   : SCENARIO step=get_out result=PASS t=31.8 speed when stopped 0.07 m/s
+11-02 16:41:44.322 13543 13573 I godot   : PERF map=kenney_town profile=low view="Spawn" fps=30 draw_calls=102 primitives=17170 objects=331 video_mem_mb=76 static_mem_mb=61 static_peak_mb=61 vehicles=awake
+11-02 16:41:44.357 13543 13573 I godot   : VEHICLE PlaceholderCar asleep
+11-02 16:41:44.385 13543 13573 I godot   : SCENARIO step=asleep_after_getting_out result=PASS t=32.3 car asleep
+11-02 16:41:44.385 13543 13573 I godot   : SCENARIO step=slope_skipped result=INFO t=32.3 the map has no sloped viewpoint (MapDefinition.sloped_viewpoint)
+11-02 16:41:44.386 13543 13573 I godot   : SCENARIO step=done result=PASS t=32.3 passed=21 failed=0
+11-02 16:41:44.413 13543 13573 I godot   : BENCH_DONE
