@@ -1,0 +1,93 @@
+[gd_resource type="Resource" script_class="CategoryRules" format=3]
+
+[ext_resource type="Script" path="res://game/world/category_rule.gd" id="1_l7a2i"]
+[ext_resource type="Script" path="res://game/world/category_rules.gd" id="2_ic6fq"]
+
+[sub_resource type="Resource" id="Resource_o35fh"]
+script = ExtResource("1_l7a2i")
+category = "water"
+kind = "words"
+pattern = "water sea river lake pond ocean"
+
+[sub_resource type="Resource" id="Resource_oo84c"]
+script = ExtResource("1_l7a2i")
+category = "decor"
+kind = "words"
+pattern = "traffic sign fence barrier bench cone dumpster bin hydrant mailbox pole wire planter prop car vehicle"
+
+[sub_resource type="Resource" id="Resource_ainfq"]
+script = ExtResource("1_l7a2i")
+category = "lamps"
+kind = "words"
+pattern = "lamp light lantern"
+
+[sub_resource type="Resource" id="Resource_r44m4"]
+script = ExtResource("1_l7a2i")
+category = "trees"
+kind = "words"
+pattern = "tree bush shrub hedge plant foliage vegetation palm leaves"
+
+[sub_resource type="Resource" id="Resource_3fhge"]
+script = ExtResource("1_l7a2i")
+category = "facade_detail"
+kind = "words"
+pattern = "window door balcony timber beam trim cornice facade shutter awning railing detail frame"
+
+[sub_resource type="Resource" id="Resource_qegya"]
+script = ExtResource("1_l7a2i")
+category = "buildings"
+kind = "words"
+pattern = "building house wall roof tower dome drum minaret chimney church mosque shop skyscraper apartment office"
+
+[sub_resource type="Resource" id="Resource_xhggp"]
+script = ExtResource("1_l7a2i")
+category = "ground"
+kind = "words"
+pattern = "ground terrain road street pavement sidewalk path grass land landcover floor plaza square tile parking driveway curb kerb dirt sand field bridge"
+
+[sub_resource type="Resource" id="Resource_1nvji"]
+script = ExtResource("1_l7a2i")
+category = "facade_detail"
+kind = "group"
+pattern = "map_category_facade_detail"
+
+[sub_resource type="Resource" id="Resource_ukdvv"]
+script = ExtResource("1_l7a2i")
+category = "decor"
+kind = "group"
+pattern = "map_category_decor"
+
+[sub_resource type="Resource" id="Resource_xtx6i"]
+script = ExtResource("1_l7a2i")
+category = "lamps"
+kind = "group"
+pattern = "map_category_lamps"
+
+[sub_resource type="Resource" id="Resource_lvqix"]
+script = ExtResource("1_l7a2i")
+category = "trees"
+kind = "group"
+pattern = "map_category_trees"
+
+[sub_resource type="Resource" id="Resource_1plub"]
+script = ExtResource("1_l7a2i")
+category = "buildings"
+kind = "group"
+pattern = "map_category_buildings"
+
+[sub_resource type="Resource" id="Resource_qa7hs"]
+script = ExtResource("1_l7a2i")
+category = "ground"
+kind = "group"
+pattern = "map_category_ground"
+
+[sub_resource type="Resource" id="Resource_o0ppo"]
+script = ExtResource("1_l7a2i")
+category = "water"
+kind = "group"
+pattern = "map_category_water"
+
+[resource]
+script = ExtResource("2_ic6fq")
+rules = Array[ExtResource("1_l7a2i")]([SubResource("Resource_o35fh"), SubResource("Resource_oo84c"), SubResource("Resource_ainfq"), SubResource("Resource_r44m4"), SubResource("Resource_3fhge"), SubResource("Resource_qegya"), SubResource("Resource_xhggp"), SubResource("Resource_1nvji"), SubResource("Resource_ukdvv"), SubResource("Resource_xtx6i"), SubResource("Resource_lvqix"), SubResource("Resource_1plub"), SubResource("Resource_qa7hs"), SubResource("Resource_o0ppo")])
+occluder_categories = Array[String](["buildings", "ground"])

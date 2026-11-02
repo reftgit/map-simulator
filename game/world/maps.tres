@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="MapRegistry" load_steps=8 format=3]
+[gd_resource type="Resource" script_class="MapRegistry" load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://game/world/map_registry.gd" id="1_registry"]
 [ext_resource type="Script" path="res://game/world/map_definition.gd" id="2_definition"]
@@ -7,7 +7,8 @@
 [ext_resource type="Resource" path="res://maps/istanbul_halic_cells/istanbul_halic_cells.tres" id="5_istanbul_cells"]
 [ext_resource type="Resource" path="res://maps/istanbul_halic_cells_light/istanbul_halic_cells_light.tres" id="6_istanbul_cells_light"]
 [ext_resource type="Resource" path="res://maps/istanbul_halic_cells_shader/istanbul_halic_cells_shader.tres" id="7_istanbul_cells_shader"]
+[ext_resource type="Resource" path="res://maps/kenney_town/kenney_town.tres" id="8_kenney_town"]
 
 [resource]
 script = ExtResource("1_registry")
-definitions = Array[ExtResource("2_definition")]([ExtResource("7_istanbul_cells_shader"), ExtResource("3_istanbul"), ExtResource("4_test_district"), ExtResource("5_istanbul_cells"), ExtResource("6_istanbul_cells_light")])
+definitions = Array[ExtResource("2_definition")]([ExtResource("7_istanbul_cells_shader"), ExtResource("3_istanbul"), ExtResource("4_test_district"), ExtResource("5_istanbul_cells"), ExtResource("6_istanbul_cells_light"), ExtResource("8_kenney_town")])

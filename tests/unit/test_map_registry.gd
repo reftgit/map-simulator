@@ -170,10 +170,13 @@ func test_imported_files_count_once_imported() -> void:
 
 func test_registry_order_and_generated_files() -> void:
 	# The shader facade map first (the default, D25); İstanbul • Haliç, the
-	# test district, and the cells and light maps stay selectable.
+	# test district, and the cells and light maps stay selectable; the CC0
+	# Kenney town, imported by the tool (Phase 6a), last.
 	var registry := MapRegistry.load_default()
 	var cells := registry.find("istanbul_halic_cells")
-	check(cells != null and registry.ids() == (["istanbul_halic_cells_shader", "istanbul_halic", "test_district", "istanbul_halic_cells", "istanbul_halic_cells_light"] as Array[String]), "registry order (%s)" % [registry.ids()])
+	check(cells != null and registry.ids() == (["istanbul_halic_cells_shader", "istanbul_halic", "test_district", "istanbul_halic_cells", "istanbul_halic_cells_light", "kenney_town"] as Array[String]), "registry order (%s)" % [registry.ids()])
+	var town := registry.find("kenney_town")
+	check(town.required_files == (["res://maps/kenney_town/kenney_town_model.scn"] as Array[String]) and town.is_available(), "the Kenney town's processed model is committed")
 	for variant in ["istanbul_halic_cells_light", "istanbul_halic_cells_shader"]:
 		check(registry.find(variant).required_files == (["res://assets/%s.glb" % variant] as Array[String]), "%s needs its generated GLB" % variant)
 		check(FileAccess.file_exists("res://assets/%s.glb.import" % variant), "%s: the GLB's import settings are committed" % variant)

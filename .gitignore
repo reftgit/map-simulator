@@ -25,3 +25,8 @@ __pycache__/
 
 # OS files
 .DS_Store
+
+# Maps the import tool writes for tests from inputs that are not in Git (the
+# Safranbolu package, the shipped İstanbul GLB under a test id); regenerated
+# with the commands in docs/maps/imported/.
+/tests/imported/
