@@ -70,6 +70,7 @@ static func definition(id: String, display_name: String, paths: Dictionary, plac
 	map.required_files.assign([paths.model])
 	map.debug_viewpoints.assign(placement.viewpoints)
 	map.debug_viewpoint_names.assign(placement.viewpoint_names)
+	map.sloped_viewpoint = placement.sloped_viewpoint
 	return map
 
 

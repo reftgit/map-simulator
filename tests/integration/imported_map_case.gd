@@ -3,7 +3,7 @@ extends "res://tests/test_case.gd"
 ## with the tool's placement only: the spawn on the ground, a 10 s walk
 ## without falling or getting stuck, punch and roll, the vehicle parked flat
 ## and driving, the NPC patrolling, the quality profiles, a map switch
-## without leaks. Each imported map's test file extends
+## without leaks, the device scenario. Each imported map's test file extends
 ## this; it is skipped while the map's generated model is missing.
 
 var game: Node
@@ -210,3 +210,22 @@ func test_map_switch_without_leaks() -> void:
 	await physics_frames(30)
 	check(_node_count() == before, "node count back where it was (%d, before %d)" % [_node_count(), before])
 	check(_flat_distance(player.global_position, definition.player_spawn_position) < 0.3 and player.is_on_floor(), "back at the spawn")
+
+
+func test_device_scenario_vehicle_sleep() -> void:
+	# The generalized device scenario (Phase 6a) on this map's own points.
+	await _setup()
+	var config := PerfConfig.from_dict({"experiment": "scenario_test", "scenario": {"name": "vehicle_sleep", "quit_when_done": false}})
+	var scenario: DeviceScenario = game.start_scenario(config)
+	var results: Array = await scenario.finished
+	var steps: Array[String] = []
+	for result: Dictionary in results:
+		steps.append(result.step)
+		check(result.result != "FAIL", "%s: %s (%s)" % [result.step, result.result, result.detail])
+	for step in ["parked_car_asleep", "car_button", "walk_into_car_wakes_it", "get_in_wakes_it", "throttle", "get_out", "asleep_after_getting_out", "done"]:
+		check(step in steps, "step %s ran" % step)
+	if definition.sloped_viewpoint >= 0:
+		check("slope_setup" in steps and "slope_stays_asleep_beside_it" in steps, "the slope steps ran on the map's sloped viewpoint")
+	else:
+		check("slope_skipped" in steps, "no sloped viewpoint: the slope steps are skipped")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(PerfBenchmark.RESULTS_PATH))

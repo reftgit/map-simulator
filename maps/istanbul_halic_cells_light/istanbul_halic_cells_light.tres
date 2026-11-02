@@ -30,3 +30,4 @@ category_rules = ExtResource("9_categories")
 required_files = Array[String](["res://assets/istanbul_halic_cells_light.glb"])
 debug_viewpoints = Array[Transform3D]([Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.03, 120), Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -20, 39.49, -250)])
 debug_viewpoint_names = Array[String](["Karaköy street, facing north", "Galata street, facing south"])
+sloped_viewpoint = 1

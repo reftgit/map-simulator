@@ -44,6 +44,10 @@ extends Resource
 ## Array[String], not PackedStringArray: Godot 4.7.2's export conversion of
 ## text resources dropped a PackedStringArray here (seen on device 2026-10-24).
 @export var debug_viewpoint_names: Array[String] = []
+## Index into debug_viewpoints of a viewpoint on sloped ground with room to
+## park a car (the device scenario's parked-on-a-slope steps, DeviceScenario);
+## -1 when the map has none.
+@export var sloped_viewpoint := -1
 
 
 ## Whether every required file can be loaded.

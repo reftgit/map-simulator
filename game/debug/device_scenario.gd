@@ -10,14 +10,21 @@ extends Node
 ## on Android) so the host scripts collect them the same way, then quits
 ## (iOS: hides the map, as the benchmark does).
 ##
+## Every map position comes from the loaded map's MapDefinition (its vehicles,
+## NPC routes, viewpoints, and sloped viewpoint), so the scenarios run on any
+## map, imported ones included (Phase 6a).
+##
 ## "vehicle_sleep": the parked car's sleep and wake rules (Phase 4b) on the
-## real map, including standing against the car on a sloped street (Phase
-## 4c fix), then, with rotate_hold_s > 0, the "orientation" steps.
+## map's first vehicle, including standing against the car on the map's
+## sloped viewpoint (Phase 4c fix; skipped on a map without one), then, with
+## rotate_hold_s > 0, the "orientation" steps.
 ## "orientation": holds the joystick for rotate_hold_s while the device is
 ## turned (by adb on Android, by hand on iOS), logging the gravity vector,
 ## the safe area, and the stick once a second, then releases it.
 ## "extensibility" (Phase 5): the debug MAP button to the test district,
 ## the van there, punching an NPC, MAP back, then the "vehicle_sleep" steps.
+## With scenario_maps, its first map is the one to visit, switched to and back
+## directly (Main.switch_map()) instead of through every map in between.
 ## "map_switch": holds each map for scenario_hold_s and switches straight to
 ## the next map of scenario_maps (Main.switch_map()), for a host script that
 ## samples the app's memory meanwhile (tools/perf/pss_trace.py).
@@ -101,18 +108,26 @@ func _vehicle_sleep() -> void:
 	var slept := await _until(car.is_asleep, 4.0)
 	_check("asleep_after_getting_out", slept, "car %s" % _state(car))
 
-	# The Phase 4c defect: standing still against the car on a sloped street.
+	# The Phase 4c defect: standing still against the car on a sloped street
+	# (the map's sloped viewpoint).
+	var sloped: int = game.map_definition.sloped_viewpoint
+	if sloped < 0 or sloped >= game.map_definition.debug_viewpoints.size():
+		_log("slope_skipped", "INFO", "the map has no sloped viewpoint (MapDefinition.sloped_viewpoint)")
+		return
+	var slope_view: String = game.get_view_names()[sloped + 1]
 	_tap(input.interact_button)
 	await _seconds(0.5)
 	var view_button: TouchButton = hud.get_node("SafeArea/Controls/DebugViewButton")
-	while game.vehicle_interaction.is_driving() and not hud.view_name.begins_with("Galata"):
+	for i in game.get_view_names().size():
+		if not game.vehicle_interaction.is_driving() or hud.view_name == slope_view:
+			break
 		_tap(view_button)
 		await _seconds(0.5)
 	await _seconds(2.0)
 	_tap(input.exit_button)
 	await _seconds(0.5)
 	var slope := _slope_degrees(car)
-	_check("slope_setup", not game.vehicle_interaction.is_driving() and hud.view_name.begins_with("Galata") and slope >= 2.0,
+	_check("slope_setup", not game.vehicle_interaction.is_driving() and hud.view_name == slope_view and slope >= 2.0,
 			"view %s, ground slope under the car %.1f°" % [hud.view_name, slope])
 	await _until(car.is_asleep, 4.0)
 	await _walk_into(car, "slope_walk_into_car_wakes_it")
@@ -123,20 +138,23 @@ func _vehicle_sleep() -> void:
 ## Phase 5: MAP to the test district (its spawn, both vehicle types, its
 ## NPCs), the van (get in, throttle, get out, asleep again), an NPC (punch,
 ## hit reaction, back on its patrol), MAP back to the first map (the node
-## count as before the switches), then the vehicle_sleep steps there.
+## count as before the switches), then the vehicle_sleep steps there. The
+## map to visit is scenario_maps[0] when given (switched to directly).
 func _extensibility() -> void:
 	var hud: UIController = game.hud
 	var input: MobileInputController = hud.input
 	var player: PlayerController = game.player
 	var first_map: String = game.map_definition.id
+	var visit: String = config.scenario_maps[0] if not config.scenario_maps.is_empty() else "test_district"
+	var direct := not config.scenario_maps.is_empty()
 	await _seconds(1.0)
 	var nodes_before := _node_count()
-	await _switch_map("test_district")
+	await _switch_map(visit, direct)
 	await _seconds(1.0)
 	var spawn: Vector3 = game.map_definition.player_spawn_position
 	var from_spawn := Vector2(player.global_position.x - spawn.x, player.global_position.z - spawn.z).length()
-	_check("map_switch", game.map_definition.id == "test_district" and from_spawn < 0.5 and player.is_on_floor()
-			and game.world.vehicles.size() == 2 and game.world.npcs.size() == 3,
+	_check("map_switch", game.map_definition.id == visit and from_spawn < 0.5 and player.is_on_floor()
+			and game.world.vehicles.size() == game.map_definition.vehicle_spawns.size() and game.world.npcs.size() == game.map_definition.npc_routes.size(),
 			"map %s, player %.2f m from its spawn, vehicles %d, NPCs %d, nodes %d (on %s: %d)" % [game.map_definition.id, from_spawn,
 			game.world.vehicles.size(), game.world.npcs.size(), _node_count(), first_map, nodes_before])
 
@@ -199,7 +217,7 @@ func _extensibility() -> void:
 			"%s state %s, moved %.1f m, heading for point %d (was %d)" % [npc.name, npc.state_machine.get_state_name(),
 			npc.global_position.distance_to(resumed_at), npc.patrol_input.target_index, target])
 
-	await _switch_map(first_map)
+	await _switch_map(first_map, direct)
 	await _seconds(1.0)
 	spawn = game.map_definition.player_spawn_position
 	from_spawn = Vector2(player.global_position.x - spawn.x, player.global_position.z - spawn.z).length()
@@ -241,10 +259,13 @@ func _map_switches() -> void:
 		await _seconds(config.scenario_hold_s)
 
 
-## Taps MAP until the map `id` is loaded.
-func _switch_map(id: String) -> void:
+## Taps MAP until the map `id` is loaded, or with `direct` switches to it
+## (Main.switch_map()).
+func _switch_map(id: String, direct := false) -> void:
 	var button: TouchButton = game.hud.get_node("SafeArea/Controls/DebugMapButton")
 	var started := Time.get_ticks_msec()
+	if direct and game.map_definition.id != id:
+		await game.switch_map(game.maps.find(id))
 	for i in game.maps.definitions.size():
 		if game.map_definition.id == id:
 			break
