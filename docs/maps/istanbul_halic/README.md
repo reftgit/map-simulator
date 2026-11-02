@@ -1,6 +1,6 @@
 # İstanbul • Haliç map — source and restore
 
-The game's first map. It was produced outside this repository and copied in on 2026-10-24.
+The game's first map. It was produced outside this repository and copied in on 2026-10-24. Since 2026-11-02 the game's default is the shader facade map built from the same generator (`istanbul_halic_cells_shader`, D25); İstanbul • Haliç is a selectable map. To run the game on a new machine, see "Running the game on a new machine" below.
 
 `<SOURCE_PACKAGE>` below stands for the folder on the maintainer's machine that holds the original `Istanbul_Halic` package (kept outside Git, in cloud storage).
 
@@ -89,7 +89,7 @@ A regenerated GLB is not byte-identical with the shipped one: the GEOS geometry 
 
 ### The cells map (`istanbul_halic_cells`)
 
-A second map in the registry (`maps/istanbul_halic_cells/`): the same spawn, bounds, viewpoints, vehicle spawn, NPC routes, and scene setup as İstanbul • Haliç, with the GLB built with `--detail-cell 40`. It is loaded only with `--map=istanbul_halic_cells`, an experiment's `"map"` key, or the debug MAP button (debug and Release Perf builds); İstanbul • Haliç stays the default. Its GLB is generated on each machine and ignored by Git; its import settings (`assets/istanbul_halic_cells.glb.import`, the same values as the shipped GLB's) and its baked occluders (`maps/istanbul_halic_cells/istanbul_halic_cells_occluders.scn`) are committed. Until the GLB is generated and imported the map counts as unavailable: the MAP button skips it, `--map` falls back to İstanbul • Haliç with a warning, and its tests report SKIP.
+A second map in the registry (`maps/istanbul_halic_cells/`): the same spawn, bounds, viewpoints, vehicle spawn, NPC routes, and scene setup as İstanbul • Haliç, with the GLB built with `--detail-cell 40`. It is loaded only with `--map=istanbul_halic_cells`, an experiment's `"map"` key, or the debug MAP button (debug and Release Perf builds); it is not the default. Its GLB is generated on each machine and ignored by Git; its import settings (`assets/istanbul_halic_cells.glb.import`, the same values as the shipped GLB's) and its baked occluders (`maps/istanbul_halic_cells/istanbul_halic_cells_occluders.scn`) are committed. Until the GLB is generated and imported the map counts as unavailable: the MAP button skips it, `--map` falls back to the default with a warning, and its tests report SKIP.
 
 On a clean machine, after the setup above:
 
@@ -133,7 +133,28 @@ cp build/maps/istanbul_halic_cells_shader/istanbul_halic.glb assets/istanbul_hal
 godot --headless --path . --import
 ```
 
-Their tests check these hashes. A visual comparison of all four İstanbul maps is in `docs/perf/facade/`. The user chose the shader facade (`PROJECT_CONTEXT.md`, D25); it stays an experimental map until D25's criteria pass (on 2026-11-01 the tablet's long-frame criterion failed), so İstanbul • Haliç (`assets/istanbul_halic.glb`) is still the default. Its distant windows and device results: `docs/perf/facade_v2/`.
+Their tests check these hashes. A visual comparison of all four İstanbul maps is in `docs/perf/facade/`. The user chose the shader facade (`PROJECT_CONTEXT.md`, D25), and since 2026-11-02 `istanbul_halic_cells_shader` is the game's default map (first in the registry); the light facade stays an experimental map. Its distant windows and device results: `docs/perf/facade_v2/`; the default decision: `docs/perf/default_map/`.
+
+## Running the game on a new machine
+
+A clone carries no map GLB: `assets/istanbul_halic.glb` is copied in from the source package and the `istanbul_halic_cells*.glb` are generated (D6, D23). The default map is first in `game/world/maps.tres`; while its GLB is missing the game starts on the first available map with a warning (İstanbul • Haliç when its GLB is copied in, else the test district, which needs no file) in every kind of build, and with no map available it shows an error (`PROJECT_CONTEXT.md`, T44).
+
+1. Godot 4.7.2 and, for the map, Python 3.12 (`python3.12 -m venv <VENV>`, `<VENV>/bin/python -m pip install -r tools/maps/istanbul_halic/requirements.txt`, once).
+2. Generate the default map's GLB and copy it in:
+
+   ```bash
+   <VENV>/bin/python -B tools/maps/istanbul_halic/build_map.py --detail-cell 40 --facade shader --out build/maps/istanbul_halic_cells_shader
+   shasum -a 256 build/maps/istanbul_halic_cells_shader/istanbul_halic.glb
+   # expected: 60b9f7295be0ca536822126cbcf182de8f6db96de772314c5a80a39b31755303 (254,569,692 bytes)
+   cp build/maps/istanbul_halic_cells_shader/istanbul_halic.glb assets/istanbul_halic_cells_shader.glb
+   ```
+
+   On the Mac (Apple Silicon, 16 GB) the run took 122.8 s with a peak resident size of 2.4 GiB (peak memory footprint 2.4 GiB). It needs no other generated file: the map's occluders (the cells map's, `maps/istanbul_halic_cells/istanbul_halic_cells_occluders.scn`) are committed.
+3. `godot --headless --path . --import` (the shader GLB's import took 8.7 s on the Mac), then `godot --path .` starts on `istanbul_halic_cells_shader`; a debug build logs `STARTUP … map=istanbul_halic_cells_shader`.
+4. Optional, for İstanbul • Haliç as a selectable map and its tests: copy its GLB as in "The model file is not in Git". The other generated maps: "The cells map" and "Facade variants" above.
+5. `godot --headless --path . --script res://tests/run_tests.gd`: without a GLB the tests of its map report SKIP and the run exits 2.
+
+A device build packs every map whose GLB is imported (five maps: Release Perf APK 675 MB); a release package should carry only the default map's GLB (open question 36).
 
 ## Attribution
 

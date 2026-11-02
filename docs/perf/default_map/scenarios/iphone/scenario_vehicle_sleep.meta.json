@@ -1,0 +1,28 @@
+{
+ "experiment": "scenario_vehicle_sleep",
+ "device": "ios",
+ "wall_s": 50,
+ "cooldown_s": 0,
+ "app_args": "",
+ "thermal_start": "Nominal",
+ "thermal_end": "Nominal",
+ "thermal_max": "Nominal",
+ "footprint_peak_mib": 875,
+ "probes": [
+  {
+   "t": 0,
+   "thermal": "Nominal",
+   "footprint_mib": null
+  },
+  {
+   "t": 40,
+   "thermal": "Nominal",
+   "footprint_mib": 875
+  },
+  {
+   "t": 51,
+   "thermal": "Nominal",
+   "footprint_mib": null
+  }
+ ]
+}

@@ -1,0 +1,10 @@
+--------- beginning of main
+330538.370  5670  5706 I godot   : Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+330538.416  5670  5706 I godot   : Vulkan 1.1.128 - Forward Mobile - Using Device #0: Qualcomm - Adreno (TM) 610
+330538.747  5670  5706 I godot   : 
+330539.443  5670  5706 I godot   : SAFE_AREA window=(2000, 1200) safe=[P: (0, 0), S: (2000, 1200)] canvas=[P: (0.0, 0.0), S: (1500.0, 900.0)] viewport=(1500.0, 900.0)
+330544.277  5670  5706 I godot   : QUALITY profile=low experiment=c_relative_shader occluders={"ms":91,"occluders":643,"source":"baked","triangles":317518} effective={"camera_far":400.0,"fog":true,"hide":[],"lod_threshold":4.0,"max_fps":30,"occlusion":true,"render_scale":0.6,"scaling_mode":"bilinear","shadows":"off","visibility_end":{"decor":100.0,"facade_detail":100.0,"lamps":100.0,"trees":100.0}}
+330544.277  5670  5706 I godot   : PERF_EXPERIMENT {"config":{"experiment":"c_relative_shader","map":"istanbul_halic_cells_shader","profile":"low","runtime":{},"settings":{}},"profile":"low"}
+330544.296  5670  5706 I godot   : VIEW Spawn
+330544.744  5670  5706 I godot   : STARTUP map_ready_ms=6033 first_frame_ms=6499 map=istanbul_halic_cells_shader profile=low occluders={"ms":91,"occluders":643,"source":"baked","triangles":317518} physics_3d=GodotPhysics3D (setting DEFAULT) vehicles=awake npcs=2 build={"android_frame_pacing":true,"debug_build":false,"display_refresh_rate":60.0000038146973,"ios_allow_high_refresh_rate":false,"max_fps":30,"perf_feature":true,"physics_engine_setting":"DEFAULT","physics_interpolation":true,"physics_ticks":60,"screen_refresh_rate":60.0000038146973,"vsync_mode":1} user_dir=/data/data/com.mirongi.mapsimulator/files
+330547.173  5670  5706 I godot   : VEHICLE PlaceholderCar asleep

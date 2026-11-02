@@ -2,6 +2,8 @@
 
 For `PROJECT_STATE.md`, "Shader facade toward the default", and the criteria of D25 (`PROJECT_CONTEXT.md`). Sections: the distant windows (for the user's visual approval), the long-frame diagnosis on the tablet, the device measurements, the map switches.
 
+Follow-up (2026-11-02): the visual approval was given through the reviewer, criterion 1 was made relative and passed, and the shader map became the default: `docs/perf/default_map/`.
+
 ## Distant windows
 
 For the user's visual approval (D25, criterion 5). The shader facade map (`istanbul_halic_cells_shader`) draws its windows with `maps/istanbul_halic_cells_shader/facade_windows.gdshader`; this task replaced the shader's distance fade with a filter over each pixel's footprint. Three columns, the same camera positions:

@@ -1,0 +1,44 @@
+         1793576299.338   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793576299.344   555   555 I lmkd    : Reclaim 'com.android.keychain' (30766), uid 1000, oom_score_adj 999, state 19 to free 19204kB rss, 42256kB swap; reason: min2x watermark is breached and swap is low (1864824kB < 786428kB)
+         1793576299.395   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793576299.398   555   555 I lmkd    : Reclaim 'com.android.settings:remote' (30788), uid 1000, oom_score_adj 999, state 19 to free 18404kB rss, 56084kB swap; reason: min2x watermark is breached even after kill
+         1793576299.495   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793576299.506   555   555 I lmkd    : Reclaim 'com.samsung.android.bbc.bbcagent' (31072), uid 1000, oom_score_adj 995, state 19 to free 17988kB rss, 41924kB swap; reason: min2x watermark is breached even after kill
+         1793576299.694   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793576299.703   555   555 I lmkd    : Reclaim 'com.android.vending:background' (30881), uid 10156, oom_score_adj 965, state 19 to free 28816kB rss, 63380kB swap; reason: min2x watermark is breached and swap is low (1910636kB < 786428kB)
+         1793576299.805   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793576299.808   555   555 I lmkd    : Reclaim 'com.sec.android.app.soundalive' (31564), uid 10047, oom_score_adj 935, state 19 to free 27788kB rss, 38300kB swap; reason: min2x watermark is breached even after kill
+         1793576299.859   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793576299.863   555   555 I lmkd    : Reclaim 'com.samsung.android.game.gos' (32440), uid 10072, oom_score_adj 925, state 19 to free 22376kB rss, 47320kB swap; reason: min2x watermark is breached even after kill
+         1793576305.897   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793576305.902   555   555 I lmkd    : Reclaim 'com.google.android.verifier' (30687), uid 10239, oom_score_adj 915, state 19 to free 20112kB rss, 52436kB swap; reason: min2x watermark is breached and swap is low (1911580kB < 786428kB)
+         1793576305.983   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793576306.005   555   555 I lmkd    : Reclaim 'com.android.vending' (30416), uid 10156, oom_score_adj 905, state 19 to free 29424kB rss, 78420kB swap; reason: min2x watermark is breached even after kill
+         1793576306.083   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793576306.098   555   555 I lmkd    : Reclaim 'com.google.android.googlequicksearchbox:googleapp' (31012), uid 10158, oom_score_adj 900, state 17 to free 24052kB rss, 82328kB swap; reason: min2x watermark is breached even after kill
+         1793576306.183   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793576306.189   555   555 I lmkd    : Reclaim 'com.refdev.games.game1' (31202), uid 10238, oom_score_adj 850, state 19 to free 21288kB rss, 44576kB swap; reason: min2x watermark is breached even after kill
+         1793576306.292   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793576306.303   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793576306.319   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793576306.335   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793576306.352   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793576306.362   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793576306.374   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793576306.390   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793576306.405   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793576306.418   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793576306.430   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793576306.441   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793576306.454   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793576306.466   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793576306.479   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793576306.495   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793576306.506   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793576306.517   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793576306.529   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793576306.542   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793576306.553   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793576334.960   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793576334.972   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793576334.985   555   555 I lmkd    : cached 0, sandbox(not0) 0
