@@ -161,8 +161,8 @@ func _ensure_occluders() -> void:
 	occluder_report.triangles = stats.triangles
 
 
-## Builds one OccluderInstance3D per collision shape of the meshes of
-## `categories` (the map's CategoryRules.occluder_categories) under a new (not
+## Builds one OccluderInstance3D per collision shape (trimesh, convex, or box;
+## shape_faces()) of the meshes of `categories` (the map's CategoryRules.occluder_categories) under a new (not
 ## yet added) node. Transforms are relative to `map_root`. With
 ## `share_vertices`, identical vertices are merged (smaller files for baking;
 ## same triangles).
@@ -174,10 +174,9 @@ static func build_occluders(map_root: Node, groups: Dictionary, share_vertices :
 	for category in categories:
 		for mesh: MeshInstance3D in groups.get(category, []):
 			for shape_node in mesh.find_children("*", "CollisionShape3D", true, false):
-				var shape := (shape_node as CollisionShape3D).shape as ConcavePolygonShape3D
-				if shape == null:
+				var faces := shape_faces((shape_node as CollisionShape3D).shape)
+				if faces.is_empty():
 					continue
-				var faces := shape.get_faces()
 				var vertices := PackedVector3Array()
 				var indices := PackedInt32Array()
 				indices.resize(faces.size())
@@ -201,6 +200,30 @@ static func build_occluders(map_root: Node, groups: Dictionary, share_vertices :
 				instance.transform = root_inverse * (shape_node as Node3D).global_transform
 				holder.add_child(instance)
 	return holder
+
+
+## The triangles of a collision shape, three points each: a trimesh's faces,
+## or the faces of a convex or box shape's hull (its debug mesh's triangle
+## surface); empty for other shapes.
+static func shape_faces(shape: Shape3D) -> PackedVector3Array:
+	if shape is ConcavePolygonShape3D:
+		return (shape as ConcavePolygonShape3D).get_faces()
+	var faces := PackedVector3Array()
+	if not (shape is ConvexPolygonShape3D or shape is BoxShape3D):
+		return faces
+	var mesh := shape.get_debug_mesh()
+	for surface in mesh.get_surface_count():
+		if mesh.surface_get_primitive_type(surface) != Mesh.PRIMITIVE_TRIANGLES:
+			continue
+		var arrays := mesh.surface_get_arrays(surface)
+		var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+		var indices = arrays[Mesh.ARRAY_INDEX]
+		if indices == null or (indices as PackedInt32Array).is_empty():
+			faces.append_array(vertices)
+		else:
+			for index: int in indices:
+				faces.append(vertices[index])
+	return faces
 
 
 ## Occluder count and triangle count under `holder`.

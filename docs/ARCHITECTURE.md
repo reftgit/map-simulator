@@ -260,10 +260,24 @@ A `VehicleBody3D` at rest is never put to sleep by GodotPhysics3D: the engine's 
 ### Adding a map (the steps followed for the test district)
 
 1. Make the map scene, `maps/<id>/<id>.tscn`: any Node3D scene with walkable static bodies on layer 1 (world). Give it category rules (`CategoryRules`, below: `maps/test_district/test_district_categories.tres` maps the prefixes `Ground_`, `Road_`, `Buildings_`) so the quality profiles' visibility ranges apply, and give it a `WorldEnvironment` and a `DirectionalLight3D` named `Sun` as direct children if the profiles should change fog and shadows. The test district is generated from Godot primitives by `tools/build_test_district.gd` (box shapes and one convex ramp instead of trimesh colliders).
-2. Occluders (optional): a scene of `OccluderInstance3D` nodes with `ArrayOccluder3D` occluders, referenced by `occluders_path`. `tools/bake_occluders.gd -- --map=res://maps/<id>/<id>.tres` builds them from trimesh collision (İstanbul); the test district's generator writes one box per building. Without the file, a profile with occlusion builds occluders from trimesh collision at load and logs a warning (none for box colliders).
+2. Occluders (optional): a scene of `OccluderInstance3D` nodes with `ArrayOccluder3D` occluders, referenced by `occluders_path`. `tools/bake_occluders.gd -- --map=res://maps/<id>/<id>.tres` builds them from trimesh collision (İstanbul); the test district's generator writes one box per building. Without the file, a profile with occlusion builds occluders from the collision at load and logs a warning (trimesh faces, and since 2026-11-02 the hull faces of convex and box shapes, `RenderSettings.shape_faces()`).
 3. Write `maps/<id>/<id>.tres` (`MapDefinition`): a unique `id`, the scene path, spawn and yaw, bounds (a ground-plane `Rect2`: x is world X, y is world Z), kill height, vehicle spawns (transforms face −Z) and their types, NPC routes (points on the floor, at least 10 m from where tests walk), the occluder path, and viewpoints. Exported arrays must be typed arrays, not packed arrays (T16).
 4. Add it to `game/world/maps.tres` (`definitions`). Nothing in the player, vehicle, NPC, camera, or input code changes.
 5. Test it: `tests/integration/test_test_district.gd` is the model (spawn, colliders, bounds and kill height, viewpoints on the floor, profiles and occluders, a switch round trip, vehicles, NPCs); measure a viewpoint with an experiment that names the map (`profile_default_test_district.json`).
+
+### Import tool (Phase 6a, 2026-11-02)
+
+`tools/import_map.gd` turns a GLB into a map (rules and user steps: `docs/MAP_CONTRACT.md`; one command, the GLB is only read). The pipeline lives in `tools/map_import/` (no `class_name`; tests preload the scripts):
+
+| Script | Does |
+|---|---|
+| `map_importer.gd` | Loads the GLB with `GLTFDocument` (C1); flattens every mesh into one `Model` node with rigid transforms, baking the configuration's scale and up-axis fix (and any scale or mirroring of the source nodes) into the meshes (`_snapped` keys share one bake per scale); flat normals where the source has none (R4); vertex colours on white untextured materials, optional back-face culling (R5, R6); the checks C2, C3, C5, C6 (`_audit_scale_and_axes`); categories (configured rules or a `CategoryRules` resource, then the vocabulary, then shape; shape results become Godot groups `map_category_<category>` so the saved rules reproduce them; R1, R3, R7); building shells (C7); colliders (R2); occluders (`build_occluders()`, the same `RenderSettings.build_occluders` the bake uses). Every check is a `{"id", "result", "message"}` in `checks`. |
+| `map_geometry.gd` | Face statistics (area by orientation, zero-area and flipped triangles), flat normals, baked transforms (mirroring reverses the winding), connected parts, closed-shell check. Godot's front faces wind clockwise: front normal `(c − a) × (b − a)`. |
+| `map_classifier.gd` | The default vocabulary (as `words` rules), the group rules, configured rules, the shape rules. |
+| `map_colliders.gd` | Collision node suffixes (`-col`, `-colonly`, `-convcol`, `-convcolonly`) and the collider types (`trimesh` per mesh, `convex` or `box` per connected part; parts under 0.5 m or flatter than 2 cm are skipped). A `StaticBody3D` (layer 1) under the mesh, as Godot's GLB import makes it. |
+| `import_report.gd` | The Markdown report. |
+
+Outputs (`--out`, default `maps/<id>/`): `<id>_model.scn` (compressed; above 10 MB the tool writes a `.gitignore` for it), `<id>_categories.tres`, `<id>_occluders.scn`; the report goes to `docs/maps/imported/<id>.md` (`--report`). Exit code 0 written, 1 a mandatory check failed (`--force` writes anyway), 2 bad arguments. Tests: `tests/unit/test_map_import.gd` (synthetic scenes).
 
 ### Adding a vehicle type (the steps followed for the van)
 

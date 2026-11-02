@@ -482,6 +482,15 @@ Decisions made by the implementing agent (Claude Code, 2026-10-24). None was spe
 - **Proof:** all 21,458 mesh assignments of the five maps byte-identical before and after (a dump from the old code at `cbaf661` and from the new rules), `test_map_categories_unchanged.gd` against the old table, the default map's Mac benchmark (low and high, three viewpoints) with the same draw calls, primitives, and objects (`PROJECT_STATE.md`, "Phase 6a").
 - **Rationale:** D26: a map that is not İstanbul must be able to say what its meshes are without code changes. One of the extensibility findings of Phase 6a (a core change).
 
+### T46 — A general import tool in GDScript, writing a baked model (2026-11-02, Phase 6a)
+
+- **Decision:** `tools/import_map.gd` (Godot headless) loads any GLB with `GLTFDocument` at tool time, fixes and checks it against `docs/MAP_CONTRACT.md`, and saves the result as a binary scene (`maps/<id>/<id>_model.scn`) with its colliders, instead of copying the GLB into `assets/` for Godot's importer. One command, the GLB only read, no editor import step; the same code runs on synthetic scenes in the unit tests.
+- **Why not the editor importer:** it gives a GLB without normals no normals at all (measured on the Safranbolu GLB: the arrays come without `NORMAL`), it cannot classify or place anything, and a post-import script would need an editor import step between two commands. The editor importer's collision naming (`-col` etc.) is reproduced by the tool, with the same body layout (a `StaticBody3D` under the mesh), so the shipped İstanbul GLB imports with its 827 trimesh bodies.
+- **Flattening:** every mesh becomes a direct child of `Model` with a rotation-and-position transform; scale, shear, and mirroring are baked into the mesh (physics bodies do not support scale). Names keep the source names (duplicates get `_2`, …; collision suffixes are dropped as Godot does).
+- **Classification order:** configured rules, the default vocabulary (generic English words, `docs/MAP_CONTRACT.md`), then the shape. Shape results are stored as Godot groups in the model and matched by group rules at the end of the map's `CategoryRules`, so the game sees exactly the report's categories without per-mesh rules.
+- **Colliders:** with collision nodes only those (the author decided); otherwise ground trimesh, buildings one convex hull per connected part (a courtyard is filled; `"colliders"` can choose `box` or `trimesh`), nothing for trees, lamps, decor, facade detail, water. Occluders come from the buildings and ground colliders with the existing bake (`RenderSettings.build_occluders`), which now also takes the hull faces of convex and box shapes (an extensibility finding: a core change).
+- **Rationale:** D26; the import must work without hand work and say what it could not fix.
+
 ## Performance findings and proposed measures
 
 Status: **measured on 2026-10-24, nothing applied.** Full tables and protocol: `PROJECT_STATE.md`, "Performance diagnosis pass". Raw data and screenshots: `docs/perf/`.
