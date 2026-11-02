@@ -153,7 +153,7 @@ func test_perf_categories_cover_every_map_mesh() -> void:
 	var uncategorized: Array[String] = []
 	var counts := {}
 	for node in game.world.map_root.get_node("Model").find_children("*", "MeshInstance3D", true, false):
-		var category := RenderSettings.category_of(node.name)
+		var category: String = game.map_definition.category_rules.category_of(node)
 		if category.is_empty():
 			uncategorized.append(str(node.name))
 		counts[category] = counts.get(category, 0) + 1
@@ -235,7 +235,8 @@ func test_baked_occluders_match_runtime_build() -> void:
 	check(ResourceLoader.exists(path), "baked occluders exist at %s" % path)
 	var baked: Node = (load(path) as PackedScene).instantiate()
 	var map_root: Node = game.world.map_root
-	var runtime := RenderSettings.build_occluders(map_root, RenderSettings.meshes_by_category(map_root))
+	var rules: CategoryRules = game.map_definition.category_rules
+	var runtime := RenderSettings.build_occluders(map_root, rules.meshes_by_category(map_root), false, rules.occluder_categories)
 	var baked_stats := RenderSettings.occluder_stats(baked)
 	check(baked_stats == RenderSettings.occluder_stats(runtime), "same occluders and triangles: baked %s, runtime %s" % [baked_stats, RenderSettings.occluder_stats(runtime)])
 	var a := _occluder_bounds(baked)

@@ -9,8 +9,8 @@ extends SceneTree
 ## written by hand, like İstanbul's; its spawn, vehicle spawns, routes, and
 ## viewpoints refer to the layout below. Edit the layout here and re-run:
 ##   godot --headless --path . --script res://tools/build_test_district.gd
-## Node names follow RenderSettings.CATEGORIES ("Ground_", "Road_",
-## "Buildings_"); every solid part is a mesh with a StaticBody3D child on the
+## Node names carry the prefixes of its category rules
+## (test_district_categories.tres: "Ground_", "Road_", "Buildings_"); every solid part is a mesh with a StaticBody3D child on the
 ## world layer, as the GLB import makes them, but with box (and one convex)
 ## shapes instead of trimesh.
 

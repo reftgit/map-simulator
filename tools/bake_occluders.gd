@@ -1,8 +1,9 @@
 extends SceneTree
 ## Bakes a map's occluders once into the scene named by its MapDefinition's
 ## occluders_path. The geometry is what RenderSettings would otherwise build
-## at load: one ArrayOccluder3D per collision shape of the buildings and
-## ground categories, with shared vertices merged. Run after the map changes.
+## at load: one ArrayOccluder3D per collision shape of the map's occluder
+## categories (CategoryRules.occluder_categories: buildings and ground), with
+## shared vertices merged. Run after the map changes.
 ##   godot --headless --path . --import
 ##   godot --headless --path . --script res://tools/bake_occluders.gd [-- --map=res://maps/<name>/<name>.tres] [--out=<path>]
 ## --out writes elsewhere instead (e.g. to compare a map's bake with a shared file).
@@ -33,7 +34,8 @@ func _run() -> void:
 	root.add_child(map)
 	await physics_frame
 	var started := Time.get_ticks_msec()
-	var holder := RenderSettings.build_occluders(map, RenderSettings.meshes_by_category(map), true)
+	var rules := definition.category_rules if definition.category_rules else CategoryRules.new()
+	var holder := RenderSettings.build_occluders(map, rules.meshes_by_category(map), true, rules.occluder_categories)
 	for child in holder.get_children():
 		child.owner = holder
 	var packed := PackedScene.new()

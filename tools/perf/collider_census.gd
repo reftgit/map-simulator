@@ -19,6 +19,7 @@ func _run() -> void:
 		if arg.begins_with("--map="):
 			map_path = arg.trim_prefix("--map=")
 	var definition := load(map_path) as MapDefinition
+	var rules := definition.category_rules if definition.category_rules else CategoryRules.new()
 	var map := (load(definition.scene_path) as PackedScene).instantiate()
 	root.add_child(map)
 	await physics_frame
@@ -39,7 +40,7 @@ func _run() -> void:
 			var box: AABB = shape.global_transform * shape.shape.get_debug_mesh().get_aabb()
 			bounds = box if first else bounds.merge(box)
 			first = false
-		var category := RenderSettings.category_of(body.get_parent().name if body.get_parent() else body.name)
+		var category := rules.category_of(body.get_parent()) if body.get_parent() else ""
 		if category.is_empty():
 			category = str(body.name).get_slice("_", 0)
 		var stats: Dictionary = by_category.get(category, {"bodies": 0, "triangles": 0})

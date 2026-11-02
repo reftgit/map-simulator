@@ -3,6 +3,8 @@ extends "res://tests/test_case.gd"
 ## profile values, precedence (experiment > profile > defaults), applying and
 ## resetting settings, occluder fallback.
 
+const ISTANBUL_RULES := "res://maps/istanbul_halic/istanbul_halic_categories.tres"
+
 var _saved_max_fps := 0
 
 
@@ -43,7 +45,7 @@ func _setup(occluders_path := "") -> Dictionary:
 	camera.far = 1500.0
 	viewport.add_child(camera)
 	return {"map": map, "viewport": viewport, "camera": camera,
-			"settings": RenderSettings.new(map, camera, viewport, occluders_path)}
+			"settings": RenderSettings.new(map, camera, viewport, occluders_path, load(ISTANBUL_RULES) as CategoryRules)}
 
 
 func _restore() -> void:
@@ -133,7 +135,7 @@ func test_occluder_fallback_builds_from_collision() -> void:
 func test_shared_vertices_keep_triangles() -> void:
 	var map := _fixture_map()
 	add_node(map)
-	var groups := RenderSettings.meshes_by_category(map)
+	var groups := (load(ISTANBUL_RULES) as CategoryRules).meshes_by_category(map)
 	var plain := RenderSettings.build_occluders(map, groups)
 	var shared := RenderSettings.build_occluders(map, groups, true)
 	check(RenderSettings.occluder_stats(plain) == RenderSettings.occluder_stats(shared), "same occluders and triangles")
@@ -154,5 +156,10 @@ func test_category_matching() -> void:
 		"Ground_1_2": "ground", "Galata_Bridge": "ground", "Halic_Metro_Bridge": "ground", "Gardens_1_2": "ground",
 		"Water": "water", "Sun": "",
 	}
+	var rules := load(ISTANBUL_RULES) as CategoryRules
 	for node_name: String in expected:
-		check(RenderSettings.category_of(node_name) == expected[node_name], "%s -> %s (got '%s')" % [node_name, expected[node_name], RenderSettings.category_of(node_name)])
+		var node := MeshInstance3D.new()
+		node.name = node_name
+		var category := rules.category_of(node)
+		check(category == expected[node_name], "%s -> %s (got '%s')" % [node_name, expected[node_name], category])
+		node.free()

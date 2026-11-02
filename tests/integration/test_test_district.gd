@@ -45,7 +45,7 @@ func test_built_from_primitives() -> void:
 	check((map.get_node("Sun") as DirectionalLight3D).shadow_enabled, "sun with shadows")
 	for mesh: MeshInstance3D in map.find_children("*", "MeshInstance3D", true, false):
 		check(mesh.mesh is PrimitiveMesh, "%s is a primitive mesh" % mesh.name)
-		check(not RenderSettings.category_of(mesh.name).is_empty(), "%s belongs to a render category" % mesh.name)
+		check(not game.map_definition.category_rules.category_of(mesh).is_empty(), "%s belongs to a render category" % mesh.name)
 	var bodies := map.find_children("*", "StaticBody3D", true, false)
 	check(bodies.size() == 14, "ground, plaza, ramp, 7 buildings, 4 walls have colliders (%d)" % bodies.size())
 	for body: StaticBody3D in bodies:

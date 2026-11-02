@@ -10,7 +10,8 @@ extends SceneTree
 ## instead of relying on the test reaching its end.
 ##
 ## A test file can define `skip_reason() -> String`; a non-empty result marks
-## all its tests SKIP (e.g. integration tests without the map GLB).
+## all its tests SKIP (e.g. integration tests without the map GLB). A single
+## test calls skip(reason) and returns to be reported SKIP.
 ##
 ## Exit code: 0 = no failures and no skips; 1 = a failure, an error logged
 ## outside a test, or nothing passed; 2 = no failures, but tests were skipped.
@@ -103,7 +104,10 @@ func _run() -> void:
 				for error: String in captured.errors:
 					problems.append("logged error: " + error)
 				label += " (%d ms)" % (Time.get_ticks_msec() - started)
-				if problems.is_empty():
+				if problems.is_empty() and not case.skipped_reason.is_empty():
+					skipped += 1
+					print("SKIP ", label, " (", case.skipped_reason, ")")
+				elif problems.is_empty():
 					passed += 1
 					print("PASS ", label)
 				else:

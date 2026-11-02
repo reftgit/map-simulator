@@ -170,7 +170,7 @@ static func _parse_settings(data: Dictionary, out: Dictionary) -> String:
 			ranges[str(category)] = float(data.visibility_end[category])
 		out.visibility_end = ranges
 	for category in out.get("hide", []) + out.get("visibility_end", {}).keys():
-		if category not in RenderSettings.CATEGORIES:
+		if category not in CategoryRules.CATEGORIES:
 			return "unknown category '%s'" % category
 	for key in ["camera_far", "render_scale", "lod_threshold"]:
 		if data.has(key):

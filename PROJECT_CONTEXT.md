@@ -476,6 +476,12 @@ Decisions made by the implementing agent (Claude Code, 2026-10-24). None was spe
 - **Decision:** `MapRegistry.default_map()` is the first map whose `required_files` can all be loaded; `Main._initial_map()` uses it when no map is requested, and when `--map` or an experiment names an unknown or unavailable map, with a warning that names the missing files. The same rule holds in normal release builds. With no available map the game logs an error that names each map's missing files and shows "Harita yüklenemedi: harita dosyaları eksik." on the loading screen instead of loading. İstanbul • Haliç lists its GLB in `required_files` too (copied in, out of Git, D6).
 - **Rationale:** the default map's GLB is generated on each machine (D23), so a fresh clone lacks it; the game should still start (on İstanbul where its GLB is copied in, else on the test district, which needs no file) and say why, rather than fail to load a missing scene. A release package that leaves out the default map's GLB gets the same visible fallback or a clear error (open question 36).
 
+### T45 — Render categories are map data (2026-11-02, Phase 6a)
+
+- **Decision:** the category vocabulary (`CategoryRules.CATEGORIES`: facade_detail, decor, lamps, trees, buildings, ground, water) stays the game's, because the quality profiles and experiments name it; the rules that put a map's meshes into it move into the map (`MapDefinition.category_rules`, a `CategoryRules` resource of ordered `CategoryRule`s: prefix, regex, words, material, group; a default category; the occluder categories). `RenderSettings` lost its built-in İstanbul prefix table, its occluder category list, and its fog colour constant: the depth fog now fades to the map's procedural sky horizon colour, which on every existing map is exactly the old constant.
+- **Proof:** all 21,458 mesh assignments of the five maps byte-identical before and after (a dump from the old code at `cbaf661` and from the new rules), `test_map_categories_unchanged.gd` against the old table, the default map's Mac benchmark (low and high, three viewpoints) with the same draw calls, primitives, and objects (`PROJECT_STATE.md`, "Phase 6a").
+- **Rationale:** D26: a map that is not İstanbul must be able to say what its meshes are without code changes. One of the extensibility findings of Phase 6a (a core change).
+
 ## Performance findings and proposed measures
 
 Status: **measured on 2026-10-24, nothing applied.** Full tables and protocol: `PROJECT_STATE.md`, "Performance diagnosis pass". Raw data and screenshots: `docs/perf/`.

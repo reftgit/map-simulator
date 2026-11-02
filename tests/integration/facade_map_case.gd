@@ -146,7 +146,7 @@ func test_every_mesh_has_a_category_and_cells_are_named() -> void:
 	var misnamed: Array[String] = []
 	for node in _model().find_children("*", "MeshInstance3D", true, false):
 		var name := str(node.name)
-		if RenderSettings.category_of(name).is_empty():
+		if game.map_definition.category_rules.category_of(node).is_empty():
 			uncategorized.append(name)
 		for prefix in ["Detail_", "Trees_", "Shrubs_"]:
 			if name.begins_with(prefix) and name.split("_").size() != 5:
@@ -175,7 +175,8 @@ func test_shared_occluders_match_this_maps_collision() -> void:
 	var saved_fps := Engine.max_fps
 	var baked: Node = (load(game.map_definition.occluders_path) as PackedScene).instantiate()
 	var map_root: Node = game.world.map_root
-	var runtime := RenderSettings.build_occluders(map_root, RenderSettings.meshes_by_category(map_root))
+	var rules: CategoryRules = game.map_definition.category_rules
+	var runtime := RenderSettings.build_occluders(map_root, rules.meshes_by_category(map_root), false, rules.occluder_categories)
 	var baked_stats := RenderSettings.occluder_stats(baked)
 	check(baked_stats == RenderSettings.occluder_stats(runtime) and baked_stats.instances == 643 and baked_stats.triangles == 317518,
 			"same occluders and triangles: baked %s, from this map's collision %s" % [baked_stats, RenderSettings.occluder_stats(runtime)])

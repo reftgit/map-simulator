@@ -113,7 +113,7 @@ func _load_map(definition: MapDefinition) -> void:
 		for npc in world.spawn_npcs(npc_scene):
 			npc.focus = player
 	_car_index = -1
-	render_settings = RenderSettings.new(world.map_root, camera_rig.camera, get_viewport(), definition.occluders_path)
+	render_settings = RenderSettings.new(world.map_root, camera_rig.camera, get_viewport(), definition.occluders_path, definition.category_rules)
 	hud.map_name = definition.id
 
 

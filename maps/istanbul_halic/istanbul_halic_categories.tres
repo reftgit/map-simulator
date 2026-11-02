@@ -1,0 +1,176 @@
+[gd_resource type="Resource" script_class="CategoryRules" load_steps=31 format=3]
+
+[ext_resource type="Script" path="res://game/world/category_rules.gd" id="1_rules"]
+[ext_resource type="Script" path="res://game/world/category_rule.gd" id="2_rule"]
+
+[sub_resource type="Resource" id="Rule_1"]
+script = ExtResource("2_rule")
+category = "facade_detail"
+kind = "prefix"
+pattern = "Detail_"
+
+[sub_resource type="Resource" id="Rule_2"]
+script = ExtResource("2_rule")
+category = "facade_detail"
+kind = "prefix"
+pattern = "MosqueDetail_"
+
+[sub_resource type="Resource" id="Rule_3"]
+script = ExtResource("2_rule")
+category = "facade_detail"
+kind = "prefix"
+pattern = "LandmarkDetail_"
+
+[sub_resource type="Resource" id="Rule_4"]
+script = ExtResource("2_rule")
+category = "decor"
+kind = "prefix"
+pattern = "Galata_Bridge_Detail"
+
+[sub_resource type="Resource" id="Rule_5"]
+script = ExtResource("2_rule")
+category = "decor"
+kind = "prefix"
+pattern = "Halic_Metro_Bridge_Detail"
+
+[sub_resource type="Resource" id="Rule_6"]
+script = ExtResource("2_rule")
+category = "decor"
+kind = "prefix"
+pattern = "BridgeDetail_"
+
+[sub_resource type="Resource" id="Rule_7"]
+script = ExtResource("2_rule")
+category = "decor"
+kind = "prefix"
+pattern = "BridgeGlass_"
+
+[sub_resource type="Resource" id="Rule_8"]
+script = ExtResource("2_rule")
+category = "decor"
+kind = "prefix"
+pattern = "RoadPaint_"
+
+[sub_resource type="Resource" id="Rule_9"]
+script = ExtResource("2_rule")
+category = "decor"
+kind = "prefix"
+pattern = "TrafficSignals_"
+
+[sub_resource type="Resource" id="Rule_10"]
+script = ExtResource("2_rule")
+category = "decor"
+kind = "prefix"
+pattern = "SignalGlow_"
+
+[sub_resource type="Resource" id="Rule_11"]
+script = ExtResource("2_rule")
+category = "decor"
+kind = "prefix"
+pattern = "Ferry_"
+
+[sub_resource type="Resource" id="Rule_12"]
+script = ExtResource("2_rule")
+category = "lamps"
+kind = "prefix"
+pattern = "StreetLamps_"
+
+[sub_resource type="Resource" id="Rule_13"]
+script = ExtResource("2_rule")
+category = "lamps"
+kind = "prefix"
+pattern = "LampGlow_"
+
+[sub_resource type="Resource" id="Rule_14"]
+script = ExtResource("2_rule")
+category = "trees"
+kind = "prefix"
+pattern = "Trees_"
+
+[sub_resource type="Resource" id="Rule_15"]
+script = ExtResource("2_rule")
+category = "trees"
+kind = "prefix"
+pattern = "TreeTrunks_"
+
+[sub_resource type="Resource" id="Rule_16"]
+script = ExtResource("2_rule")
+category = "trees"
+kind = "prefix"
+pattern = "Shrubs_"
+
+[sub_resource type="Resource" id="Rule_17"]
+script = ExtResource("2_rule")
+category = "buildings"
+kind = "prefix"
+pattern = "Buildings_"
+
+[sub_resource type="Resource" id="Rule_18"]
+script = ExtResource("2_rule")
+category = "buildings"
+kind = "prefix"
+pattern = "Mosque_"
+
+[sub_resource type="Resource" id="Rule_19"]
+script = ExtResource("2_rule")
+category = "buildings"
+kind = "prefix"
+pattern = "Landmark_"
+
+[sub_resource type="Resource" id="Rule_20"]
+script = ExtResource("2_rule")
+category = "ground"
+kind = "prefix"
+pattern = "Ground_"
+
+[sub_resource type="Resource" id="Rule_21"]
+script = ExtResource("2_rule")
+category = "ground"
+kind = "prefix"
+pattern = "Road_"
+
+[sub_resource type="Resource" id="Rule_22"]
+script = ExtResource("2_rule")
+category = "ground"
+kind = "prefix"
+pattern = "Pavement_"
+
+[sub_resource type="Resource" id="Rule_23"]
+script = ExtResource("2_rule")
+category = "ground"
+kind = "prefix"
+pattern = "Quays_"
+
+[sub_resource type="Resource" id="Rule_24"]
+script = ExtResource("2_rule")
+category = "ground"
+kind = "prefix"
+pattern = "Gardens_"
+
+[sub_resource type="Resource" id="Rule_25"]
+script = ExtResource("2_rule")
+category = "ground"
+kind = "prefix"
+pattern = "Galata_Bridge"
+
+[sub_resource type="Resource" id="Rule_26"]
+script = ExtResource("2_rule")
+category = "ground"
+kind = "prefix"
+pattern = "Halic_Metro_Bridge"
+
+[sub_resource type="Resource" id="Rule_27"]
+script = ExtResource("2_rule")
+category = "ground"
+kind = "prefix"
+pattern = "Ataturk_Bridge"
+
+[sub_resource type="Resource" id="Rule_28"]
+script = ExtResource("2_rule")
+category = "water"
+kind = "prefix"
+pattern = "Water"
+
+[resource]
+script = ExtResource("1_rules")
+rules = Array[ExtResource("2_rule")]([SubResource("Rule_1"), SubResource("Rule_2"), SubResource("Rule_3"), SubResource("Rule_4"), SubResource("Rule_5"), SubResource("Rule_6"), SubResource("Rule_7"), SubResource("Rule_8"), SubResource("Rule_9"), SubResource("Rule_10"), SubResource("Rule_11"), SubResource("Rule_12"), SubResource("Rule_13"), SubResource("Rule_14"), SubResource("Rule_15"), SubResource("Rule_16"), SubResource("Rule_17"), SubResource("Rule_18"), SubResource("Rule_19"), SubResource("Rule_20"), SubResource("Rule_21"), SubResource("Rule_22"), SubResource("Rule_23"), SubResource("Rule_24"), SubResource("Rule_25"), SubResource("Rule_26"), SubResource("Rule_27"), SubResource("Rule_28")])

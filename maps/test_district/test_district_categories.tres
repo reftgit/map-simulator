@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="CategoryRules" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://game/world/category_rules.gd" id="1_rules"]
+[ext_resource type="Script" path="res://game/world/category_rule.gd" id="2_rule"]
+
+[sub_resource type="Resource" id="Rule_1"]
+script = ExtResource("2_rule")
+category = "buildings"
+kind = "prefix"
+pattern = "Buildings_"
+
+[sub_resource type="Resource" id="Rule_2"]
+script = ExtResource("2_rule")
+category = "ground"
+kind = "prefix"
+pattern = "Ground_"
+
+[sub_resource type="Resource" id="Rule_3"]
+script = ExtResource("2_rule")
+category = "ground"
+kind = "prefix"
+pattern = "Road_"
+
+[resource]
+script = ExtResource("1_rules")
+rules = Array[ExtResource("2_rule")]([SubResource("Rule_1"), SubResource("Rule_2"), SubResource("Rule_3")])

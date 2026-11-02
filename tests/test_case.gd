@@ -5,6 +5,8 @@ extends RefCounted
 
 var tree: SceneTree
 var failures: Array[String] = []
+## Set by skip(): the runner reports the test as SKIP with this reason.
+var skipped_reason := ""
 
 var _nodes: Array[Node] = []
 
@@ -41,6 +43,12 @@ func physics_frames(count: int) -> void:
 func process_frames(count: int) -> void:
 	for i in count:
 		await tree.process_frame
+
+
+## Marks the running test as skipped (e.g. its map's files are missing); the
+## test should return right after.
+func skip(reason: String) -> void:
+	skipped_reason = reason
 
 
 func check(condition: bool, message: String) -> void:

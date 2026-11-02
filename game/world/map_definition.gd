@@ -27,6 +27,10 @@ extends Resource
 ## Baked OccluderInstance3D scene (tools/bake_occluders.gd). Without it,
 ## occluders are built from the map's collision at load and a warning is logged.
 @export_file("*.scn", "*.tscn") var occluders_path := ""
+## Which render category each mesh belongs to (the quality profiles'
+## visibility ranges and hidden categories, occluder sources). Without it no
+## mesh has a category.
+@export var category_rules: CategoryRules
 ## Files the map needs that are generated or copied in on each machine and
 ## kept out of Git (e.g. its GLB). While one is missing the map is not
 ## available: the MAP button skips it, and the default and --map fall back to

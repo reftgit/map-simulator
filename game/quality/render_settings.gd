@@ -13,24 +13,8 @@ extends RefCounted
 
 const KEYS := ["hide", "visibility_end", "camera_far", "fog", "shadows", "render_scale", "scaling_mode",
 		"max_fps", "occlusion", "lod_threshold"]
-
-## Map node categories, matched by node-name prefix in this order (the GLB has
-## no hierarchy; every mesh node is a 150 m chunk, a cell of one on the cells
-## map, or a single landmark).
-const CATEGORIES := {
-	"facade_detail": ["Detail_", "MosqueDetail_", "LandmarkDetail_"],
-	"decor": ["Galata_Bridge_Detail", "Halic_Metro_Bridge_Detail", "BridgeDetail_", "BridgeGlass_",
-			"RoadPaint_", "TrafficSignals_", "SignalGlow_", "Ferry_"],
-	"lamps": ["StreetLamps_", "LampGlow_"],
-	"trees": ["Trees_", "TreeTrunks_", "Shrubs_"],
-	"buildings": ["Buildings_", "Mosque_", "Landmark_"],
-	"ground": ["Ground_", "Road_", "Pavement_", "Quays_", "Gardens_", "Galata_Bridge", "Halic_Metro_Bridge",
-			"Ataturk_Bridge"],
-	"water": ["Water"],
-}
-## Collision of these categories becomes occluders.
-const OCCLUDER_CATEGORIES := ["buildings", "ground"]
-const FOG_COLOR := Color(0.843137, 0.866667, 0.815686)
+## Depth fog colour for a sky without a horizon colour (a light grey).
+const DEFAULT_FOG_COLOR := Color(0.65, 0.66, 0.67)
 
 ## Values the scene had before any layer was applied.
 var defaults := {}
@@ -41,6 +25,7 @@ var _map_root: Node
 var _camera: Camera3D
 var _viewport: Viewport
 var _occluders_path := ""
+var _occluder_categories: Array[String] = []
 var _groups := {}
 var _sun: DirectionalLight3D
 var _sun_defaults := {}
@@ -51,13 +36,18 @@ var _occluders: Node
 
 ## `occluders_path` points to a scene of baked OccluderInstance3D nodes
 ## (tools/bake_occluders.gd); when it is empty or missing, occluders are built
-## from the map's collision on first use and a warning is logged.
-func _init(map_root: Node, camera: Camera3D, viewport: Viewport, occluders_path := "") -> void:
+## from the map's collision on first use and a warning is logged. `rules` (the
+## map's MapDefinition.category_rules) puts the map's meshes into the render
+## categories; without rules no mesh has a category.
+func _init(map_root: Node, camera: Camera3D, viewport: Viewport, occluders_path := "", rules: CategoryRules = null) -> void:
 	_map_root = map_root
 	_camera = camera
 	_viewport = viewport
 	_occluders_path = occluders_path
-	_groups = meshes_by_category(map_root)
+	if rules == null:
+		rules = CategoryRules.new()
+	_groups = rules.meshes_by_category(map_root)
+	_occluder_categories = rules.occluder_categories
 	_sun = map_root.find_child("Sun", false, false) as DirectionalLight3D
 	if _sun:
 		_sun_defaults = {"enabled": _sun.shadow_enabled, "mode": _sun.directional_shadow_mode}
@@ -74,27 +64,6 @@ func _init(map_root: Node, camera: Camera3D, viewport: Viewport, occluders_path 
 	}
 
 
-## Category of a map mesh node, or "" when no prefix matches.
-static func category_of(node_name: String) -> String:
-	for category in CATEGORIES:
-		for prefix: String in CATEGORIES[category]:
-			if node_name.begins_with(prefix):
-				return category
-	return ""
-
-
-## Map mesh nodes grouped by category.
-static func meshes_by_category(map_root: Node) -> Dictionary:
-	var groups := {}
-	for category in CATEGORIES:
-		groups[category] = []
-	for node in map_root.find_children("*", "MeshInstance3D", true, false):
-		var category := category_of(node.name)
-		if not category.is_empty():
-			groups[category].append(node)
-	return groups
-
-
 ## Merges layers in order; later layers win per key (dictionary values such as
 ## visibility_end are replaced, not combined).
 static func merge(layers: Array[Dictionary]) -> Dictionary:
@@ -109,7 +78,7 @@ static func merge(layers: Array[Dictionary]) -> Dictionary:
 func apply(settings: Dictionary) -> Dictionary:
 	var effective := defaults.duplicate(true)
 	effective.merge(settings, true)
-	for category in CATEGORIES:
+	for category in CategoryRules.CATEGORIES:
 		var range_end: float = effective.visibility_end.get(category, 0.0)
 		for mesh: MeshInstance3D in _groups[category]:
 			mesh.visible = category not in effective.hide
@@ -139,7 +108,7 @@ func _apply_fog(enabled: bool, far: float) -> void:
 	if enabled:
 		_environment.fog_enabled = true
 		_environment.fog_mode = Environment.FOG_MODE_DEPTH
-		_environment.fog_light_color = FOG_COLOR
+		_environment.fog_light_color = _horizon_color()
 		_environment.fog_depth_begin = far * 0.5
 		_environment.fog_depth_end = far
 		_environment.fog_sky_affect = 0.0
@@ -150,6 +119,17 @@ func _apply_fog(enabled: bool, far: float) -> void:
 		_environment.fog_depth_begin = _fog_defaults.begin
 		_environment.fog_depth_end = _fog_defaults.end
 		_environment.fog_sky_affect = _fog_defaults.sky
+
+
+## The colour the depth fog fades to: the map's sky horizon (a procedural
+## sky), so distant geometry blends into it; else its background colour.
+func _horizon_color() -> Color:
+	var sky_material := _environment.sky.sky_material if _environment.sky else null
+	if _environment.background_mode == Environment.BG_SKY and sky_material is ProceduralSkyMaterial:
+		return (sky_material as ProceduralSkyMaterial).sky_horizon_color
+	if _environment.background_mode == Environment.BG_COLOR:
+		return _environment.background_color
+	return DEFAULT_FOG_COLOR
 
 
 func _apply_shadows(mode: String) -> void:
@@ -172,7 +152,7 @@ func _ensure_occluders() -> void:
 		occluder_report.source = "baked"
 	else:
 		push_warning("RenderSettings: baked occluders missing (%s); building them from collision at runtime" % _occluders_path)
-		_occluders = build_occluders(_map_root, _groups)
+		_occluders = build_occluders(_map_root, _groups, false, _occluder_categories)
 		_map_root.add_child(_occluders)
 		occluder_report.source = "runtime"
 	occluder_report.ms = Time.get_ticks_msec() - started
@@ -181,16 +161,18 @@ func _ensure_occluders() -> void:
 	occluder_report.triangles = stats.triangles
 
 
-## Builds one OccluderInstance3D per collision shape of the occluder
-## categories under a new (not yet added) node. Transforms are relative to
-## `map_root`. With `share_vertices`, identical vertices are merged (smaller
-## files for baking; same triangles).
-static func build_occluders(map_root: Node, groups: Dictionary, share_vertices := false) -> Node3D:
+## Builds one OccluderInstance3D per collision shape of the meshes of
+## `categories` (the map's CategoryRules.occluder_categories) under a new (not
+## yet added) node. Transforms are relative to `map_root`. With
+## `share_vertices`, identical vertices are merged (smaller files for baking;
+## same triangles).
+static func build_occluders(map_root: Node, groups: Dictionary, share_vertices := false,
+		categories: Array[String] = CategoryRules.DEFAULT_OCCLUDER_CATEGORIES) -> Node3D:
 	var holder := Node3D.new()
 	holder.name = "Occluders"
 	var root_inverse := (map_root as Node3D).global_transform.affine_inverse() if map_root is Node3D else Transform3D.IDENTITY
-	for category in OCCLUDER_CATEGORIES:
-		for mesh: MeshInstance3D in groups[category]:
+	for category in categories:
+		for mesh: MeshInstance3D in groups.get(category, []):
 			for shape_node in mesh.find_children("*", "CollisionShape3D", true, false):
 				var shape := (shape_node as CollisionShape3D).shape as ConcavePolygonShape3D
 				if shape == null:
