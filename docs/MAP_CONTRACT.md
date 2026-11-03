@@ -156,15 +156,30 @@ Every key is optional; the tool works without a configuration file.
 
 ## Examples
 
-Three maps were imported with the tool in Phase 6a (reports in `docs/maps/imported/`):
+Five maps were imported with the tool, three in Phase 6a and two the tool had never seen in Phase 6b (reports in `docs/maps/imported/`; the blind runs in `docs/maps/imported/blind/`):
 
 | Map | What it tested | Report |
 |---|---|---|
+| Abstract city (public domain, in the game; Phase 6b blind test) | two OBJ files converted with `tools/convert_to_gltf.gd`; the whole city in one mesh (split into its 219 objects, R3 FIXED), arbitrary units (C2 FAIL with a suggestion, then `"scale": 100`), no names (every object classified by its shape), no normals | `abstract_city.md`, sources `abstract_city_source.md` |
+| Apollo 11 landing site (NASA, in the game; Phase 6b blind test) | an STL converted as it is: Z-up (C3 FIXED by the tool), inside out (C7 FIXED), millimetres read as metres (not detectable), no colours (R5 WARN) | `apollo11_site.md`, sources `apollo11_site_source.md` |
 | Kenney town (CC0, in the game) | Kenney's own scale (C2 FAIL with a suggestion, then FIXED by `"scale": 10`), names classified by the vocabulary, generated colliders | `kenney_town.md`, sources `kenney_town_source.md` |
 | Safranbolu (the user's package, test input only) | no normals (R4 FIXED), no colliders (generated), open roofs and zero-area triangles (C7 WARN), roads inside buildings (avoided by the placement) | `safranbolu_test.md` |
 | İstanbul • Haliç (the shipped GLB, test id) | collision nodes (827 `-col` bodies used, R2), a `CategoryRules` resource from the configuration, 7.07 M triangles (C6 WARN) | `istanbul_halic_import.md` |
 
 Test imports whose sources are not in the repository go to `tests/imported/<id>/` (`--out=res://tests/imported/<id> --no-register`): ignored by Git and excluded from every export.
+
+## Preparing a map (for map authors)
+
+What makes the import need no configuration and no guess; the report's "How to improve this map" says which of these a given map misses.
+
+1. **Format:** export glTF 2.0 (`.glb`, or `.gltf` with its files). From Blender: File → Export → glTF 2.0, "+Y Up" on (the default), "Apply Modifiers" on, "Normals" on; lights, cameras, and armatures off.
+2. **Units and axes:** model in metres (a door about 2 m high, a road 6–10 m wide) with +Y up. The tool recognises millimetres, centimetres, inches, and feet and turns a Z-up or upside-down file, but a model in other units needs `"scale"`.
+3. **One object per mesh:** a mesh per building, tree, lamp, fence segment, prop; ground in tiles of at most 150 m; never the whole city in one mesh (the tool splits such a mesh by its connected parts, which is a guess).
+4. **Names:** name meshes with what they are (`house_12`, `road_3`, `tree_oak_4`, `street_lamp_2`, `fence_1`, `window_set_7`, `water`): the words in "Default name vocabulary" above, in English, as whole words or word starts (`Building_3`, `osm_12_walls`, `StreetLamps_01`). Unnamed meshes are classified by their shape, which mistakes lamps for decor and facade detail for buildings.
+5. **Ground:** walkable surfaces (terrain, roads, squares) are open from above, at most 35° steep, connected, and big enough for a player spawn with 20 m of walk and a car with 25 m of road (C4, C8).
+6. **Closed, outward shells:** buildings as closed shells with faces pointing out and no zero-area triangles (Blender: Mesh → Clean Up; Normals → Recalculate Outside), single-sided materials.
+7. **Collision (optional):** for exact collision, add `<name>-col` meshes; otherwise the tool builds hulls, trimeshes, boxes, and capsules by category and shape.
+8. **Size:** under 2,000,000 triangles for the tablet class; detail in separate named meshes so the quality profiles can hide it at a distance.
 
 ## Adding a map (user steps)
 

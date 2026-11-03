@@ -1,0 +1,195 @@
+{
+  "config": {
+    "experiment": "scenario_extensibility_abstract_city",
+    "map": "abstract_city",
+    "profile": "",
+    "runtime": {},
+    "scenario": {
+      "hold_s": 20.0,
+      "maps": [
+        "test_district"
+      ],
+      "name": "extensibility",
+      "rotate_hold_s": 0.0
+    },
+    "settings": {}
+  },
+  "profile": "low",
+  "scenario": [
+    {
+      "detail": "scenario=extensibility rotate_hold_s=0",
+      "result": "INFO",
+      "step": "start",
+      "t": 0.0
+    },
+    {
+      "detail": "loaded after 0.4 s",
+      "result": "INFO",
+      "step": "map_test_district",
+      "t": 1.4
+    },
+    {
+      "detail": "map test_district, player 0.00 m from its spawn, vehicles 2, NPCs 3, nodes 220 (on abstract_city: 962)",
+      "result": "PASS",
+      "step": "map_switch",
+      "t": 2.4
+    },
+    {
+      "detail": "PlaceholderVan (Van (placeholder)), asleep",
+      "result": "PASS",
+      "step": "van_parked",
+      "t": 4.1
+    },
+    {
+      "detail": "beside PlaceholderVan, interact button true",
+      "result": "PASS",
+      "step": "van_walk_up",
+      "t": 5.1
+    },
+    {
+      "detail": "driving PlaceholderVan, awake, camera on it true",
+      "result": "PASS",
+      "step": "van_get_in",
+      "t": 5.6
+    },
+    {
+      "detail": "forward speed 5.0 m/s (max 14)",
+      "result": "PASS",
+      "step": "van_throttle",
+      "t": 7.6
+    },
+    {
+      "detail": "speed when stopped 0.07 m/s",
+      "result": "PASS",
+      "step": "van_get_out",
+      "t": 9.1
+    },
+    {
+      "detail": "PlaceholderVan asleep",
+      "result": "PASS",
+      "step": "van_asleep_after_getting_out",
+      "t": 9.6
+    },
+    {
+      "detail": "Npc3 moved 6.9 m in 3 s, 0 arrivals, state Walk",
+      "result": "PASS",
+      "step": "npc_patrols",
+      "t": 12.7
+    },
+    {
+      "detail": "Npc3 hit after 1 punch(es), state HitReaction",
+      "result": "PASS",
+      "step": "npc_hit_reaction",
+      "t": 15.5
+    },
+    {
+      "detail": "1 hit(s) for the punch that landed",
+      "result": "PASS",
+      "step": "npc_one_hit_per_punch",
+      "t": 16.5
+    },
+    {
+      "detail": "Npc3 state Idle, moved 0.5 m, heading for point 1 (was 0)",
+      "result": "PASS",
+      "step": "npc_patrol_resumes",
+      "t": 19.8
+    },
+    {
+      "detail": "loaded after 0.4 s",
+      "result": "INFO",
+      "step": "map_abstract_city",
+      "t": 20.2
+    },
+    {
+      "detail": "map abstract_city, player 0.00 m from its spawn, vehicles 1, NPCs 1, nodes 962 (before the switches 962)",
+      "result": "PASS",
+      "step": "map_back",
+      "t": 21.2
+    },
+    {
+      "detail": "car asleep",
+      "result": "PASS",
+      "step": "parked_car_asleep",
+      "t": 22.6
+    },
+    {
+      "detail": "distance 2.4 m, car asleep, interact button true",
+      "result": "PASS",
+      "step": "car_button",
+      "t": 23.6
+    },
+    {
+      "detail": "player on a wall true, car awake",
+      "result": "PASS",
+      "step": "walk_into_car_wakes_it",
+      "t": 24.0
+    },
+    {
+      "detail": "after 1.1 s",
+      "result": "PASS",
+      "step": "asleep_after_stopping",
+      "t": 25.0
+    },
+    {
+      "detail": "player touched the car true, distance 1.25 m",
+      "result": "PASS",
+      "step": "stays_asleep_beside_it",
+      "t": 28.1
+    },
+    {
+      "detail": "driving true, car awake",
+      "result": "PASS",
+      "step": "get_in_wakes_it",
+      "t": 28.6
+    },
+    {
+      "detail": "forward speed 5.0 m/s",
+      "result": "PASS",
+      "step": "throttle",
+      "t": 29.7
+    },
+    {
+      "detail": "speed when stopped 0.08 m/s",
+      "result": "PASS",
+      "step": "get_out",
+      "t": 31.1
+    },
+    {
+      "detail": "car asleep",
+      "result": "PASS",
+      "step": "asleep_after_getting_out",
+      "t": 31.6
+    },
+    {
+      "detail": "the map has no sloped viewpoint (MapDefinition.sloped_viewpoint)",
+      "result": "INFO",
+      "step": "slope_skipped",
+      "t": 31.6
+    },
+    {
+      "detail": "passed=21 failed=0",
+      "result": "PASS",
+      "step": "done",
+      "t": 31.6
+    }
+  ],
+  "startup": {
+    "android_frame_pacing": true,
+    "debug_build": true,
+    "display_refresh_rate": 60.0000038146973,
+    "first_frame_ms": 2449,
+    "ios_allow_high_refresh_rate": false,
+    "map": "abstract_city",
+    "map_ready_ms": 2366,
+    "max_fps": 30,
+    "npcs": 1,
+    "perf_feature": false,
+    "physics_3d": "GodotPhysics3D",
+    "physics_engine_setting": "DEFAULT",
+    "physics_interpolation": true,
+    "physics_ticks": 60,
+    "screen_refresh_rate": 60.0000038146973,
+    "vehicles": "awake",
+    "vsync_mode": 1
+  }
+}

@@ -1,0 +1,4 @@
+{"experiment": "scenario_extensibility_abstract_city", "device": "android", "battery_c_start": 26.5, "battery_c_end": 27.0,
+ "thermal_status_start": "0", "thermal_status_end": "0",
+ "pss_peak_kb": 309091, "wall_s": 46, "started": "2026-11-03 16:20:40",
+ "cool_wait_s": 0, "cool_target_c": ""}
