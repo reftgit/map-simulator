@@ -65,14 +65,16 @@ static func has_normals(mesh: Mesh) -> bool:
 ## coordinate along its axis of the faces toward each direction ("at_+x" …,
 ## after `basis`, for the up-axis detection), the vertical area (normals
 ## within 30° of horizontal; "side_x", "side_z" for X or Z as the up axis),
-## the triangles whose winding disagrees with their given normals, the sum
+## the area its upward faces cover seen from above ("cover": a roof covers
+## its building's footprint, a fence ring almost nothing), the triangles
+## whose winding disagrees with their given normals, the sum
 ## of the area-weighted face normals (zero for a closed surface), and the
 ## enclosed volume measured from the centre of the mesh's box (positive when
 ## the faces point out; for a surface that is not closed it depends on that
 ## centre by up to |normal_sum| times the box's half diagonal over 3).
 static func stats(mesh: Mesh, basis := Basis.IDENTITY) -> Dictionary:
 	var result := {"triangles": 0, "zero_area": 0, "area": 0.0, "vertical": 0.0, "side_x": 0.0, "side_z": 0.0, "flipped": 0,
-			"normal_sum": Vector3.ZERO, "volume": 0.0}
+			"normal_sum": Vector3.ZERO, "volume": 0.0, "cover": 0.0}
 	# Per axis direction (+x, -x, +y, -y, +z, -z): facing area, area times coordinate.
 	var facing := PackedFloat64Array([0, 0, 0, 0, 0, 0])
 	var at := PackedFloat64Array([0, 0, 0, 0, 0, 0])
@@ -99,6 +101,8 @@ static func stats(mesh: Mesh, basis := Basis.IDENTITY) -> Dictionary:
 			var n := basis * (face / double_area)
 			result.area += area
 			result.normal_sum += n * area
+			if n.y > 0.0:
+				result.cover += n.y * area
 			result.volume -= (a - center).dot((positions[i1] - center).cross(positions[i2] - center)) / 6.0
 			for axis in 3:
 				var component: float = n[axis]
@@ -290,6 +294,131 @@ static func parts(mesh: Mesh) -> Array[PackedVector3Array]:
 	for root in by_root:
 		result.append(by_root[root])
 	return result
+
+
+## The connected parts of `mesh` (as parts()) as meshes of their own: the
+## same surfaces and materials with only the part's triangles, its vertices
+## re-indexed, in the order the parts first appear.
+static func part_meshes(mesh: Mesh) -> Array[ArrayMesh]:
+	var index_of := {}
+	var parent := []
+	var surfaces := []  # [surface index, arrays, corner order, welded id per corner]
+	for surface in mesh.get_surface_count():
+		if mesh.surface_get_primitive_type(surface) != Mesh.PRIMITIVE_TRIANGLES:
+			continue
+		var arrays := mesh.surface_get_arrays(surface)
+		var order := _triangle_order(arrays)
+		var positions: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+		var welded := PackedInt32Array()
+		welded.resize(order.size())
+		for i in order.size():
+			var key := Vector3i((positions[order[i]] / WELD).round())
+			if not index_of.has(key):
+				index_of[key] = parent.size()
+				parent.append(parent.size())
+			welded[i] = index_of[key]
+		surfaces.append([surface, arrays, order, welded])
+	for entry: Array in surfaces:
+		var welded: PackedInt32Array = entry[3]
+		for t in range(0, welded.size(), 3):
+			var root_a := _find(parent, welded[t])
+			for k in [1, 2]:
+				var root_b := _find(parent, welded[t + k])
+				if root_a != root_b:
+					parent[root_b] = root_a
+	var part_of_root := {}
+	var parts := []  # per part: {slot in surfaces: PackedInt32Array of triangle starts}
+	for slot in surfaces.size():
+		var welded: PackedInt32Array = surfaces[slot][3]
+		for t in range(0, welded.size(), 3):
+			var root := _find(parent, welded[t])
+			if not part_of_root.has(root):
+				part_of_root[root] = parts.size()
+				parts.append({})
+			var triangles: Dictionary = parts[part_of_root[root]]
+			if not triangles.has(slot):
+				triangles[slot] = PackedInt32Array()
+			triangles[slot].append(t)
+	var result: Array[ArrayMesh] = []
+	for triangles: Dictionary in parts:
+		var out := ArrayMesh.new()
+		out.resource_name = mesh.resource_name
+		for slot: int in triangles:
+			var entry: Array = surfaces[slot]
+			out.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, _subset(entry[1], entry[2], triangles[slot]))
+			out.surface_set_material(out.get_surface_count() - 1, mesh.surface_get_material(entry[0]))
+			out.surface_set_name(out.get_surface_count() - 1, mesh.surface_get_name(entry[0]))
+		result.append(out)
+	return result
+
+
+## Surface arrays holding only the triangles starting at `starts` (corner
+## positions in `order`), with the vertex attributes they use.
+static func _subset(arrays: Array, order: PackedInt32Array, starts: PackedInt32Array) -> Array:
+	var remap := {}
+	var used := PackedInt32Array()
+	var indices := PackedInt32Array()
+	for t in starts:
+		for k in 3:
+			var vertex := order[t + k]
+			if not remap.has(vertex):
+				remap[vertex] = used.size()
+				used.append(vertex)
+			indices.append(remap[vertex])
+	var out := []
+	out.resize(Mesh.ARRAY_MAX)
+	var count := (arrays[Mesh.ARRAY_VERTEX] as PackedVector3Array).size()
+	for slot in [Mesh.ARRAY_VERTEX, Mesh.ARRAY_NORMAL, Mesh.ARRAY_TEX_UV, Mesh.ARRAY_TEX_UV2]:
+		var source = arrays[slot]
+		if source == null or source.size() != count:
+			continue
+		var gathered = PackedVector3Array() if slot in [Mesh.ARRAY_VERTEX, Mesh.ARRAY_NORMAL] else PackedVector2Array()
+		gathered.resize(used.size())
+		for i in used.size():
+			gathered[i] = source[used[i]]
+		out[slot] = gathered
+	if arrays[Mesh.ARRAY_COLOR] != null and (arrays[Mesh.ARRAY_COLOR] as PackedColorArray).size() == count:
+		var colors := PackedColorArray()
+		colors.resize(used.size())
+		for i in used.size():
+			colors[i] = arrays[Mesh.ARRAY_COLOR][used[i]]
+		out[Mesh.ARRAY_COLOR] = colors
+	out[Mesh.ARRAY_INDEX] = indices
+	return out
+
+
+## How the vertices of `mesh` placed with `transform` spread over its height:
+## the horizontal extent (x, z) and centre of those in its lowest tenth
+## ("low", "low_center", the latter at the bottom) and of those above 30 % of
+## its height ("crown"), and the height ("height"). A tree is a narrow trunk
+## under a wide crown, a pole narrow at the bottom.
+static func profile(mesh: Mesh, transform: Transform3D) -> Dictionary:
+	var points := PackedVector3Array()
+	for surface: Array in triangle_surfaces(mesh):
+		for point: Vector3 in surface[0]:
+			points.append(transform * point)
+	if points.is_empty():
+		return {}
+	var bottom := INF
+	var top := -INF
+	for point in points:
+		bottom = minf(bottom, point.y)
+		top = maxf(top, point.y)
+	var height := top - bottom
+	var low := Rect2()
+	var crown := Rect2()
+	var low_seen := false
+	var crown_seen := false
+	for point in points:
+		var flat := Vector2(point.x, point.z)
+		if point.y <= bottom + 0.1 * height:
+			low = low.expand(flat) if low_seen else Rect2(flat, Vector2.ZERO)
+			low_seen = true
+		if point.y >= bottom + 0.3 * height:
+			crown = crown.expand(flat) if crown_seen else Rect2(flat, Vector2.ZERO)
+			crown_seen = true
+	var center := low.get_center()
+	return {"height": height, "low": low.size, "low_center": Vector3(center.x, bottom, center.y), "crown": crown.size}
 
 
 ## Closed-shell check of `mesh`: edges, edges used by one triangle only

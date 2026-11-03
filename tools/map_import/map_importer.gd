@@ -33,6 +33,9 @@ const PART_TRIANGLES := 50000
 const MULTI_PARTS := 8
 const MULTI_SPREAD := 4.0
 const MULTI_GROUNDED := 0.75
+## Only a mesh at least this wide both ways (m) is split for classification:
+## an area of separate objects, not an object of several pieces.
+const MULTI_AREA := 10.0
 ## C5: coordinates and vertical extent.
 const MAX_DISTANCE := 20000.0
 const MAX_HEIGHT := 2000.0
@@ -686,7 +689,9 @@ func _classify() -> void:
 		rules.occluder_categories = resource.occluder_categories.duplicate()
 	if config.has("category_rules"):
 		configured.append_array(MapClassifier.rules_from_config(config.category_rules).rules)
-	var vocabulary: Array[CategoryRule] = MapClassifier.vocabulary_rules() if config.get("use_default_name_rules", true) else []
+	var vocabulary: Array[CategoryRule] = []
+	if config.get("use_default_name_rules", true):
+		vocabulary = MapClassifier.vocabulary_rules()
 	rules.rules.append_array(configured)
 	rules.rules.append_array(vocabulary)
 	rules.rules.append_array(MapClassifier.group_rules())
@@ -695,27 +700,49 @@ func _classify() -> void:
 	var by_counts := {"rule": 0, "vocabulary": 0, "shape": 0, "default": 0, "none": 0}
 	var shape_counts := {}
 	var unclassified: Array[String] = []
-	for node: MeshInstance3D in model.get_children():
-		var record: Dictionary = meshes[str(node.name)]
+	# Names first; a mesh no name matches that holds several separate objects
+	# is split into one mesh per object before its shape is judged (R3).
+	var by_name := {}
+	var split: Array[String] = []
+	for node: MeshInstance3D in model.get_children().duplicate():
 		var category := _first_match(configured, node)
 		var by := "rule"
 		if category.is_empty():
 			category = _first_match(vocabulary, node)
 			by = "vocabulary"
-		if category.is_empty():
-			category = MapClassifier.category_by_shape(record.box, record.stats)
-			by = "shape"
-			if not category.is_empty():
-				node.add_to_group(MapClassifier.GROUP_PREFIX + category, true)
-				shape_counts[category] = shape_counts.get(category, 0) + 1
-		if category.is_empty():
-			category = rules.default_category
-			by = "default" if not category.is_empty() else "none"
-			if category.is_empty():
+		if not category.is_empty():
+			by_name[str(node.name)] = [category, by]
+		elif not _collision_types.has(str(node.name)) and not multi_parts(node.mesh, node.transform.basis, MULTI_AREA).is_empty():
+			split.append("%s (%d)" % [node.name, _split(node)])
+	var repeats := {}
+	for node: MeshInstance3D in model.get_children():
+		var record: Dictionary = meshes[str(node.name)]
+		var key := MapClassifier.shape_key(record.triangles, record.box)
+		repeats[key] = repeats.get(key, 0) + 1
+	var by_shape_nodes: Array[MeshInstance3D] = []
+	for node: MeshInstance3D in model.get_children():
+		var record: Dictionary = meshes[str(node.name)]
+		if by_name.has(str(node.name)):
+			record.category = by_name[str(node.name)][0]
+			record.by = by_name[str(node.name)][1]
+			continue
+		record.profile = MapGeometry.profile(node.mesh, node.transform)
+		record.category = MapClassifier.category_by_shape(record.box, record.stats, record.profile, repeats[MapClassifier.shape_key(record.triangles, record.box)])
+		record.by = "shape"
+		by_shape_nodes.append(node)
+	summary.attached = _attachments(by_shape_nodes)
+	for node: MeshInstance3D in model.get_children():
+		var record: Dictionary = meshes[str(node.name)]
+		if record.by == "shape" and not record.category.is_empty():
+			node.add_to_group(MapClassifier.GROUP_PREFIX + record.category, true)
+			shape_counts[record.category] = shape_counts.get(record.category, 0) + 1
+		if record.category.is_empty():
+			record.category = rules.default_category
+			record.by = "default" if not record.category.is_empty() else "none"
+			if record.category.is_empty():
 				unclassified.append(str(node.name))
-		record.category = category
-		record.by = by
-		by_counts[by] += 1
+		by_counts[record.by] += 1
+	summary.split = split
 	summary.classified_by = by_counts
 	var by_shape: int = by_counts.shape + by_counts.default + by_counts.none
 	if by_shape == 0:
@@ -734,10 +761,92 @@ func _classify() -> void:
 		var record: Dictionary = meshes[node_name]
 		if record.category != "ground" and maxf(record.box.size.x, record.box.size.z) > MAX_OBJECT:
 			wide.append(node_name)
+	if not split.is_empty():
+		_check("R3", "FIXED", "%d meshes no name rule matched held several separate objects and were split into one mesh per object: %s" % [split.size(), _list(split)])
 	if wide.is_empty():
 		_check("R3", "PASS", "no non-ground mesh is wider than %.0f m" % MAX_OBJECT)
 	else:
 		_check("R3", "WARN", "%d non-ground meshes are wider than %.0f m (%s): visibility ranges and occlusion work per mesh, so they are drawn whole or not at all." % [wide.size(), MAX_OBJECT, _list(wide)])
+
+
+## A second look at the meshes classified by shape that sit on a building
+## (inside its box with 1 m around it): one made of many thin pieces (at
+## least 4 parts, three quarters of them at most 0.4 m thick) within the
+## building's height is its facade detail (windows, timber, frames); a cover
+## (its upward faces covering half its footprint) above the building's lower
+## half is its roof. Returns how many became which.
+func _attachments(nodes: Array[MeshInstance3D]) -> Dictionary:
+	var changed := {"facade_detail": 0, "roof": 0}
+	var buildings: Array[Dictionary] = []
+	for record: Dictionary in meshes.values():
+		if record.category == "buildings":
+			buildings.append(record)
+	for node in nodes:
+		var record: Dictionary = meshes[str(node.name)]
+		if record.category in ["ground", "trees", "water"]:
+			continue
+		var box: AABB = record.box
+		for building in buildings:
+			if building == record:
+				continue
+			var around: AABB = (building.box as AABB).grow(1.0)
+			if box.position.x < around.position.x or box.end.x > around.end.x or box.position.z < around.position.z or box.end.z > around.end.z:
+				continue
+			var base: AABB = building.box
+			var cover: float = float(record.stats.cover) / maxf(box.size.x * box.size.z, 1e-6)
+			if cover >= 0.5 and box.position.y >= base.position.y + 0.5 * base.size.y and box.end.y <= base.end.y + 10.0:
+				record.category = "buildings"
+				changed.roof += 1
+				break
+			if box.position.y >= around.position.y and box.end.y <= around.end.y and _thin_pieces(node.mesh):
+				record.category = "facade_detail"
+				changed.facade_detail += 1
+				break
+	return changed
+
+
+## Whether a mesh is made of many thin pieces (at least 4 connected parts,
+## three quarters of them at most 0.4 m thick).
+static func _thin_pieces(mesh: Mesh) -> bool:
+	var parts := MapGeometry.parts(mesh)
+	if parts.size() < 4:
+		return false
+	var thin := 0
+	for points in parts:
+		var box := AABB(points[0], Vector3.ZERO)
+		for point in points:
+			box = box.expand(point)
+		if box.get_shortest_axis_size() <= 0.4:
+			thin += 1
+	return thin >= 0.75 * parts.size()
+
+
+## Replaces a mesh node that holds several objects by one node per connected
+## part (named "<name>_000" …, same transform and materials), each with its
+## own record; returns the number of parts.
+func _split(node: MeshInstance3D) -> int:
+	var node_name := str(node.name)
+	var index := node.get_index()
+	var pieces := MapGeometry.part_meshes(node.mesh)
+	var names := {}
+	for child in model.get_children():
+		names[str(child.name)] = true
+	var digits := maxi(3, str(pieces.size() - 1).length())
+	for i in pieces.size():
+		var part := MeshInstance3D.new()
+		part.name = _unique("%s_%0*d" % [node_name, digits, i], names)
+		part.mesh = pieces[i]
+		part.transform = node.transform
+		model.add_child(part)
+		model.move_child(part, index + i)
+		part.owner = model
+		var stats := _node_stats(part)
+		meshes[str(part.name)] = {"category": "", "by": "none", "triangles": stats.triangles, "box": part.transform * part.mesh.get_aabb(), "stats": stats, "split_from": node_name}
+	meshes.erase(node_name)
+	model.remove_child(node)
+	node.free()
+	summary.mesh_nodes = model.get_child_count()
+	return pieces.size()
 
 
 static func _first_match(list: Array[CategoryRule], node: Node) -> String:

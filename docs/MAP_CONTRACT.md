@@ -64,7 +64,7 @@ godot --headless --path . --script res://tools/convert_to_gltf.gd -- --out=<file
 |---|---|---|---|---|
 | R1 | Mesh names say what a mesh is (a category word or prefix), or the configuration maps names or materials to categories. | Every mesh goes through the category rules in order: the configuration's `category_rules`, then the default name vocabulary (below), then geometry (below). The report counts each way and lists the meshes geometry classified or left out. | `R1 WARN: <n> meshes matched no name rule and were classified by their shape (<counts>); <k> are in no category: <names>` | Names or `category_rules` (FIXED by geometry where it can). |
 | R2 | Collision is given by collision nodes, Godot's naming convention: `<name>-col` (mesh plus trimesh collider), `-colonly` (trimesh collider, no mesh), `-convcol`, `-convcolonly` (convex). | Node names. When the model has any collision node, only those are used. Otherwise colliders come from the categories: `ground` trimesh per mesh, `buildings` one convex hull per connected part (parts smaller than 0.5 m or flatter than 2 cm are skipped), nothing for the others; `"colliders"` in the configuration changes this per category (`trimesh`, `convex`, `box`, `none`). | `R2 INFO: no collision nodes; colliders generated from the categories: <counts>` | Collision nodes in the model, or `"colliders"`. |
-| R3 | Separate objects: one mesh per building or block, not the whole city in one mesh; no non-ground mesh wider than 150 m. | Horizontal extent of every non-ground mesh. | `R3 WARN: <n> non-ground meshes are wider than 150 m (<names>): visibility ranges and occlusion work per mesh, so they are drawn whole or not at all.` | Split the model into objects. |
+| R3 | Separate objects: one mesh per building or block, not the whole city in one mesh; no non-ground mesh wider than 150 m. | A mesh no name rule matched that holds several separate objects is split into one mesh per object (step 0 of the geometry classification; FIXED). Horizontal extent of every non-ground mesh. | `R3 FIXED: <n> meshes no name rule matched held several separate objects and were split into one mesh per object: <name> (<parts>), …` / `R3 WARN: <n> non-ground meshes are wider than 150 m (<names>): visibility ranges and occlusion work per mesh, so they are drawn whole or not at all.` | Split the model into objects (a mesh whose name matched a rule is never split). |
 | R4 | Every mesh has normals. | The glTF primitives' `NORMAL` attribute. | `R4 FIXED: <n> meshes had no normals; flat normals computed from the triangles` | Automatic: flat (per-face) normals. |
 | R5 | Colour comes from textures or vertex colours. | Materials: a white, untextured material on a mesh with vertex colours does not show them in Godot. | `R5 FIXED: <n> materials show their vertex colours now` / `R5 WARN: <n> white untextured materials without vertex colours render white` | Automatic for vertex colours. |
 | R6 | Materials are single-sided. | Materials whose cull mode is disabled (glTF `doubleSided`). | `R6 WARN: <n> double-sided materials: back faces are drawn too (fill-rate cost on mobile). Set "single_sided": true if the shells are closed (C7).` | `"single_sided": true` (FIXED). |
@@ -89,14 +89,22 @@ Applied after the configuration's rules, case-insensitively: a line matches when
 
 ### Geometry classification (R1)
 
-For meshes no name rule matched, from the mesh's box in the map (after scale and axis fixes) and its faces, in this order:
+For meshes no name rule matched, from the mesh's box in the map (after scale and axis fixes), its faces, how its vertices spread over its height, and how many meshes share its shape, in this order:
 
-1. `ground`: wider than 20 m, at most a quarter as high as wide, and at least half of its area faces up (within 30° of +Y).
-2. `buildings`: at least 2.5 m high, at least 2 m wide in both directions, and at least a quarter of its area vertical (within 30° of horizontal normals).
-3. `decor`: smaller than 2.5 m in every direction.
-4. Otherwise no category (`default_category` in the configuration, empty by default).
+0. **Split first** (R3): a mesh of at most 50,000 triangles that holds several separate objects (at least 8 connected parts, spread over at least 4 times the largest part's footprint, at least 10 m wide both ways, three quarters of the parts standing on its lowest level) becomes one mesh per part (`<name>_000`, … with the same transform and materials) before the rules below. The pieces of one object (the beams of a timber frame at many heights, a fence's posts and rails along a line) are not split.
+1. `ground`: wider than 20 m and at most a quarter as high as wide, or a flat tile (at least 2 m by 1 m, at most 0.3 m or 5 % of its width thick); in both cases at least half of what can be seen from above faces up (within 30° of +Y; a closed slab's underside does not count) and its walls are at most half of that.
+2. `trees`: 1.5–40 m high, at most 25 m wide, a narrow trunk (the vertices of its lowest tenth span at most 0.35 of the crown's width) under a round crown (above 30 % of its height, at least 1 m across both ways and at least half as deep as wide).
+3. `buildings`: at least 2.5 m high, at least 2 m wide both ways, at least a quarter of its area vertical (normals within 30° of horizontal), and either at least 3 m high or roofed (its upward faces cover at least half its footprint seen from above).
+4. `decor`, an enclosure: at most 3.5 m high, at least half of its area vertical, covering under a fifth of its footprint from above (a fence or wall round a yard).
+5. `decor`, a pole: at least 2 m high, its lowest tenth at most 0.6 m across, at most 3 m wide (lamp posts, signs, traffic lights; lamps are told apart only by name).
+6. `decor`, a thin barrier: at most 0.6 m thick, 0.3–3.5 m high, at least 1.5 m long (fences, low walls).
+7. `decor`, small or low: smaller than 2.5 m every way, or under 2.5 m high and at most 10 m wide (benches, planters, cars, kiosks), or up to 6 m and repeated at least 3 times (same triangle count and box to 1 cm).
+8. `buildings`, a tall wall (over 3.5 m high, at most 2 m thick, at least 3 m long, half of its area vertical) or a tall slender block (at least 5 m high, under 2 m thick, three quarters of its area vertical: towers, columns, chimneys), which must not vanish beyond a visibility range like decor.
+9. Otherwise no category (`default_category` in the configuration, empty by default).
 
-The tool stores this result in the map (each such mesh is in the Godot group `map_category_<category>`), and the map's category rules end with one rule per group, so the game sees the same categories the report shows.
+Then a second look at the meshes classified so, that sit on a building (inside its box with 1 m around it): one made of many thin pieces (at least 4 parts, three quarters at most 0.4 m thick) within the building's height becomes `facade_detail` (windows, timber, frames); a cover (upward faces over half its footprint) above the building's lower half becomes `buildings` (its roof).
+
+The tool stores this result in the map (each such mesh is in the Godot group `map_category_<category>`), and the map's category rules end with one rule per group, so the game sees the same categories the report shows. Measured accuracy: `PROJECT_STATE.md`, "Phase 6b".
 
 ## Placement (C8)
 

@@ -114,10 +114,69 @@ func test_shape_classification() -> void:
 	check(MapClassifier.category_by_shape(AABB(Vector3.ZERO, Vector3(40, 3, 30)), up) == "ground", "wide, low, facing up: ground")
 	check(MapClassifier.category_by_shape(AABB(Vector3.ZERO, Vector3(40, 20, 30)), up) != "ground", "too high for ground")
 	check(MapClassifier.category_by_shape(AABB(Vector3.ZERO, Vector3(8, 9, 10)), walls) == "buildings", "high box with walls: buildings")
-	check(MapClassifier.category_by_shape(AABB(Vector3.ZERO, Vector3(1.5, 9, 10)), walls) == "", "too thin for a building")
+	check(MapClassifier.category_by_shape(AABB(Vector3.ZERO, Vector3(1.5, 9, 10)), walls) == "buildings", "a tall thin wall is a building")
 	check(MapClassifier.category_by_shape(AABB(Vector3.ZERO, Vector3(1, 1, 1)), walls) == "decor", "small: decor")
 	check(MapClassifier.category_by_shape(AABB(Vector3.ZERO, Vector3(3, 1, 30)), up) == "ground", "a long flat strip (a road): ground")
 	check(MapClassifier.category_by_shape(AABB(Vector3.ZERO, Vector3(0.3, 12, 0.3)), walls) == "", "a tall pole: no category")
+
+
+## Category by shape of a mesh as the importer measures it (no names).
+func _shape_of(mesh: Mesh, repeats := 1) -> String:
+	var stats := MapGeometry.stats(mesh)
+	return MapClassifier.category_by_shape(mesh.get_aabb(), stats, MapGeometry.profile(mesh, Transform3D.IDENTITY), repeats)
+
+
+func test_shape_rules_on_measured_meshes() -> void:
+	var tree := _boxes([[Vector3(0, 1.5, 0), Vector3(0.3, 3, 0.3)], [Vector3(0, 4.5, 0), Vector3(3, 3, 3)]])
+	check(_shape_of(tree) == "trees", "a trunk under a crown: trees (%s)" % _shape_of(tree))
+	var lamp := _boxes([[Vector3(0, 3, 0), Vector3(0.2, 6, 0.2)], [Vector3(0.8, 5.9, 0), Vector3(1.6, 0.15, 0.2)]])
+	check(_shape_of(lamp) == "decor", "a pole with an arm: decor, not a tree (%s)" % _shape_of(lamp))
+	check(_shape_of(_boxes([[Vector3(0, 0.75, 0), Vector3(4, 1.5, 0.1)]])) == "decor", "a fence segment: decor")
+	var ring := _boxes([[Vector3(0, 1, -5), Vector3(10, 2, 0.1)], [Vector3(0, 1, 5), Vector3(10, 2, 0.1)], [Vector3(-5, 1, 0), Vector3(0.1, 2, 10)], [Vector3(5, 1, 0), Vector3(0.1, 2, 10)]])
+	check(_shape_of(ring) == "decor", "a fence round a yard, open from above: decor, not a building (%s)" % _shape_of(ring))
+	check(_shape_of(_boxes([[Vector3(0, 0.6, 0), Vector3(4.5, 1.2, 2)]])) == "decor", "a low object (a car, a bench): decor")
+	check(_shape_of(_boxes([[Vector3(0, 10, 0), Vector3(1.5, 20, 1.5)]])) == "buildings", "a tall slender tower: buildings")
+	check(_shape_of(_boxes([[Vector3(0, 0.1, 0), Vector3(10, 0.2, 10)]])) == "ground", "a flat 10 m tile: ground")
+	check(_shape_of(_boxes([[Vector3(0, 9, 0), Vector3(255, 18, 255)]])) == "ground", "a closed 255 m slab (a printed relief): ground, its underside not counted")
+	check(_shape_of(_boxes([[Vector3(0, 4, 0), Vector3(10, 8, 12)]])) == "buildings", "a closed house box: buildings")
+	check(_shape_of(_boxes([[Vector3(0, 2.4, 0), Vector3(2.5, 4.8, 1.5)]]), 3) == "decor" and _shape_of(_boxes([[Vector3(0, 2.4, 0), Vector3(2.5, 4.8, 1.5)]])) == "", "a 4.8 m object: decor when repeated, else no category")
+
+
+func test_one_mesh_holding_a_town_is_split() -> void:
+	var blocks := []
+	for i in 12:
+		blocks.append([Vector3((i % 4) * 10.0, 6.0, (i / 4) * 10.0), Vector3(6, 12, 6)])
+	blocks.append([Vector3(5, 0.5, 25), Vector3(4, 1, 2)])
+	var timber := []
+	for i in 8:
+		timber.append([Vector3(0, 1.0 + i * 1.2, 4.05), Vector3(6, 0.15, 0.1)])
+	var importer := MapImporter.new()
+	check(importer.process(_scene([["ground_main", _plane(80.0)], ["Object_1", _boxes(blocks), Vector3(-15, 0, -15)],
+			["Object_2", _boxes([[Vector3(0, 4, 0), Vector3(8, 8, 8)]] + timber), Vector3(20, 0, 20)]])), "passes")
+	check(not importer.model.has_node("Object_1") and importer.model.has_node("Object_1_000") and importer.model.has_node("Object_1_012"), "the 13 objects became 13 meshes")
+	var block := importer.model.get_node("Object_1_005") as MeshInstance3D
+	check(importer.meshes[str(block.name)].category == "buildings" and block.transform.origin.is_equal_approx(Vector3(-15, 0, -15)), "each keeps the node's transform and gets its own category")
+	check(importer.meshes["Object_1_012"].category == "decor", "the small low one: decor")
+	check(block.mesh.get_aabb().size.is_equal_approx(Vector3(6, 12, 6)), "a part's mesh holds only its own triangles (%s)" % block.mesh.get_aabb().size)
+	check(importer.model.has_node("Object_2"), "a building with pieces at many heights stays one mesh")
+	check(_result(importer, "R3") == "PASS" and _checks(importer, "R3")[0].result == "FIXED", "R3 reports the split: %s" % [_checks(importer, "R3")])
+	importer.model.free()
+
+
+func test_detail_and_roof_on_a_building() -> void:
+	var walls := _boxes([[Vector3(0, 3, 0), Vector3(10, 6, 8)]])
+	var windows := []
+	for i in 6:
+		windows.append([Vector3(-4 + i * 1.6, 2 + (i % 2) * 2.5, 4.05), Vector3(1, 1.2, 0.1)])
+	var roof := _boxes([[Vector3(0, 7, 0), Vector3(10.6, 2, 8.6)]])
+	var importer := MapImporter.new()
+	importer.parse_config({"use_default_name_rules": false})
+	check(importer.process(_scene([["Floor", _plane(60.0)], ["A", walls], ["B", _boxes(windows)], ["C", roof]])), "passes without the vocabulary")
+	check(importer.meshes.A.category == "buildings", "the walls: buildings")
+	check(importer.meshes.B.category == "facade_detail", "thin pieces on its walls: facade detail (%s)" % importer.meshes.B.category)
+	check(importer.meshes.C.category == "buildings", "a cover above it: its roof, buildings (%s)" % importer.meshes.C.category)
+	check(importer.summary.attached == {"facade_detail": 1, "roof": 1}, "counted: %s" % [importer.summary.attached])
+	importer.model.free()
 
 
 func test_flat_normals_face_out() -> void:
