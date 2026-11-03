@@ -30,7 +30,8 @@ const ADVICE := {
 
 ## Markdown for one import. `info` holds: id, source (file name), bytes,
 ## sha256, config (Dictionary), command, outputs ([path, bytes, in_git]),
-## placement (Dictionary, optional), seconds, written (bool).
+## placement (Dictionary, optional), streaming (the cell step's summary
+## lines, optional), seconds, written (bool).
 static func markdown(importer: RefCounted, info: Dictionary) -> String:
 	var lines := PackedStringArray()
 	lines.append("# Import report: %s" % info.id)
@@ -115,6 +116,14 @@ static func markdown(importer: RefCounted, info: Dictionary) -> String:
 		lines.append("")
 		for line: String in info.placement.get("lines", []):
 			lines.append("- " + line)
+	if not info.get("streaming", []).is_empty():
+		lines.append("")
+		lines.append("## Streaming")
+		lines.append("")
+		lines.append("The cell step (`tools/cell_map.gd`, docs/STREAMING.md) split the written map into a resident scene and streaming cells (generated, not in Git):")
+		lines.append("")
+		for line: String in info.streaming:
+			lines.append("- " + line.strip_edges())
 	lines.append("")
 	lines.append("## Timings")
 	lines.append("")

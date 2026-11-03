@@ -7,9 +7,11 @@ extends SceneTree
 ## occluders, the map scene, its MapDefinition, the registry entry, and a report.
 ##   godot --headless --path . --script res://tools/import_map.gd -- --glb=<file.glb> [--config=<file.json>] [--id=<id>]
 ##       [--out=res://maps/<id>] [--report=res://docs/maps/imported/<id>.md] [--no-register] [--force]
-##       [--compare=<earlier report.md>[,<earlier report.md>…]]
+##       [--compare=<earlier report.md>[,<earlier report.md>…]] [--no-cells]
 ## --compare puts earlier reports of the same map (a blind run, say) beside
-## this one in the report.
+## this one in the report. After writing, the map is split into a resident
+## scene and streaming cells (<out>/streaming/, the cell step of
+## tools/cell_map.gd; docs/STREAMING.md) unless --no-cells is given.
 ## The GLB is only read. Exit code 0 when the map was written, 1 when a
 ## mandatory rule failed (the report says what to fix), 2 for bad arguments.
 
@@ -17,6 +19,7 @@ const MapImporter := preload("res://tools/map_import/map_importer.gd")
 const MapPlacement := preload("res://tools/map_import/map_placement.gd")
 const MapWriter := preload("res://tools/map_import/map_writer.gd")
 const ImportReport := preload("res://tools/map_import/import_report.gd")
+const MapCells := preload("res://tools/map_import/map_cells.gd")
 
 ## Models larger than this stay out of Git (a .gitignore in the map folder).
 const GIT_LIMIT := 10 * 1024 * 1024
@@ -35,7 +38,7 @@ func _run() -> void:
 		elif arg.begins_with("--"):
 			args[arg.trim_prefix("--")] = true
 	if not args.has("glb"):
-		printerr("usage: --glb=<file.glb> [--config=<file.json>] [--id=<id>] [--out=res://maps/<id>] [--report=<path.md>] [--no-register] [--force] [--compare=<report.md>,…]")
+		printerr("usage: --glb=<file.glb> [--config=<file.json>] [--id=<id>] [--out=res://maps/<id>] [--report=<path.md>] [--no-register] [--force] [--compare=<report.md>,…] [--no-cells]")
 		quit(2)
 		return
 	var glb := ProjectSettings.globalize_path(str(args.glb))
@@ -72,6 +75,8 @@ func _run() -> void:
 		info.placement = {"lines": placement.lines}
 		if not importer.failed() or args.has("force"):
 			info.written = _write(importer, placement, id, out, info)
+			if info.written and not args.has("no-cells"):
+				info.streaming = _cells(out.path_join("%s.tres" % id))
 			if info.written and not args.has("no-register"):
 				var registered := MapWriter.register(ProjectSettings.globalize_path(MapRegistry.PATH), out.path_join("%s.tres" % id))
 				info.registered = registered in ["added", "present"]
@@ -103,6 +108,25 @@ func _place(importer: RefCounted) -> RefCounted:
 	importer.timings.placement = Time.get_ticks_msec() - started
 	print("IMPORT stage placement %d ms" % importer.timings.placement)
 	return placement
+
+
+## The cell step on the written map: its resident scene and streaming cells
+## in <map folder>/streaming/, the definition pointed at the index. Returns
+## the summary lines.
+func _cells(definition_path: String) -> Array[String]:
+	var started := Time.get_ticks_msec()
+	var definition := ResourceLoader.load(definition_path, "", ResourceLoader.CACHE_MODE_REPLACE) as MapDefinition
+	var cells := MapCells.new()
+	var error := cells.run(definition, definition_path.get_base_dir().path_join("streaming"))
+	var lines := cells.lines.duplicate()
+	if not error.is_empty():
+		lines.append("cell step failed: %s (the map loads whole)" % error)
+	elif cells.index:
+		lines.append("definition: %s" % MapCells.link(definition, cells.index_path))
+	for line in lines:
+		print("IMPORT cells: ", line)
+	print("IMPORT stage cells %d ms" % (Time.get_ticks_msec() - started))
+	return lines
 
 
 ## Writes the processed model, the category rules, the occluders, the map

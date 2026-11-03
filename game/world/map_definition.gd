@@ -36,6 +36,9 @@ extends Resource
 ## available: the MAP button skips it, and the default and --map fall back to
 ## the first available map (MapRegistry.default_map()).
 @export var required_files: Array[String] = []
+## The streaming index tools/cell_map.gd writes for this map (MapStreamingIndex;
+## docs/STREAMING.md). While it is empty, missing, or stale, the map loads whole.
+@export_file("*.tres") var streaming_index_path := ""
 
 @export_group("Debug")
 ## Fixed player positions for repeatable performance measurements, cycled

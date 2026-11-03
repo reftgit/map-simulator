@@ -30,3 +30,7 @@ __pycache__/
 # Safranbolu package, the shipped İstanbul GLB under a test id); regenerated
 # with the commands in docs/maps/imported/.
 /tests/imported/
+
+# Streaming cells and resident scenes written by tools/cell_map.gd (and the
+# import tool) for each map; regenerated on each machine (docs/STREAMING.md).
+/maps/*/streaming*/
