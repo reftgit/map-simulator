@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="MapDefinition" format=3]
+
+[ext_resource type="Resource" path="res://maps/apollo11_site/apollo11_site_categories.tres" id="1_nsx4n"]
+[ext_resource type="Script" path="res://game/npc/patrol_route.gd" id="2_uryh2"]
+[ext_resource type="Script" path="res://game/world/map_definition.gd" id="3_1ccj0"]
+
+[sub_resource type="Resource" id="Resource_hkg4x"]
+script = ExtResource("2_uryh2")
+points = Array[Vector3]([Vector3(8.942516, 11.2024, -1.2774925), Vector3(8.942516, 11.556994, -13.277493)])
+
+[resource]
+script = ExtResource("3_1ccj0")
+id = "apollo11_site"
+display_name = "Apollo 11 landing site"
+scene_path = "res://maps/apollo11_site/apollo11_site.tscn"
+player_spawn_position = Vector3(-1.2774849, 10.729898, -1.2774925)
+bounds = Rect2(-125.4725, -125.4725, 250.94504, 250.94502)
+kill_height = -9.0
+vehicle_spawns = Array[Transform3D]([Transform3D(0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, 0.70710677, -8.942486, 10.8118, -3.8324928)])
+npc_routes = Array[ExtResource("2_uryh2")]([SubResource("Resource_hkg4x")])
+occluders_path = "res://maps/apollo11_site/apollo11_site_occluders.scn"
+category_rules = ExtResource("1_nsx4n")
+required_files = Array[String](["res://maps/apollo11_site/apollo11_site_model.scn"])
+debug_viewpoints = Array[Transform3D]([Transform3D(0.7495518, 0, 0.6619457, 0, 1, 0, -0.6619457, 0, 0.7495518, 19.162518, 11.136857, 21.717512), Transform3D(0.71207887, 0, -0.70209944, 0, 1, 0, 0.70209944, 0, 0.71207887, -21.717487, 9.5488, 21.71751), Transform3D(-0.61416787, 0, 0.7891754, 0, 1, 0, -0.7891754, 0, -0.61416787, 24.272518, 12.316775, -19.162493), Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -8.942486, 10.585522, -1.2774925)])
+debug_viewpoint_names = Array[String](["View A", "View B", "View C", "Sloped street"])
+sloped_viewpoint = 3

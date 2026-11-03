@@ -27,3 +27,7 @@ Each OBJ becomes one node named after its file (`city`, `groundplane`); as neith
 | `maps/abstract_city/source/abstract_city.glb` | 5,068,916 | `a0b82d3ec879cc2bceb19d42670792e125152fa13f196ee8bb0b65cc05b9977c` |
 
 `maps/abstract_city/source/` carries a `.gdignore`, so Godot neither imports nor packs the GLB.
+
+## Import
+
+Configuration `maps/abstract_city/source/abstract_city.json`: `{"display_name": "Abstract city (public domain)", "scale": 100}` (100 is the tool's own suggestion since Phase 6b; units are arbitrary, so any scale is a choice: at 100 most of its 219 objects are towers 7–47 m high and 1.6–28 m wide, the rest slabs under 1 m, and the player fits into the alleys at the city's edge but not between its packed centre's towers). Report: `docs/maps/imported/abstract_city.md`; blind results: `docs/maps/imported/blind/`. The processed model (7.8 MB, the two textures inside it) is committed in `maps/abstract_city/`.

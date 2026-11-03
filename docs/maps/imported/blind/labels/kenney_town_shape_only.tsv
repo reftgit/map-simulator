@@ -1,0 +1,6 @@
+reference	test	meshes
+buildings	buildings	32
+decor	decor	32
+ground	ground	144
+lamps	decor	20
+trees	trees	41

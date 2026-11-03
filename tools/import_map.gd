@@ -178,14 +178,16 @@ static func _id_from_file(path: String) -> String:
 	return id
 
 
-## The arguments as given, with the GLB and configuration shown by file name
-## only (no personal paths in the report).
+## The arguments as given, with the GLB, configuration, and earlier reports
+## shown by file name only (no personal paths in the report).
 static func _shown_args() -> PackedStringArray:
 	var shown := PackedStringArray()
 	for arg in OS.get_cmdline_user_args():
-		if arg.begins_with("--glb=") or arg.begins_with("--config="):
-			var value := arg.substr(arg.find("=") + 1)
-			shown.append("%s=%s" % [arg.get_slice("=", 0), value if value.begins_with("res://") else "<dir>/" + value.get_file()])
+		if arg.begins_with("--glb=") or arg.begins_with("--config=") or arg.begins_with("--compare="):
+			var values := PackedStringArray()
+			for value in arg.substr(arg.find("=") + 1).split(","):
+				values.append(value if value.begins_with("res://") else "<dir>/" + value.get_file())
+			shown.append("%s=%s" % [arg.get_slice("=", 0), ",".join(values)])
 		else:
 			shown.append(arg)
 	return shown

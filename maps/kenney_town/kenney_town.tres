@@ -6,21 +6,20 @@
 
 [sub_resource type="Resource" id="Resource_grd72"]
 script = ExtResource("2_4slvl")
-points = Array[Vector3]([Vector3(6.8600006, 0.29999885, 4.9698563), Vector3(6.8600006, 0.2999998, -11.030144)])
+points = Array[Vector3]([Vector3(12.860001, 0.29999885, -7.0301437), Vector3(0.8600006, 0.2999998, -7.0301433)])
 
 [resource]
 script = ExtResource("3_qks20")
 id = "kenney_town"
 display_name = "Kenney town (CC0)"
 scene_path = "res://maps/kenney_town/kenney_town.tscn"
-player_spawn_position = Vector3(0.8600006, 0.29999885, -3.0301437)
-player_spawn_yaw_degrees = 270.0
+player_spawn_position = Vector3(20.86, 0.20000228, -1.0301437)
 bounds = Rect2(-58.14, -58.030144, 116, 116)
 kill_height = -11.0
-vehicle_spawns = Array[Transform3D]([Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0.8600006, 0.49999982, 4.9698563)])
+vehicle_spawns = Array[Transform3D]([Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 50.86, 0.50000006, 26.969856)])
 npc_routes = Array[ExtResource("2_4slvl")]([SubResource("Resource_grd72")])
 occluders_path = "res://maps/kenney_town/kenney_town_occluders.scn"
 category_rules = ExtResource("1_30dbt")
 required_files = Array[String](["res://maps/kenney_town/kenney_town_model.scn"])
-debug_viewpoints = Array[Transform3D]([Transform3D(0.7813438, 0, -0.6241008, 0, 1, 0, 0.6241008, 0, 0.7813438, -17.14, 0.20000228, 20.969856), Transform3D(0.8904437, 0, 0.45509344, 0, 1, 0, -0.45509344, 0, 0.8904437, 12.860001, 0.20000228, 24.969856), Transform3D(-0.47644347, 0, -0.8792051, 0, 1, 0, 0.8792051, 0, -0.47644347, -27.14, 0.20000228, -15.030144)])
+debug_viewpoints = Array[Transform3D]([Transform3D(0.3353438, 0, -0.9420958, 0, 1, 0, 0.9420958, 0, 0.3353438, -9.139999, 0.29999885, 2.9698563), Transform3D(-0.99306804, 0, 0.11754115, 0, 1, 0, -0.11754115, 0, -0.99306804, 2.8600006, 0.20000228, -25.030144), Transform3D(0.95017844, 0, 0.31170642, 0, 1, 0, -0.31170642, 0, 0.95017844, 8.860001, 0.20000228, 26.969856)])
 debug_viewpoint_names = Array[String](["View A", "View B", "View C"])

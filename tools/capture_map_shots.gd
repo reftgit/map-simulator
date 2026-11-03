@@ -60,17 +60,18 @@ func _run() -> void:
 		var at := car.global_position
 		camera.look_at_from_position(at + car.global_basis * Vector3(5.0, 3.0, 9.0), at + Vector3.UP * 0.6)
 		await _shoot(prefix + "_vehicle.png")
-	var markers := Node3D.new()
-	game.add_child(markers)
-	_add_marker(markers, definition.player_spawn_position, MARKERS.spawn)
-	for spawn: Transform3D in definition.vehicle_spawns:
-		_add_marker(markers, spawn.origin, MARKERS.vehicle)
-	for route: PatrolRoute in definition.npc_routes:
-		for point in route.points:
-			_add_marker(markers, point, MARKERS.route)
 	var bounds: Rect2 = definition.bounds
 	var center := Vector3(bounds.get_center().x, definition.player_spawn_position.y, bounds.get_center().y)
 	var size := maxf(maxf(bounds.size.x, bounds.size.y), 40.0)
+	var markers := Node3D.new()
+	game.add_child(markers)
+	var post := maxf(1.0, size / 140.0)  # posts grow with the map so they show from above
+	_add_marker(markers, definition.player_spawn_position, MARKERS.spawn, post)
+	for spawn: Transform3D in definition.vehicle_spawns:
+		_add_marker(markers, spawn.origin, MARKERS.vehicle, post)
+	for route: PatrolRoute in definition.npc_routes:
+		for point in route.points:
+			_add_marker(markers, point, MARKERS.route, post)
 	camera.look_at_from_position(center + Vector3(0.0, size * 0.8, size * 0.6), center)
 	await _shoot(prefix + "_above.png")
 	markers.queue_free()
@@ -84,18 +85,18 @@ func _run() -> void:
 	quit(0)
 
 
-func _add_marker(parent: Node3D, at: Vector3, color: Color) -> void:
+func _add_marker(parent: Node3D, at: Vector3, color: Color, size := 1.0) -> void:
 	var post := MeshInstance3D.new()
 	var mesh := CylinderMesh.new()
-	mesh.top_radius = 0.6
-	mesh.bottom_radius = 0.6
-	mesh.height = 14.0
+	mesh.top_radius = 0.6 * size
+	mesh.bottom_radius = 0.6 * size
+	mesh.height = 14.0 * size
 	var material := StandardMaterial3D.new()
 	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	material.albedo_color = color
 	mesh.material = material
 	post.mesh = mesh
-	post.position = at + Vector3.UP * 7.0
+	post.position = at + Vector3.UP * 7.0 * size
 	parent.add_child(post)
 
 

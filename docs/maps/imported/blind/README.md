@@ -58,4 +58,28 @@ Test log: `logs/blind_config_tests.log` (the two test files were temporary and a
 | Both: `test_quality_profiles_apply` FAIL | **test assumption** | the shared test requires at least one mesh in a visibility-range category; maps without trees, lamps, decor, or facade detail have none, yet the profiles apply (FPS cap, baked occluders) |
 | Both: no sloped viewpoint | map property | INFO; the device scenario skips its slope steps |
 
-Classification at mesh level (the three meshes): the ground plane and the relief are ground (right), the city mesh is `buildings` as a whole, though it holds 219 objects of several kinds. A hand-labelled sample of the city's objects, with the blind and the fixed assignments, is in `PROJECT_STATE.md`, "Phase 6b".
+Classification at mesh level (the three meshes): the ground plane and the relief are ground (right), the city mesh is `buildings` as a whole, though it holds 219 objects of several kinds.
+
+## After the general fixes (final state, Phase 6b commits 2–6)
+
+The same two GLBs, imported with the fixed tool and a configuration a user would write (the abstract city: `{"scale": 100}`, the tool's own new suggestion, and a display name; the relief: only a display name). Reports with the blind runs side by side ("Compared with earlier imports"): `docs/maps/imported/abstract_city.md`, `docs/maps/imported/apollo11_site.md`; both maps are in the game (`maps/`, registry entries 9 and 10).
+
+| | Abstract city: blind → suggested config → fixed | Apollo 11 landing site: blind → suggested config → fixed |
+|---|---|---|
+| Configuration | none → `{"scale": 20}` → `{"scale": 100}` | none → `{"up_axis": "z"}` → none (display name only) |
+| C2 | FAIL (suggested 20) → FIXED → FIXED (now suggested 100: the typical object of 218 separate objects 28 m tall, 7 m wide) | PASS → PASS → PASS (millimetres not detectable) |
+| C3 | PASS | FAIL → FIXED (configuration) → FIXED by the tool: "+Z up … its base is at the low end" |
+| C7 | — → PASS → PASS | — → WARN (476 zero-area triangles) → FIXED (inside out: turned outward) + WARN (zero-area) |
+| R3 | — → PASS → FIXED: the city mesh split into its 219 objects | PASS |
+| Categories | — → buildings 1, ground 1 → buildings 203, decor 13, ground 1, none 3 | — → ground 1 → ground 1 |
+| Colliders | — → 215 hulls → 187 hulls, 17 concave parts as trimesh, 13 boxes | trimesh |
+| Placement | spawn, car, route on the bare plane beside a toy city → spawn in an alley at the city's edge, the car 15 m away beside the towers | spawn, car, route on the relief; now on its top surface, with a sloped viewpoint |
+| Gameplay tests | 7 of 8 → 11 of 11 (8 shared + registry, split, extensibility scenario) | 7 of 8 → 10 of 10 (8 shared + registry, relief faces up) |
+| Shots | `../shots/abstract_city_{spawn,vehicle,above,npc}.jpg` | `../shots/apollo11_site_{spawn,vehicle,above,npc}.jpg` |
+
+### Classification accuracy (`labels/`)
+
+- **Abstract city, hand-labelled sample:** 60 of its 219 objects drawn at random (seed 6) by `tools/map_import/sample_sheet.gd`, each shown in green among grey neighbours from above (`labels/abstract_city_sample_1–4.jpg`; six hidden ones again alone, `labels/abstract_city_isolated_1.jpg`), labelled by the agent before reading the tool's answers: 56 towers or blocks (`buildings`) and 4 low slabs (`decor`). The blind tool, which gave the whole mesh one category, had 56 of 60 right (it called the slabs buildings); the fixed tool 58 of 60 (two 4.8 m blocks in no category). `labels/abstract_city_labels.tsv` lists every sampled object with its label and both answers. The sample says little about trees, lamps, fences, or ground, which the city does not have.
+- **Shape alone on the Phase 6a maps** (`"use_default_name_rules": false`, compared mesh by mesh with the name categories by `tools/map_import/compare_categories.gd`): Kenney town 249 of 269 (92.6 %; the 20 misses are lamps classified as decor, which lamps are not told apart from without names), Safranbolu 1,033 of 1,173 (88.1 %; 86 facade-detail meshes as buildings, 38 buildings and 5 others in no category): `labels/kenney_town_shape_only.tsv`, `labels/safranbolu_test_shape_only.tsv`. Before the fixes, the same runs crashed (the vocabulary switch had a bug since Phase 6a); by the old ground rule (wider than 20 m) none of the Kenney town's 10 m tiles is ground, so it would have failed C4.
+- **The relief by shape alone:** ground (its name matched `land` by chance; with the vocabulary off the fixed rules still give ground, since a closed slab's underside no longer counts; the old rule gave nothing: 46 % of its area faces up, under the 50 % it required).
+- Caveat: the low-object and slender-tower rules were written after seeing the city's unclassified objects, and the facade-detail and roof pass after seeing Safranbolu's shape-only result; none uses a name, but those two samples are not blind to the rules.

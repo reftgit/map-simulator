@@ -187,8 +187,13 @@ func test_quality_profiles_apply() -> void:
 		ranged.append_array(groups[category])
 	var ranges := func(expected: float) -> bool:
 		return ranged.all(func(node: MeshInstance3D) -> bool: return is_equal_approx(node.visibility_range_end, expected))
+	# A map may have no trees, lamps, decor, or facade detail (a bare terrain,
+	# Phase 6b): the profiles still set the frame cap and the occluders.
+	var expected := expected_categories()
+	var wanted: int = expected.get("trees", 0) + expected.get("lamps", 0) + expected.get("decor", 0) + expected.get("facade_detail", 0)
+	check(ranged.size() == wanted, "the meshes with ranges are the %d of the visibility-range categories (%d)" % [wanted, ranged.size()])
 	game.set_quality_profile("low")
-	check(not ranged.is_empty() and ranges.call(100.0) and Engine.max_fps == 30, "low: 100 m on the %d meshes with ranges" % ranged.size())
+	check(ranges.call(100.0) and Engine.max_fps == 30, "low: 30 FPS, 100 m on the %d meshes with ranges" % ranged.size())
 	check(game.render_settings.occluder_report.get("source") == "baked", "the baked occluders (%s)" % [game.render_settings.occluder_report])
 	game.set_quality_profile("high")
 	check(ranges.call(200.0) and Engine.max_fps == 60, "high: 200 m")

@@ -89,6 +89,7 @@ var _walk_from := Vector3.ZERO
 var _walk_to := Vector3.ZERO
 var _drive_from := Vector3.ZERO
 var _drive_to := Vector3.ZERO
+var _area_slope := 0.0  # steepest ground under the last car area measured (degrees)
 
 
 ## Runs every search. `model` holds the colliders, `categories` maps each
@@ -252,8 +253,8 @@ func _place_vehicle(override: Dictionary) -> bool:
 	vehicle = best
 	_set_drive()
 	var origin: Vector3 = (vehicle.transform as Transform3D).origin
-	_check("C8", "PASS", "vehicle at %s facing %.0f°, %.0f m of clear road ahead, %.0f m from the spawn; score %.2f (%d trees, lamps, or decor within %.0f m, buildings on %d sides, %.1f m of room on its narrower side)" % [_text(origin), _yaw_of(vehicle.transform.basis),
-			minf(vehicle.drive, DRIVE_CAP), origin.distance_to(spawn.position), vehicle.score, vehicle.clutter, CLUTTER_RADIUS, vehicle.street, vehicle.room])
+	_check("C8", "PASS", "vehicle at %s facing %.0f°, %.0f m of clear road ahead, %.0f m from the spawn; score %.2f (%d trees, lamps, or decor within %.0f m, buildings on %d sides, %.1f m of room on its narrower side, ground up to %.1f° steep)" % [_text(origin), _yaw_of(vehicle.transform.basis),
+			minf(vehicle.drive, DRIVE_CAP), origin.distance_to(spawn.position), vehicle.score, vehicle.clutter, CLUTTER_RADIUS, vehicle.street, vehicle.room, vehicle.slope])
 	return true
 
 
@@ -267,16 +268,23 @@ func _set_drive() -> void:
 ## Vector3.INF when it does not qualify.
 func _car_area(at: Vector3, basis: Basis) -> Vector3:
 	var heights := PackedFloat32Array()
+	_area_slope = 0.0
 	for corner in [Vector2.ZERO, Vector2(-1, -1), Vector2(1, -1), Vector2(-1, 1), Vector2(1, 1)]:
 		var offset := basis * Vector3(corner.x * CAR_AREA.x * 0.5, 0.0, corner.y * CAR_AREA.y * 0.5)
 		var hit := ground_hit(at.x + offset.x, at.z + offset.z, at.y + 3.0, at.y - 3.0)
-		if category_at(hit) != "ground" or rad_to_deg((hit.normal as Vector3).angle_to(Vector3.UP)) > CAR_SLOPE:
+		var slope := rad_to_deg((hit.normal as Vector3).angle_to(Vector3.UP)) if not hit.is_empty() else 90.0
+		if category_at(hit) != "ground" or slope > CAR_SLOPE:
 			return Vector3.INF
+		_area_slope = maxf(_area_slope, slope)
 		heights.append((hit.position as Vector3).y)
-	var spread := 0.0
+	# Highest minus lowest point (not against the centre: two corners on either
+	# side of it could differ by twice the limit and tilt the car over 5°).
+	var low := heights[0]
+	var high := heights[0]
 	for h in heights:
-		spread = maxf(spread, absf(h - heights[0]))
-	if spread > CAR_HEIGHT_SPREAD:
+		low = minf(low, h)
+		high = maxf(high, h)
+	if high - low > CAR_HEIGHT_SPREAD:
 		return Vector3.INF
 	var center := Vector3(at.x, heights[0], at.z)
 	var shape := BoxShape3D.new()
@@ -291,14 +299,16 @@ func _car_area(at: Vector3, basis: Basis) -> Vector3:
 ## a building within STREET_REACH to a side (a street: 1, on both sides 1.5),
 ## minus 0.5 for every tree, lamp, or decor collider within CLUTTER_RADIUS
 ## (at most 6), minus a point per FAR_FROM_SPAWN beyond that distance from
-## the spawn.
+## the spawn, minus the steepest ground under it over CAR_SLOPE (flat is
+## best: up to 1 point).
 func _car_score(center: Vector3, basis: Basis, drive: float) -> Dictionary:
+	var slope := _area_slope
 	var street := _street(center, basis)
 	var room := clampf((minf(street.room, SIDE_ROOM) - 2.5) / (SIDE_ROOM - 2.5), 0.0, 1.0)
 	var clutter := mini(_clutter(center, CLUTTER_RADIUS), 6)
 	var far := maxf(0.0, center.distance_to(spawn.position) - FAR_FROM_SPAWN) / FAR_FROM_SPAWN
-	return {"score": 2.0 * minf(drive, DRIVE_CAP) / DRIVE_CAP + room + street.score - 0.5 * clutter - far,
-			"clutter": clutter, "street": street.sides, "room": street.room}
+	return {"score": 2.0 * minf(drive, DRIVE_CAP) / DRIVE_CAP + room + street.score - 0.5 * clutter - far - slope / CAR_SLOPE,
+			"clutter": clutter, "street": street.sides, "room": street.room, "slope": slope}
 
 
 ## What lies to the left and right of `at` (facing -Z of `basis`), 1.2 m

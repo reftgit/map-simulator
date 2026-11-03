@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="MapDefinition" format=3]
+
+[ext_resource type="Resource" path="res://maps/abstract_city/abstract_city_categories.tres" id="1_cklsd"]
+[ext_resource type="Script" path="res://game/npc/patrol_route.gd" id="2_hf7wu"]
+[ext_resource type="Script" path="res://game/world/map_definition.gd" id="3_k0to7"]
+
+[sub_resource type="Resource" id="Resource_d15en"]
+script = ExtResource("2_hf7wu")
+points = Array[Vector3]([Vector3(41.763355, 0.09999619, -34.897167), Vector3(41.763355, 0.09999976, -46.897167)])
+
+[resource]
+script = ExtResource("3_k0to7")
+id = "abstract_city"
+display_name = "Abstract city (public domain)"
+scene_path = "res://maps/abstract_city/abstract_city.tscn"
+player_spawn_position = Vector3(41.763355, 0.09999619, -24.749489)
+player_spawn_yaw_degrees = 180.0
+bounds = Rect2(-102.68672, -206.40771, 332.8734, 299.04782)
+kill_height = -11.0
+vehicle_spawns = Array[Transform3D]([Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 48.528473, 0.29999977, -11.21925)])
+npc_routes = Array[ExtResource("2_hf7wu")]([SubResource("Resource_d15en")])
+occluders_path = "res://maps/abstract_city/abstract_city_occluders.scn"
+category_rules = ExtResource("1_cklsd")
+required_files = Array[String](["res://maps/abstract_city/abstract_city_model.scn"])
+debug_viewpoints = Array[Transform3D]([Transform3D(0.8520054, 0, 0.523533, 0, 1, 0, -0.523533, 0, 0.8520054, 68.82383, 0.09999619, -48.427406), Transform3D(-0.19670472, 0, -0.9804628, 0, 1, 0, 0.9804628, 0, -0.19670472, 38.380795, 0.09999619, -61.957645), Transform3D(-0.6435458, 0, 0.7654076, 0, 1, 0, -0.7654076, 0, -0.6435458, 85.73663, 0.09999619, -75.487885)])
+debug_viewpoint_names = Array[String](["View A", "View B", "View C"])

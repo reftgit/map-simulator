@@ -1,0 +1,13 @@
+reference	test	meshes
+buildings	(none)	38
+buildings	buildings	554
+buildings	decor	3
+buildings	ground	5
+facade_detail	(none)	2
+facade_detail	buildings	86
+facade_detail	facade_detail	435
+ground	(none)	3
+ground	buildings	1
+ground	decor	1
+ground	ground	44
+ground	trees	1

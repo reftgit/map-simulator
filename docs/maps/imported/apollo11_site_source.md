@@ -26,3 +26,7 @@ One node, `Apollo 11 - Landing Site`, corners with equal positions welded, no ma
 | `maps/apollo11_site/source/apollo11_site.glb` | 2,570,732 | `088254447b160634f9031f1f0e08561765d41ebf7ee9def3944ff8babe696fa2` |
 
 `maps/apollo11_site/source/` carries a `.gdignore`, so Godot neither imports nor packs the GLB.
+
+## Import
+
+Configuration `maps/apollo11_site/source/apollo11_site.json`: `{"display_name": "Apollo 11 landing site"}` only; since Phase 6b the tool turns the relief to +Y up (C3) and its inside-out faces outward (C7) by itself. The millimetres stay metres (a 255.5 m map with 18.7 m of relief; C2 cannot see them). Report: `docs/maps/imported/apollo11_site.md`; blind results: `docs/maps/imported/blind/`. The processed model (3.4 MB) and occluders are committed in `maps/apollo11_site/`.
