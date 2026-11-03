@@ -140,3 +140,30 @@ func test_writer_files() -> void:
 		restored = restored.replace("load_steps=%d" % (int(steps.get_string(1)) + 1), steps.get_string())
 		check(restored == original, "nothing else in the registry changes")
 	DirAccess.remove_absolute(registry_copy)
+
+
+## A 160 m square: a street between two rows of houses in the west, a grove
+## of trees in the east, open grass between them.
+static func _street_and_grove() -> Node3D:
+	var parts := [["ground_main", ImportCase._plane(160.0)]]
+	for i in 7:
+		parts.append(["house_w%d" % i, ImportCase._boxes([[Vector3(0, 5, 0), Vector3(10, 10, 10)]]), Vector3(-62, 0, -60 + i * 20)])
+		parts.append(["house_e%d" % i, ImportCase._boxes([[Vector3(0, 5, 0), Vector3(10, 10, 10)]]), Vector3(-38, 0, -60 + i * 20)])
+	var tree := ImportCase._boxes([[Vector3(0, 1.5, 0), Vector3(0.4, 3, 0.4)], [Vector3(0, 4.5, 0), Vector3(3, 3, 3)]])
+	for x in range(5, 70, 9):
+		for z in range(-65, 70, 9):
+			parts.append(["tree_%d_%d" % [x, z], tree, Vector3(x, 0, z)])
+	return ImportCase._scene(parts)
+
+
+func test_vehicle_and_spawn_prefer_a_street_to_a_grove() -> void:
+	var importer: RefCounted = await _imported(_street_and_grove())
+	var placement := _placement(importer)
+	check(not _result(placement, "C8").has("FAIL"), "everything placed: %s" % [placement.checks])
+	var car: Vector3 = placement.vehicle.transform.origin
+	check(car.x > -57.0 and car.x < -43.0, "the car stands in the street between the houses (%s)" % car)
+	check(placement.vehicle.clutter == 0 and placement.vehicle.street >= 1, "no tree near it, houses beside it (%s)" % [placement.vehicle])
+	var spawn: Vector3 = placement.spawn.position
+	check(spawn.x < 0.0 and placement.spawn.clutter == 0, "the spawn is not in the grove (%s, %d trees near)" % [spawn, placement.spawn.clutter])
+	# Each candidate's score is in the report line.
+	check(placement.checks.any(func(c: Dictionary) -> bool: return c.id == "C8" and c.message.contains("score")), "the score is reported")

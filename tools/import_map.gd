@@ -7,6 +7,9 @@ extends SceneTree
 ## occluders, the map scene, its MapDefinition, the registry entry, and a report.
 ##   godot --headless --path . --script res://tools/import_map.gd -- --glb=<file.glb> [--config=<file.json>] [--id=<id>]
 ##       [--out=res://maps/<id>] [--report=res://docs/maps/imported/<id>.md] [--no-register] [--force]
+##       [--compare=<earlier report.md>[,<earlier report.md>…]]
+## --compare puts earlier reports of the same map (a blind run, say) beside
+## this one in the report.
 ## The GLB is only read. Exit code 0 when the map was written, 1 when a
 ## mandatory rule failed (the report says what to fix), 2 for bad arguments.
 
@@ -32,7 +35,7 @@ func _run() -> void:
 		elif arg.begins_with("--"):
 			args[arg.trim_prefix("--")] = true
 	if not args.has("glb"):
-		printerr("usage: --glb=<file.glb> [--config=<file.json>] [--id=<id>] [--out=res://maps/<id>] [--report=<path.md>] [--no-register] [--force]")
+		printerr("usage: --glb=<file.glb> [--config=<file.json>] [--id=<id>] [--out=res://maps/<id>] [--report=<path.md>] [--no-register] [--force] [--compare=<report.md>,…]")
 		quit(2)
 		return
 	var glb := ProjectSettings.globalize_path(str(args.glb))
@@ -56,7 +59,8 @@ func _run() -> void:
 	var file := FileAccess.open(glb, FileAccess.READ)
 	var info := {"id": id, "source": glb.get_file(), "bytes": file.get_length() if file else 0,
 			"sha256": FileAccess.get_sha256(glb), "config": config, "written": false, "outputs": [],
-			"command": "godot --headless --path . --script res://tools/import_map.gd -- " + " ".join(_shown_args())}
+			"command": "godot --headless --path . --script res://tools/import_map.gd -- " + " ".join(_shown_args()),
+			"compare": Array(str(args.get("compare", "")).split(",", false))}
 	print("IMPORT %s from %s" % [id, glb])
 	var scene := importer.load_glb(glb)
 	var ok := scene != null and importer.process(scene, args.has("force"))

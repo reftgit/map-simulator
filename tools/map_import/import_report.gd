@@ -1,7 +1,31 @@
 extends RefCounted
 ## The import tool's report (docs/maps/imported/<id>.md): the contract checks
-## (docs/MAP_CONTRACT.md) with their results, the fixes, the categories, the
-## colliders and occluders, the placement, the timings, and the files written.
+## (docs/MAP_CONTRACT.md) with their results, what to change in the model to
+## do better, a comparison with earlier imports of the same map, the fixes,
+## the categories, the colliders and occluders, the placement, the timings,
+## and the files written.
+
+## What the map's author can change, per rule, when a check did not simply
+## pass (FAIL, WARN, or FIXED: what the tool fixed can be done better in the
+## model, and then needs no guess).
+const ADVICE := {
+	"C1": "Export the model as glTF 2.0 (.glb, or .gltf with its files). OBJ, STL, and FBX can be converted first with `tools/convert_to_gltf.gd`; Blender, Collada, and Unity files must be exported from their tool.",
+	"C2": "Model in metres (1 unit = 1 m), or export with the unit scale applied. Until then, `\"scale\"` in the configuration says how big a unit is; the tool only recognises millimetres, centimetres, inches, and feet by itself.",
+	"C3": "Export with +Y up (Blender's glTF exporter does this with its default \"+Y Up\"). The tool turned the model by itself; `\"up_axis\"` overrides its guess.",
+	"C4": "Give the walkable surfaces (terrain, roads, squares) names with a ground word (road, street, ground, terrain, …) or a `category_rules` entry, or add `-col` collision nodes.",
+	"C5": "Move the model's origin into the map before exporting (Blender: Object → Set Origin, then Apply → Location).",
+	"C6": "Use lighter geometry, and put detail (windows, trees, lamps, props) into separate meshes with names, so the quality profiles can hide it at a distance.",
+	"C7": "Close the building shells and make every face point outward (Blender: Mesh → Clean Up → Merge by Distance, Delete Loose; Normals → Recalculate Outside), and remove zero-area triangles (Mesh → Clean Up → Degenerate Dissolve).",
+	"C8": "Leave open, flat, connected ground for the player and a car (a street of at least 7 m by 25 m), or give `\"spawn\"`, `\"vehicle_spawn\"`, and `\"npc_route\"` in the configuration.",
+	"R1": "Name each mesh with what it is (building, house, road, tree, lamp, fence, window, water, …: the vocabulary in docs/MAP_CONTRACT.md), or map names or materials with `category_rules`: shape rules guess, names know.",
+	"R2": "For exact collision, add collision meshes named `<name>-col` (or `-colonly`, `-convcol`); otherwise the tool builds colliders from the categories and shapes.",
+	"R3": "Export one mesh per building or object, not a whole city in one mesh, and split ground into tiles of at most 150 m.",
+	"R4": "Export normals with the model (Blender: \"Normals\" in the glTF export).",
+	"R5": "Give every material a colour or a texture; a white material without vertex colours renders white.",
+	"R6": "Make materials single-sided once the shells are closed (Blender: Material → Backface Culling), or set `\"single_sided\": true`.",
+	"R7": "Name the water surface `water` (or map it with a rule).",
+	"R8": "Leave lights, cameras, and armatures out of the export: the map scene brings its own sun and sky.",
+}
 
 
 ## Markdown for one import. `info` holds: id, source (file name), bytes,
@@ -21,6 +45,22 @@ static func markdown(importer: RefCounted, info: Dictionary) -> String:
 	lines.append("| Result | %s |" % ("map written" + (" and registered" if info.get("registered", false) else "") if info.written else "**not written**: a mandatory check failed (below)"))
 	lines.append("| Tool run | %.1f s |" % info.seconds)
 	lines.append("")
+	var advice := PackedStringArray()
+	var seen := {}
+	for check: Dictionary in importer.checks:
+		if check.result in ["FAIL", "WARN", "FIXED"] and ADVICE.has(check.id) and not seen.has(check.id):
+			seen[check.id] = true
+			advice.append("- **%s** (%s): %s" % [check.id, check.result, ADVICE[check.id]])
+	if not advice.is_empty():
+		lines.append("## How to improve this map")
+		lines.append("")
+		lines.append("What to change in the model so that the tool has nothing to guess or fix (in the order of the checks below):")
+		lines.append("")
+		lines.append_array(advice)
+		lines.append("")
+	if not info.get("compare", []).is_empty():
+		lines.append_array(_comparison(importer, info))
+		lines.append("")
 	lines.append("## Contract checks")
 	lines.append("")
 	lines.append("| Rule | Result | Details |")
@@ -93,6 +133,96 @@ static func markdown(importer: RefCounted, info: Dictionary) -> String:
 	lines.append("")
 	return "\n".join(lines)
 
+
+
+## The earlier imports in `info.compare` (their reports' paths) and this
+## one side by side: configuration, result, every rule's results, the
+## categories, and the colliders.
+static func _comparison(importer: RefCounted, info: Dictionary) -> PackedStringArray:
+	var columns := []
+	for path: String in info.compare:
+		var earlier := read_report(path)
+		earlier.label = path.get_file().get_basename()
+		columns.append(earlier)
+	var now := {"label": "this import", "config": "`%s`" % JSON.stringify(info.config) if not info.config.is_empty() else "none",
+			"result": "map written" if info.written else "not written", "checks": {}, "categories": "", "colliders": ""}
+	for check: Dictionary in importer.checks:
+		now.checks[check.id] = (now.checks.get(check.id, []) as Array) + [check.result]
+	var counts := {}
+	for record: Dictionary in importer.meshes.values():
+		var key: String = record.category if not record.category.is_empty() else "(none)"
+		counts[key] = counts.get(key, 0) + 1
+	now.categories = _counts(counts)
+	if importer.summary.has("colliders"):
+		now.colliders = "%d shapes %s" % [importer.summary.colliders.shapes, JSON.stringify(importer.summary.get("collider_types", {}))]
+	columns.append(now)
+	var lines := PackedStringArray()
+	lines.append("## Compared with earlier imports")
+	lines.append("")
+	var header := "| |"
+	var rule := "|---|"
+	for column: Dictionary in columns:
+		header += " %s |" % column.label
+		rule += "---|"
+	lines.append(header)
+	lines.append(rule)
+	for row: Array in [["Configuration", "config"], ["Result", "result"]]:
+		var line := "| %s |" % row[0]
+		for column: Dictionary in columns:
+			line += " %s |" % column[row[1]]
+		lines.append(line)
+	var ids := []
+	for column: Dictionary in columns:
+		for id: String in column.checks:
+			if id not in ids:
+				ids.append(id)
+	ids.sort()
+	for id: String in ids:
+		var line := "| %s |" % id
+		for column: Dictionary in columns:
+			line += " %s |" % " + ".join(PackedStringArray(column.checks.get(id, ["—"])))
+		lines.append(line)
+	for row: Array in [["Categories (meshes)", "categories"], ["Colliders", "colliders"]]:
+		var line := "| %s |" % row[0]
+		for column: Dictionary in columns:
+			line += " %s |" % (column[row[1]] if not str(column[row[1]]).is_empty() else "—")
+		lines.append(line)
+	return lines
+
+
+## What a report this tool wrote says: configuration, result, the results
+## per rule, the categories, the colliders (for comparisons).
+static func read_report(path: String) -> Dictionary:
+	var report := {"config": "?", "result": "?", "checks": {}, "categories": "", "colliders": ""}
+	var section := ""
+	var counts := {}
+	for line in FileAccess.get_file_as_string(path).split("\n"):
+		if line.begins_with("## "):
+			section = line.trim_prefix("## ")
+			continue
+		var cells := Array(line.split("|")).map(func(cell: String) -> String: return cell.strip_edges())
+		if line.begins_with("| Configuration |"):
+			report.config = cells[2]
+		elif line.begins_with("| Result |"):
+			report.result = "map written" if cells[2].begins_with("map written") else "not written"
+		elif section == "Contract checks" and line.begins_with("| ") and cells.size() > 3 and cells[1] != "Rule" and not cells[1].begins_with("-"):
+			report.checks[cells[1]] = (report.checks.get(cells[1], []) as Array) + [cells[2].replace("*", "")]
+		elif section == "Categories" and line.begins_with("| ") and cells.size() > 3 and cells[1] != "Category" and not cells[1].begins_with("-"):
+			counts[cells[1]] = int(cells[2])
+		elif section == "Colliders and occluders" and line.begins_with("- Colliders:"):
+			var found := RegEx.create_from_string("(\\d+) shapes (\\{[^}]*\\})").search(line)
+			report.colliders = "%s shapes %s" % [found.get_string(1), found.get_string(2)] if found else ""
+	report.categories = _counts(counts)
+	return report
+
+
+static func _counts(counts: Dictionary) -> String:
+	var keys := counts.keys()
+	keys.sort()
+	var parts := PackedStringArray()
+	for key in keys:
+		parts.append("%s %d" % [key, counts[key]])
+	return ", ".join(parts)
 
 
 static func _thousands(value: int) -> String:

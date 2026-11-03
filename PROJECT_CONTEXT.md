@@ -534,6 +534,12 @@ Decisions made by the implementing agent (Claude Code, 2026-10-24). None was spe
 - **Why:** the reviewer's finding: the player walked through the Kenney town's trees and fences, convex hulls filled courtyards, and the car was placed among trees because trunks were invisible to the placement's shape queries. A tree trunk or a post is the part a walking player meets; a capsule is the cheapest shape that holds it, and a box the cheapest for a fence segment. Trimesh only where a hull would be wrong.
 - **Cost:** the Kenney town goes from 443 to 792 collision shapes (capsules, boxes, and 50 concave building parts as trimesh); the tablet's physics step is measured in `PROJECT_STATE.md`, "Phase 6b".
 
+### T53 — Scored spawn and vehicle places; a report that says how to improve the map (2026-11-03, Phase 6b)
+
+- **Decision:** the placement scores its candidates instead of taking the nearest that fits: up to 150 per item, at least 6 m apart; the vehicle gets points for a long drive, room to its sides, and buildings beside it (a street), and loses points for every tree, lamp, or decor collider within 6 m and for distance beyond 40 m from the spawn; the spawn likewise (walk, street, clutter within 4 m, distance from the centre). The report gains "How to improve this map" (a line of advice per rule that failed, warned, or needed a fix) and `--compare`, which puts earlier reports of the same map (the blind runs) beside the new one.
+- **Why:** the reviewer's finding that the Kenney town's car stood in a courtyard among trees; with trunks now colliding (T52) and clutter scored, it parks on a road (`road-straight_8_5`) between houses. No category is a "road" (roads and lawns are both `ground`), so the street is found from its surroundings, not from names or materials.
+- **Rationale:** D26's acceptance tests pass on any such place, but a user judges the map by where the game puts them and the car.
+
 ## Performance findings and proposed measures
 
 Status: **measured on 2026-10-24, nothing applied.** Full tables and protocol: `PROJECT_STATE.md`, "Performance diagnosis pass". Raw data and screenshots: `docs/perf/`.

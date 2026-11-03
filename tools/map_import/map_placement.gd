@@ -46,9 +46,24 @@ const VIEWPOINTS := 3
 const VIEWPOINT_SPACING := 30.0
 ## Sloped viewpoint: ground slope range (degrees).
 const SLOPE_RANGE := Vector2(2.0, 10.0)
-## Candidates evaluated at most per item (nearest first).
+## Candidates evaluated at most per item (nearest first); the spawn and the
+## vehicle are scored over the first SCORED of them that qualify, at least
+## SPREAD apart (so they reach about 40 m around).
 const MAX_CANDIDATES := 400
+const SCORED := 150
+const SPREAD := 6.0
 const DIRECTIONS := 8
+## Scoring of the spawn and the vehicle place: trees, lamps, and decor within
+## CLUTTER_RADIUS (vehicle) or SPAWN_CLUTTER (spawn) count against it, a
+## building within STREET_REACH to a side makes it a street, room to the
+## sides counts up to SIDE_ROOM, and a vehicle place further than
+## FAR_FROM_SPAWN from the spawn loses a point per that distance.
+const CLUTTER_RADIUS := 6.0
+const SPAWN_CLUTTER := 4.0
+const STREET_REACH := 12.0
+const SIDE_ROOM := 6.0
+const FAR_FROM_SPAWN := 40.0
+const CLUTTER := ["trees", "lamps", "decor"]
 
 ## Results; empty when not found.
 var spawn := {}  # {"position": Vector3, "yaw": degrees, "walk": metres}
@@ -158,26 +173,35 @@ func _place_spawn(override: Dictionary) -> bool:
 		return true
 	var best := {}
 	var evaluated := 0
+	var tried: Array[Vector3] = []
+	var half := maxf(_box.size.x, _box.size.z) * 0.5
 	for sample: Array in _candidates(SPAWN_SLOPE, _center):
-		if evaluated >= MAX_CANDIDATES:
+		if evaluated >= MAX_CANDIDATES or evaluated >= SCORED and not best.is_empty():
 			break
 		var at: Vector3 = sample[0]
+		if tried.any(func(p: Vector3) -> bool: return p.distance_to(at) < SPREAD):
+			continue
 		if not _capsule_fits(at) or not _circle_clear(at, CLEAR_RADIUS):
 			continue
 		evaluated += 1
+		tried.append(at)
+		var clutter := _clutter(at, SPAWN_CLUTTER)
 		for d in DIRECTIONS:
 			var yaw := 360.0 * d / DIRECTIONS
 			var walk := _walk(at, _direction(yaw))
-			if walk >= MIN_WALK and (best.is_empty() or minf(walk, WALK_CAP) > minf(best.walk, WALK_CAP)):
-				best = {"position": at + Vector3(0, 0.1, 0), "yaw": yaw, "walk": walk}
-		if not best.is_empty() and best.walk >= WALK_CAP:
-			break
+			if walk < MIN_WALK:
+				continue
+			var street := _street(at, Basis(Vector3.UP, deg_to_rad(yaw)))
+			var score: float = 2.0 * minf(walk, WALK_CAP) / WALK_CAP + street.score - 0.5 * clutter - 0.5 * at.distance_to(_center) / maxf(half, 1.0)
+			if best.is_empty() or score > best.score + 1e-6:
+				best = {"position": at + Vector3(0, 0.1, 0), "yaw": yaw, "walk": walk, "score": score, "clutter": clutter, "street": street.sides}
 	if best.is_empty():
 		_check("C8", "FAIL", "no player spawn: needs a walkable point (ground, at most %.0f°) with a %.0f m clear circle and %.0f m of clear walk ahead." % [SPAWN_SLOPE, CLEAR_RADIUS, MIN_WALK])
 		return false
 	spawn = best
 	_set_walk()
-	_check("C8", "PASS", "player spawn at %s facing %.0f°, %.0f m of clear walk ahead, %.0f m from the centre of the walkable area" % [_text(spawn.position), spawn.yaw, minf(spawn.walk, WALK_CAP), (spawn.position as Vector3).distance_to(_center)])
+	_check("C8", "PASS", "player spawn at %s facing %.0f°, %.0f m of clear walk ahead, %.0f m from the centre of the walkable area; score %.2f (%d trees, lamps, or decor within %.0f m, buildings on %d sides)" % [_text(spawn.position), spawn.yaw,
+			minf(spawn.walk, WALK_CAP), (spawn.position as Vector3).distance_to(_center), spawn.score, spawn.clutter, SPAWN_CLUTTER, spawn.street])
 	return true
 
 
@@ -198,13 +222,17 @@ func _place_vehicle(override: Dictionary) -> bool:
 		return true
 	var best := {}
 	var evaluated := 0
+	var tried: Array[Vector3] = []
 	for sample: Array in _candidates(CAR_SLOPE, spawn.position):
 		var at: Vector3 = sample[0]
 		if at.distance_to(spawn.position) < CAR_FROM_SPAWN or _segment_distance(at, _walk_from, _walk_to) < CAR_FROM_WALK:
 			continue
-		if evaluated >= MAX_CANDIDATES:
+		if evaluated >= MAX_CANDIDATES or evaluated >= SCORED and not best.is_empty():
 			break
+		if tried.any(func(p: Vector3) -> bool: return p.distance_to(at) < SPREAD):
+			continue
 		evaluated += 1
+		tried.append(at)
 		for d in DIRECTIONS:
 			var yaw := 360.0 * d / DIRECTIONS
 			var basis := Basis(Vector3.UP, deg_to_rad(yaw))
@@ -212,17 +240,20 @@ func _place_vehicle(override: Dictionary) -> bool:
 			if center == Vector3.INF:
 				continue
 			var drive := _drive(center, basis * Vector3.FORWARD)
-			if drive >= MIN_DRIVE and (best.is_empty() or minf(drive, DRIVE_CAP) > minf(best.drive, DRIVE_CAP)):
+			if drive < MIN_DRIVE:
+				continue
+			var scored := _car_score(center, basis, drive)
+			if best.is_empty() or scored.score > best.score + 1e-6:
 				best = {"transform": Transform3D(basis, center + Vector3(0, CAR_LIFT, 0)), "drive": drive}
-		if not best.is_empty() and best.drive >= DRIVE_CAP:
-			break
+				best.merge(scored)
 	if best.is_empty():
 		_check("C8", "FAIL", "no vehicle place: needs a clear flat area of %.0f m × %.0f m (heights within %.1f m, at most %.0f°) with %.0f m of clear road ahead." % [CAR_AREA.y, CAR_AREA.x, CAR_HEIGHT_SPREAD, CAR_SLOPE, MIN_DRIVE])
 		return false
 	vehicle = best
 	_set_drive()
 	var origin: Vector3 = (vehicle.transform as Transform3D).origin
-	_check("C8", "PASS", "vehicle at %s facing %.0f°, %.0f m of clear road ahead, %.0f m from the spawn" % [_text(origin), _yaw_of(vehicle.transform.basis), minf(vehicle.drive, DRIVE_CAP), origin.distance_to(spawn.position)])
+	_check("C8", "PASS", "vehicle at %s facing %.0f°, %.0f m of clear road ahead, %.0f m from the spawn; score %.2f (%d trees, lamps, or decor within %.0f m, buildings on %d sides, %.1f m of room on its narrower side)" % [_text(origin), _yaw_of(vehicle.transform.basis),
+			minf(vehicle.drive, DRIVE_CAP), origin.distance_to(spawn.position), vehicle.score, vehicle.clutter, CLUTTER_RADIUS, vehicle.street, vehicle.room])
 	return true
 
 
@@ -253,6 +284,55 @@ func _car_area(at: Vector3, basis: Basis) -> Vector3:
 	if _overlaps(shape, Transform3D(basis, center + Vector3(0, CAR_LIFT + 1.1, 0))):
 		return Vector3.INF
 	return center
+
+
+## How good a car place is (higher is better): the drive ahead (up to 40 m:
+## 2 points), the room to its sides beyond 2.5 m (up to SIDE_ROOM: 1 point),
+## a building within STREET_REACH to a side (a street: 1, on both sides 1.5),
+## minus 0.5 for every tree, lamp, or decor collider within CLUTTER_RADIUS
+## (at most 6), minus a point per FAR_FROM_SPAWN beyond that distance from
+## the spawn.
+func _car_score(center: Vector3, basis: Basis, drive: float) -> Dictionary:
+	var street := _street(center, basis)
+	var room := clampf((minf(street.room, SIDE_ROOM) - 2.5) / (SIDE_ROOM - 2.5), 0.0, 1.0)
+	var clutter := mini(_clutter(center, CLUTTER_RADIUS), 6)
+	var far := maxf(0.0, center.distance_to(spawn.position) - FAR_FROM_SPAWN) / FAR_FROM_SPAWN
+	return {"score": 2.0 * minf(drive, DRIVE_CAP) / DRIVE_CAP + room + street.score - 0.5 * clutter - far,
+			"clutter": clutter, "street": street.sides, "room": street.room}
+
+
+## What lies to the left and right of `at` (facing -Z of `basis`), 1.2 m
+## above the ground: {"sides": how many end at a building within
+## STREET_REACH, "score": 0, 1, or 1.5 for those, "room": metres to the
+## nearer collider on either side}.
+func _street(at: Vector3, basis: Basis) -> Dictionary:
+	var sides := 0
+	var room := STREET_REACH
+	for side in [basis * Vector3.RIGHT, basis * Vector3.LEFT]:
+		var from := at + Vector3(0, 1.2, 0)
+		var hit := _space.intersect_ray(PhysicsRayQueryParameters3D.create(from, from + (side as Vector3) * STREET_REACH, 1))
+		if hit.is_empty():
+			continue
+		room = minf(room, from.distance_to(hit.position))
+		if category_at(hit) == "buildings":
+			sides += 1
+	return {"sides": sides, "score": [0.0, 1.0, 1.5][sides], "room": room}
+
+
+## How many tree, lamp, and decor colliders stand within `radius` of `at`.
+func _clutter(at: Vector3, radius: float) -> int:
+	var shape := CylinderShape3D.new()
+	shape.radius = radius
+	shape.height = 3.0
+	var query := PhysicsShapeQueryParameters3D.new()
+	query.shape = shape
+	query.transform = Transform3D(Basis.IDENTITY, at + Vector3(0, 1.6, 0))
+	query.collision_mask = 1
+	var count := 0
+	for hit: Dictionary in _space.intersect_shape(query, 64):
+		if _categories.get((hit.collider as Object).get_instance_id(), "") in CLUTTER:
+			count += 1
+	return count
 
 
 ## Metres a car can drive from `from` along `direction` (2 m steps, a 3 m
