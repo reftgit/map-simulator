@@ -338,8 +338,9 @@ func test_classification_colliders_and_groups() -> void:
 	var house_2 := importer.model.get_node("house_2/StaticBody3D") as StaticBody3D
 	check(house_2 and house_2.get_child_count() == 2 and house_2.get_child(0).shape is ConvexPolygonShape3D, "a building mesh of two parts: two convex hulls")
 	check((house_2.get_child(0).shape as ConvexPolygonShape3D).points.size() == 8, "a hull keeps only its 8 corners")
-	check(not importer.model.get_node("StreetLamp_1").has_node("StaticBody3D") and not importer.model.get_node("Object_78").has_node("StaticBody3D"), "lamps and decor have no collider")
-	check(_result(importer, "R2") == "INFO" and importer.summary.colliders.shapes == 5, "R2: generated colliders (%s)" % [importer.summary.colliders])
+	check(importer.model.get_node("StreetLamp_1/StaticBody3D/CollisionShape3D").shape is CapsuleShape3D, "a lamp: a capsule round its post")
+	check(importer.model.get_node("Object_78/StaticBody3D/CollisionShape3D").shape is BoxShape3D, "a 1 m block of decor: a box")
+	check(_result(importer, "R2") == "INFO" and importer.summary.colliders.shapes == 7, "R2: generated colliders (%s)" % [importer.summary.colliders])
 	importer.model.free()
 
 

@@ -883,7 +883,7 @@ func _check_shells() -> void:
 		problems += 1
 	if not open.is_empty():
 		var colliders = config.get("colliders", {})
-		var building_type: String = colliders.get("buildings", "convex") if colliders is Dictionary else "convex"
+		var building_type: String = colliders.get("buildings", "auto") if colliders is Dictionary else "auto"
 		var hull := ", and their convex colliders fill the hull" if _collision_types.is_empty() and building_type == "convex" else ""
 		_check("C7", "WARN", "%d of %d building meshes are open (more than 5 %% boundary edges), e.g. %s: open walls show holes where back faces are culled%s." % [open.size(), checked, _list(open), hull])
 		problems += 1
@@ -905,7 +905,7 @@ func _build_colliders() -> void:
 		types.merge(colliders, true)
 	var use_nodes := not _collision_types.is_empty()
 	var add_categories: bool = not use_nodes or colliders is String
-	var totals := {"bodies": 0, "shapes": 0, "trimesh_triangles": 0, "skipped": 0}
+	var totals := {"bodies": 0, "shapes": 0, "trimesh_triangles": 0, "skipped": 0, "concave": 0, "too_big": 0}
 	var by_type := {}
 	var only := 0
 	for node: MeshInstance3D in model.get_children().duplicate():
@@ -919,21 +919,28 @@ func _build_colliders() -> void:
 			continue
 		var collision_only := type.begins_with("only_")
 		type = type.trim_prefix("only_")
-		var result := MapColliders.add_collider(node, type, model)
+		var result := MapColliders.add_collider(node, type, model, meshes[node_name].category)
 		if result.shapes > 0:
 			totals.bodies += 1
 			totals.shapes += result.shapes
 			totals.trimesh_triangles += result.triangles
-			by_type[type] = by_type.get(type, 0) + result.shapes
+			for kind: String in result.types:
+				by_type[kind] = by_type.get(kind, 0) + result.types[kind]
 		totals.skipped += result.skipped
+		totals.concave += result.concave
+		totals.too_big += result.too_big
 		if collision_only:
 			_replace_with_body(node)
 			only += 1
 	summary.colliders = totals
 	summary.collider_types = by_type
 	var text := "%d bodies, %d shapes (%s), %d trimesh triangles" % [totals.bodies, totals.shapes, _counts_text(by_type), totals.trimesh_triangles]
+	if totals.concave > 0:
+		text += "; %d concave building parts (courtyards, L or U plans, walls without a roof) collide as their own triangles" % totals.concave
+	if totals.too_big > 0:
+		text += "; %d concave building parts above %d triangles keep their hull" % [totals.too_big, MapColliders.TRIMESH_PART]
 	if totals.skipped > 0:
-		text += "; %d parts too small or flat for a collider" % totals.skipped
+		text += "; %d parts too small, flat, or low for a collider" % totals.skipped
 	if use_nodes:
 		_check("R2", "PASS", "%d collision nodes used%s: %s" % [_collision_types.size(), " (and category colliders, \"colliders\": \"auto\")" if add_categories else "", text])
 	else:
