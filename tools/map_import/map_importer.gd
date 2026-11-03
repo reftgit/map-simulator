@@ -10,6 +10,7 @@ extends RefCounted
 const MapGeometry := preload("res://tools/map_import/map_geometry.gd")
 const MapClassifier := preload("res://tools/map_import/map_classifier.gd")
 const MapColliders := preload("res://tools/map_import/map_colliders.gd")
+const MapUnits := preload("res://tools/map_import/map_units.gd")
 
 ## Configuration keys and their JSON types (docs/MAP_CONTRACT.md, "Configuration").
 const CONFIG_KEYS := {
@@ -20,11 +21,18 @@ const CONFIG_KEYS := {
 }
 ## C2: horizontal extent of a map in metres, and the 90th-percentile mesh
 ## height outside which the scale is doubted.
-const MIN_EXTENT := 20.0
-const MAX_EXTENT := 10000.0
-const TYPICAL_HEIGHT := 8.0
+const MIN_EXTENT := MapUnits.MIN_EXTENT
+const MAX_EXTENT := MapUnits.MAX_EXTENT
 const MIN_P90_HEIGHT := 1.5
 const MAX_P90_HEIGHT := 300.0
+## A mesh of at most this many triangles whose connected parts number at
+## least MULTI_PARTS, spread over at least MULTI_SPREAD times the largest
+## part's footprint, and mostly (MULTI_GROUNDED) stand on its lowest level
+## holds several objects (one mesh for many buildings).
+const PART_TRIANGLES := 50000
+const MULTI_PARTS := 8
+const MULTI_SPREAD := 4.0
+const MULTI_GROUNDED := 0.75
 ## C5: coordinates and vertical extent.
 const MAX_DISTANCE := 20000.0
 const MAX_HEIGHT := 2000.0
@@ -36,6 +44,12 @@ const MOBILE_TRIANGLES := 2000000
 const SHELL_MAX_TRIANGLES := 50000
 const OPEN_EDGES := 0.05
 const FLIPPED_SHARE := 0.01
+## C7: a mesh is closed when its area-weighted normals sum to at most this
+## share of its area, and inside out when its volume is negative by more
+## than what its remaining openness can explain plus INSIDE_OUT times its
+## area to the power 1.5 (a doubled plane encloses nothing).
+const CLOSED_SUM := 0.01
+const INSIDE_OUT := 0.001
 ## R3: non-ground meshes wider than this.
 const MAX_OBJECT := 150.0
 
@@ -54,6 +68,14 @@ var timings := {}
 
 var _stage_started := 0
 var _collision_types := {}  # node name -> collider type from a collision suffix
+var _missing_normals := 0
+## Fixes the tool found by itself (C2, C3): a unit's scale and the file's up direction.
+var _auto_scale := 1.0
+var _auto_up := "+y"
+var _up := {}  # MapUnits.detect_up() result, or the configuration's axis
+var _unit := {}  # what the unit check found (C2)
+var _stats_cache := {}  # [mesh id, basis] -> MapGeometry.stats()
+var _inside_out := 0  # closed meshes turned outward (C7)
 
 
 ## Validates and keeps `data` (a parsed configuration JSON); "" or an error.
@@ -67,8 +89,8 @@ func parse_config(data: Dictionary) -> String:
 			continue
 		if expected >= 0 and actual != expected:
 			return "configuration key '%s' must be a %s" % [key, type_string(expected)]
-	if data.has("up_axis") and data.up_axis not in ["y", "z"]:
-		return "up_axis must be \"y\" or \"z\""
+	if data.has("up_axis") and not MapUnits.UP_AXES.has(data.up_axis):
+		return "up_axis must be one of %s" % ", ".join(PackedStringArray(MapUnits.UP_AXES.keys()))
 	if data.has("scale") and float(data.scale) <= 0.0:
 		return "scale must be positive"
 	if data.has("id") and not RegEx.create_from_string("^[a-z0-9_]+$").search(data.id):
@@ -125,7 +147,20 @@ func process(scene: Node3D, force := false) -> bool:
 	_check("C1", "PASS", "%d mesh nodes" % instances.size())
 	_start()
 	_flatten(instances)
+	_fix_inside_out()
+	_stop("fix")
+	_start()
+	_detect_up()
+	if _detect_unit():
+		_flatten(instances)
+		_fix_inside_out()
+	_stop("audit")
 	scene.free()
+	_start()
+	if _missing_normals > 0:
+		_check("R4", "FIXED", "%d meshes had no normals; flat normals computed from the triangles" % _missing_normals)
+	else:
+		_check("R4", "PASS", "every mesh has normals")
 	_fix_materials()
 	_stop("fix")
 	_start()
@@ -203,21 +238,25 @@ static func _relative_transform(node: Node3D, root: Node) -> Transform3D:
 	return transform
 
 
-## The configuration's scale and up-axis fix as a basis.
+## The scale and up-axis fix as a basis: the configuration's, else what the
+## tool detected (C2, C3).
 func fix_basis() -> Basis:
-	var basis := Basis.IDENTITY.scaled(Vector3.ONE * float(config.get("scale", 1.0)))
-	if config.get("up_axis", "y") == "z":
-		basis = Basis(Vector3.RIGHT, -PI / 2.0) * basis
-	return basis
+	var basis := Basis.IDENTITY.scaled(Vector3.ONE * float(config.get("scale", _auto_scale)))
+	var up: String = MapUnits.UP_AXES[config.up_axis] if config.has("up_axis") else _auto_up
+	return MapUnits.TO_Y_UP[up] * basis
 
 
 func _flatten(instances: Array) -> void:
+	if model:
+		model.free()
 	model = Node3D.new()
 	model.name = "Model"
+	_collision_types.clear()
+	_stats_cache.clear()
 	var fix := Transform3D(fix_basis(), Vector3.ZERO)
 	var baked := {}  # [mesh id, basis] -> mesh with that basis applied
 	var flattened := {}  # mesh id -> mesh with flat normals
-	var missing_normals := 0
+	_missing_normals = 0
 	var fixed_meshes := {}
 	var names := {}
 	for entry: Array in instances:
@@ -239,7 +278,7 @@ func _flatten(instances: Array) -> void:
 		if not MapGeometry.has_normals(mesh):
 			if not flattened.has(mesh.get_instance_id()):
 				flattened[mesh.get_instance_id()] = MapGeometry.with_flat_normals(mesh)
-				missing_normals += 1
+				_missing_normals += 1
 			mesh = flattened[mesh.get_instance_id()]
 		fixed_meshes[mesh] = true
 		var node := MeshInstance3D.new()
@@ -258,10 +297,6 @@ func _flatten(instances: Array) -> void:
 		node.owner = model
 	summary.mesh_nodes = model.get_child_count()
 	summary.meshes = fixed_meshes.size()
-	if missing_normals > 0:
-		_check("R4", "FIXED", "%d meshes had no normals; flat normals computed from the triangles" % missing_normals)
-	else:
-		_check("R4", "PASS", "every mesh has normals")
 	summary.baked_meshes = baked.size()
 
 
@@ -327,24 +362,246 @@ func _fix_materials() -> void:
 		_check("R6", "WARN", "%d double-sided materials: back faces are drawn too (fill-rate cost on mobile). Set \"single_sided\": true if the shells are closed (C7)." % double_sided)
 
 
+## Face statistics of a mesh node as placed (cached per mesh and rotation).
+func _node_stats(node: MeshInstance3D) -> Dictionary:
+	var key := [node.mesh.get_instance_id(), node.transform.basis]
+	if not _stats_cache.has(key):
+		_stats_cache[key] = MapGeometry.stats(node.mesh, node.transform.basis)
+	return _stats_cache[key]
+
+
+## The box of all meshes as placed.
+func _model_box() -> AABB:
+	var total := AABB()
+	var first := true
+	for node: MeshInstance3D in model.get_children():
+		var box: AABB = node.transform * node.mesh.get_aabb()
+		total = box if first else total.merge(box)
+		first = false
+	return total
+
+
+## The area facing each axis direction over the whole model, with the
+## area-weighted coordinates in the model's space (MapUnits.detect_up()).
+func _face_totals() -> Dictionary:
+	var totals := {}
+	for node: MeshInstance3D in model.get_children():
+		var stats := _node_stats(node)
+		for direction: String in ["+x", "-x", "+y", "-y", "+z", "-z"]:
+			var axis := "xyz".find(direction[1])
+			totals[direction] = totals.get(direction, 0.0) + stats[direction]
+			totals["at_" + direction] = totals.get("at_" + direction, 0.0) + stats["at_" + direction] + stats[direction] * node.position[axis]
+	return totals
+
+
+## C3: which way is up: the configuration's axis, else detected from the
+## model as the file's nodes place it. A detected direction other than +Y
+## turns every node rigidly so that it points up (nothing is rebaked).
+func _detect_up() -> void:
+	if config.has("up_axis"):
+		_up = {"up": MapUnits.UP_AXES[config.up_axis], "decided": true, "configured": true}
+		if config.up_axis == "y":
+			_up.measured = MapUnits.detect_up(_model_box().size, _face_totals())
+		return
+	var box := _model_box()
+	var faces := _face_totals()
+	_up = MapUnits.detect_up(box.size, faces)
+	if _up.axis != "" and (_up.up != "+y" or _up.winding != "+"):
+		# Before turning the model, or when the faces alone cannot tell: where its base is.
+		_up = MapUnits.detect_up(box.size, faces, _flat_area_at_ends("xyz".find(_up.axis)))
+	if _up.decided and _up.up != "+y":
+		_auto_up = _up.up
+		var turn := Transform3D(MapUnits.TO_Y_UP[_auto_up], Vector3.ZERO)
+		for node: Node3D in model.get_children():
+			node.transform = turn * node.transform
+
+
+## Flat face area (within 30° of the axis, either side) in the lowest and the
+## highest MapUnits.END_BAND of the model along `axis` (0 x, 1 y, 2 z): a
+## map's ground or a printed relief's underside gathers at its low end.
+func _flat_area_at_ends(axis: int) -> Vector2:
+	var box := _model_box()
+	var band: float = box.size[axis] * MapUnits.END_BAND
+	var low_limit: float = box.position[axis] + band
+	var high_limit: float = box.end[axis] - band
+	var ends := Vector2.ZERO
+	for node: MeshInstance3D in model.get_children():
+		var placed: AABB = node.transform * node.mesh.get_aabb()
+		if placed.position[axis] > low_limit and placed.end[axis] < high_limit:
+			continue
+		for surface: Array in MapGeometry.triangle_surfaces(node.mesh):
+			var positions: PackedVector3Array = surface[0]
+			var indices = surface[2]
+			var count: int = (indices as PackedInt32Array).size() if indices != null else positions.size()
+			for t in range(0, count - 2, 3):
+				var a := node.transform * positions[indices[t] if indices != null else t]
+				var b := node.transform * positions[indices[t + 1] if indices != null else t + 1]
+				var c := node.transform * positions[indices[t + 2] if indices != null else t + 2]
+				var face := (c - a).cross(b - a)
+				var double_area := face.length()
+				if double_area <= 0.0 or absf(face[axis]) < MapGeometry.COS_30 * double_area:
+					continue
+				var at := (a[axis] + b[axis] + c[axis]) / 3.0
+				if at <= low_limit:
+					ends.x += double_area * 0.5
+				elif at >= high_limit:
+					ends.y += double_area * 0.5
+	return ends
+
+
+## C7: a closed mesh whose faces point inward (negative volume) is turned
+## outward: its winding reversed, and its normals as well, unless the file's
+## normals already pointed out (then only the winding was wrong).
+func _fix_inside_out() -> void:
+	var turned := {}  # mesh id -> the mesh turned outward
+	for node: MeshInstance3D in model.get_children():
+		var stats := _node_stats(node)
+		var id := node.mesh.get_instance_id()
+		if not turned.has(id) and not inside_out(stats, node.mesh):
+			continue
+		if not turned.has(id):
+			turned[id] = MapGeometry.turned_out(node.mesh, stats.flipped <= stats.triangles / 2)
+		node.mesh = turned[id]
+	_inside_out = turned.size()
+
+
+## Whether `mesh` (with these statistics, MapGeometry.stats()) is closed
+## and inside out (C7): its normals cancel out, its volume is clearly
+## negative, and, welded, it has (almost) no boundary edges; the last test
+## runs only on the few meshes that pass the first two (two discs facing
+## away from each other also cancel out and enclose a "volume").
+static func inside_out(stats: Dictionary, mesh: Mesh) -> bool:
+	var area: float = stats.area
+	var open_sum := (stats.normal_sum as Vector3).length()
+	if area <= 0.0 or open_sum > CLOSED_SUM * area:
+		return false
+	if stats.volume >= -(open_sum * mesh.get_aabb().size.length() / 6.0 + INSIDE_OUT * pow(area, 1.5)):
+		return false
+	var shell := MapGeometry.shell(mesh)
+	return shell.edges > 0 and shell.boundary <= CLOSED_SUM * shell.edges and shell.volume < 0.0
+
+
+## C2: when the model does not look like metres (a map-sized extent, its
+## 90th-percentile mesh between 1.5 and 300 m high), measures its separate
+## objects and tries the common units; a unit that clearly fits becomes the
+## scale. True when it did (the model must be flattened again).
+func _detect_unit() -> bool:
+	_unit = {}
+	var box := _model_box()
+	var extent := maxf(box.size.x, box.size.z)
+	var p90 := _p90_height()
+	var out_of_range := extent < MIN_EXTENT or extent > MAX_EXTENT
+	if not out_of_range and p90 >= MIN_P90_HEIGHT and p90 <= MAX_P90_HEIGHT:
+		return false
+	var typical := _typical_sizes(extent)
+	_unit = {"extent": extent, "typical": typical, "suggestion": MapUnits.suggest_scale(typical.height, typical.width)}
+	if config.has("scale"):
+		return false
+	var unit := MapUnits.unit_of(extent, typical.height)
+	if unit.has("factor"):
+		_unit.unit = unit
+		_auto_scale = unit.factor
+		return true
+	if unit.has("choices"):
+		_unit.choices = unit.choices
+	return false
+
+
+func _p90_height() -> float:
+	var heights := PackedFloat32Array()
+	for node: MeshInstance3D in model.get_children():
+		heights.append((node.transform * node.mesh.get_aabb()).size.y)
+	heights.sort()
+	return heights[ceili(0.9 * heights.size()) - 1] if not heights.is_empty() else 0.0
+
+
+## Height and width (75th percentiles) of the model's separate objects: a
+## mesh, or each connected part of a mesh that holds several objects; flat
+## pieces (less than a tenth as high as wide) and ground-sized ones (wider
+## than half the map) are left out.
+func _typical_sizes(extent: float) -> Dictionary:
+	var heights := PackedFloat32Array()
+	var widths := PackedFloat32Array()
+	for node: MeshInstance3D in model.get_children():
+		for box: AABB in _objects_of(node):
+			var wide := maxf(box.size.x, box.size.z)
+			if box.size.y < 0.1 * wide or wide > 0.5 * extent:
+				continue
+			heights.append(box.size.y)
+			widths.append(wide)
+	if heights.is_empty():
+		return {"height": _p90_height(), "width": 0.0, "objects": 0}
+	heights.sort()
+	widths.sort()
+	var at := ceili(0.75 * heights.size()) - 1
+	return {"height": heights[at], "width": widths[at], "objects": heights.size()}
+
+
+## The boxes in the model of the objects in a mesh node: its connected parts
+## when it holds several objects (multi_parts()), else the mesh as a whole.
+func _objects_of(node: MeshInstance3D) -> Array[AABB]:
+	var boxes: Array[AABB] = []
+	var parts := multi_parts(node.mesh, node.transform.basis)
+	if parts.is_empty():
+		boxes.append(node.transform * node.mesh.get_aabb())
+	for points: PackedVector3Array in parts:
+		var box := AABB(node.transform * points[0], Vector3.ZERO)
+		for point in points:
+			box = box.expand(node.transform * point)
+		boxes.append(box)
+	return boxes
+
+
+## The connected parts (point lists) of a mesh that holds several separate
+## objects standing side by side, the whole city in one mesh for example: at
+## most PART_TRIANGLES triangles, at least MULTI_PARTS parts spread over at
+## least MULTI_SPREAD times the largest part's footprint, and at least
+## MULTI_GROUNDED of them standing on the mesh's lowest level (placed with
+## `basis`), the whole at least `min_narrow` wide both ways. [] for any
+## other mesh, among them the pieces of one object: the beams of a timber
+## frame sit at many heights, a fence's posts and rails along a line.
+static func multi_parts(mesh: Mesh, basis := Basis.IDENTITY, min_narrow := 0.0) -> Array[PackedVector3Array]:
+	var none: Array[PackedVector3Array] = []
+	if MapGeometry.triangle_count(mesh) > PART_TRIANGLES:
+		return none
+	var parts := MapGeometry.parts(mesh)
+	if parts.size() < MULTI_PARTS:
+		return none
+	var largest := 0.0
+	var bottoms := PackedFloat32Array()
+	var whole := AABB()
+	for i in parts.size():
+		var box := AABB(basis * parts[i][0], Vector3.ZERO)
+		for point in parts[i]:
+			box = box.expand(basis * point)
+		largest = maxf(largest, maxf(box.size.x, 0.01) * maxf(box.size.z, 0.01))
+		bottoms.append(box.position.y)
+		whole = box if i == 0 else whole.merge(box)
+	if whole.size.x * whole.size.z < MULTI_SPREAD * largest or minf(whole.size.x, whole.size.z) < min_narrow:
+		return none
+	var tolerance := maxf(0.05 * whole.size.y, 1e-4)
+	var grounded := 0
+	for bottom in bottoms:
+		if bottom <= whole.position.y + tolerance:
+			grounded += 1
+	if grounded < MULTI_GROUNDED * parts.size():
+		return none
+	return parts
+
+
 ## C2, C3, C5, C6 from the meshes as placed; also fills `meshes` with each
-## node's box, triangles, and face statistics. False when C2 or C3 failed.
+## node's box, triangles, and face statistics. False when C2 or C5 failed or
+## C6's limit is exceeded.
 func _audit_scale_and_axes() -> bool:
-	var stats_cache := {}
 	var total := AABB()
 	var first := true
 	var triangles := 0
 	var zero_area := 0
 	var flipped := 0
-	var with_normals := 0
-	var orientation := {"up": 0.0, "down": 0.0, "pos_z": 0.0, "neg_z": 0.0}
-	var heights := PackedFloat32Array()
 	var farthest := 0.0
+	var faces := _face_totals()
 	for node: MeshInstance3D in model.get_children():
-		var key := [node.mesh.get_instance_id(), node.transform.basis]
-		if not stats_cache.has(key):
-			stats_cache[key] = MapGeometry.stats(node.mesh, node.transform.basis)
-		var stats: Dictionary = stats_cache[key]
+		var stats := _node_stats(node)
 		var box: AABB = node.transform * node.mesh.get_aabb()
 		meshes[str(node.name)] = {"category": "", "by": "none", "triangles": stats.triangles, "box": box, "stats": stats}
 		total = box if first else total.merge(box)
@@ -352,41 +609,53 @@ func _audit_scale_and_axes() -> bool:
 		triangles += stats.triangles
 		zero_area += stats.zero_area
 		flipped += stats.flipped
-		for k in orientation:
-			orientation[k] += stats[k]
-		heights.append(box.size.y)
 		for corner in 8:
 			farthest = maxf(farthest, box.get_endpoint(corner).length())
 	summary.triangles = triangles
 	summary.zero_area = zero_area
 	summary.flipped = flipped
 	summary.bounds = total
-	heights.sort()
-	var p90 := heights[ceili(0.9 * heights.size()) - 1] if not heights.is_empty() else 0.0
+	var p90 := _p90_height()
 	summary.p90_height = p90
 	var extent := maxf(total.size.x, total.size.z)
+	var configured_scale := float(config.get("scale", 1.0))
 	var ok := true
 	if extent < MIN_EXTENT or extent > MAX_EXTENT:
-		var suggested := _nice(TYPICAL_HEIGHT / p90) if p90 > 0.0 else 1.0
-		_check("C2", "FAIL", "the model spans %.1f × %.1f units; with 1 unit = 1 m that is not a map. If it is in other units, set \"scale\" in the configuration (suggested: %s, which makes its typical object %.1f m tall)." % [total.size.x, total.size.z, _number(suggested), p90 * suggested])
+		var message := "the model spans %.1f × %.1f units; with 1 unit = 1 m that is not a map." % [total.size.x, total.size.z]
+		var typical: Dictionary = _unit.get("typical", {"height": p90, "width": 0.0, "objects": 0})
+		var suggested := float(_unit.get("suggestion", 1.0))
+		if _unit.has("choices"):
+			message += " It looks like %s: set \"scale\" in the configuration to the one it is in." % " or ".join(PackedStringArray(_unit.choices))
+		else:
+			message += " If it is in other units, set \"scale\" in the configuration (suggested: %s, which makes its typical object, the 75th percentile of %d separate objects, %.1f m tall and %.1f m wide)." % [
+					_number(suggested * configured_scale), typical.objects, typical.height * suggested, typical.width * suggested]
+		_check("C2", "FAIL", message)
 		ok = false
-	elif config.has("scale") and not is_equal_approx(float(config.scale), 1.0):
-		_check("C2", "FIXED", "scaled by %s (configuration; baked into %d meshes, the nodes keep rotation and position): %.0f × %.0f m, typical object (90th percentile) %.1f m tall" % [_number(float(config.scale)), summary.baked_meshes, total.size.x, total.size.z, p90])
+	elif _unit.has("unit"):
+		_check("C2", "FIXED", "the model looks like it is in %s (%.0f units wide, its typical object %.0f units tall): scaled by %s to %.0f × %.0f m (\"scale\" in the configuration overrides this)" % [
+				_unit.unit.name, _unit.extent, _unit.typical.height, _number(_unit.unit.factor), total.size.x, total.size.z])
+	elif config.has("scale") and not is_equal_approx(configured_scale, 1.0):
+		_check("C2", "FIXED", "scaled by %s (configuration; baked into %d meshes, the nodes keep rotation and position): %.0f × %.0f m, typical object (90th percentile) %.1f m tall" % [_number(configured_scale), summary.baked_meshes, total.size.x, total.size.z, p90])
 	else:
 		_check("C2", "PASS", "%.0f × %.0f × %.0f m; typical object (90th-percentile height) %.1f m" % [total.size.x, total.size.z, total.size.y, p90])
 	if ok and (p90 < MIN_P90_HEIGHT or p90 > MAX_P90_HEIGHT):
-		_check("C2", "WARN", "the 90th-percentile mesh height is %.2f m (expected %.1f–%.0f m): check the units" % [p90, MIN_P90_HEIGHT, MAX_P90_HEIGHT])
-	var up: float = orientation.up
-	if orientation.pos_z > 2.0 * up or orientation.neg_z > 2.0 * up:
-		_check("C3", "FAIL", "most flat area faces %s, not +Y: the model looks Z-up. Set \"up_axis\": \"z\" in the configuration (or re-export with +Y up)." % ("+Z" if orientation.pos_z >= orientation.neg_z else "−Z"))
-		ok = false
-	elif orientation.down > 2.0 * up:
-		_check("C3", "FAIL", "most flat area faces −Y, not +Y: the model looks upside down (or its triangles wind the wrong way). Re-export it with +Y up.")
-		ok = false
-	elif config.get("up_axis", "y") == "z":
-		_check("C3", "FIXED", "rotated from Z-up to Y-up (configuration)")
+		var hint := " (it may be in %s)" % " or ".join(PackedStringArray(_unit.choices)) if _unit.has("choices") else ""
+		_check("C2", "WARN", "the 90th-percentile mesh height is %.2f m (expected %.1f–%.0f m): check the units%s" % [p90, MIN_P90_HEIGHT, MAX_P90_HEIGHT, hint])
+	summary.up = _up
+	if _up.get("configured", false):
+		var measured: Dictionary = _up.get("measured", {})
+		if _up.up != "+y":
+			_check("C3", "FIXED", "rotated from %s up to +Y up (configuration)" % _up.up.to_upper())
+		elif measured.get("decided", false) and measured.up != "+y":
+			_check("C3", "WARN", "the configuration keeps +Y up, but the model looks %s up: %s" % [measured.up.to_upper(), measured.reason])
+		else:
+			_check("C3", "PASS", "+Y up (configuration)")
+	elif not _up.decided:
+		_check("C3", "WARN", "%s; the file's +Y is taken as up. Set \"up_axis\" in the configuration if that is wrong." % _up.reason)
+	elif _up.up != "+y":
+		_check("C3", "FIXED", "the model is %s up: %s. Rotated to +Y up (\"up_axis\": \"y\" in the configuration keeps the file's axes)." % [_up.up.to_upper(), _up.reason])
 	else:
-		_check("C3", "PASS", "+Y up: %.0f m² face up, %.0f m² down, %.0f / %.0f m² toward ±Z" % [up, orientation.down, orientation.pos_z, orientation.neg_z])
+		_check("C3", "PASS", "+Y up: %s" % _up.reason)
 	if farthest > MAX_DISTANCE:
 		_check("C5", "FAIL", "geometry reaches %.0f m from the origin (limit 20 km). Move the model's origin into the map." % farthest)
 		ok = false
@@ -402,6 +671,7 @@ func _audit_scale_and_axes() -> bool:
 		_check("C6", "WARN", "%d triangles, above the 2,000,000 mobile budget: the low profile hides only categorized meshes beyond 100 m; lighter geometry or more meshes in visibility-range categories would help." % triangles)
 	else:
 		_check("C6", "PASS", "%d triangles" % triangles)
+	summary.faces = faces
 	return ok
 
 
@@ -481,7 +751,6 @@ static func _first_match(list: Array[CategoryRule], node: Node) -> String:
 ## zero-area triangles.
 func _check_shells() -> void:
 	var open: Array[String] = []
-	var inside_out: Array[String] = []
 	var checked := 0
 	var buildings := 0
 	var seen := {}
@@ -498,18 +767,16 @@ func _check_shells() -> void:
 		checked += 1
 		if shell.edges > 0 and float(shell.boundary) / shell.edges > OPEN_EDGES:
 			open.append(str(node.name))
-		elif shell.volume < 0.0:
-			inside_out.append(str(node.name))
-	summary.shells = {"buildings": buildings, "checked": checked, "open": open.size(), "inside_out": inside_out.size()}
+	summary.shells = {"buildings": buildings, "checked": checked, "open": open.size(), "inside_out": _inside_out}
 	var problems := 0
+	if _inside_out > 0:
+		_check("C7", "FIXED", "%d closed meshes were inside out (their faces pointed in, so their outside was not drawn): turned outward" % _inside_out)
+		problems += 1
 	if not open.is_empty():
 		var colliders = config.get("colliders", {})
 		var building_type: String = colliders.get("buildings", "convex") if colliders is Dictionary else "convex"
 		var hull := ", and their convex colliders fill the hull" if _collision_types.is_empty() and building_type == "convex" else ""
 		_check("C7", "WARN", "%d of %d building meshes are open (more than 5 %% boundary edges), e.g. %s: open walls show holes where back faces are culled%s." % [open.size(), checked, _list(open), hull])
-		problems += 1
-	if not inside_out.is_empty():
-		_check("C7", "WARN", "%d closed building meshes are inside out (negative volume), e.g. %s" % [inside_out.size(), _list(inside_out)])
 		problems += 1
 	if summary.flipped > FLIPPED_SHARE * summary.triangles:
 		_check("C7", "WARN", "%d triangles disagree with their normals" % summary.flipped)
@@ -613,16 +880,6 @@ static func _counts_text(counts: Dictionary) -> String:
 static func _list(names: Array[String], limit := 8) -> String:
 	var shown := ", ".join(PackedStringArray(names.slice(0, limit)))
 	return shown + (", …" if names.size() > limit else "")
-
-
-## 1, 2, 2.5, or 5 times a power of ten, nearest to `value`.
-static func _nice(value: float) -> float:
-	var power := pow(10.0, floor(log(value) / log(10.0)))
-	var best := power
-	for step in [1.0, 2.0, 2.5, 5.0, 10.0]:
-		if absf(step * power - value) < absf(best - value):
-			best = step * power
-	return best
 
 
 static func _number(value: float) -> String:

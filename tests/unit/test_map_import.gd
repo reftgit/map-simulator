@@ -6,6 +6,7 @@ const MapImporter := preload("res://tools/map_import/map_importer.gd")
 const MapGeometry := preload("res://tools/map_import/map_geometry.gd")
 const MapClassifier := preload("res://tools/map_import/map_classifier.gd")
 const MapColliders := preload("res://tools/map_import/map_colliders.gd")
+const MapUnits := preload("res://tools/map_import/map_units.gd")
 
 
 ## An ArrayMesh of axis-aligned boxes (centre, size), without normals unless asked.
@@ -84,7 +85,8 @@ func test_configuration_is_validated() -> void:
 	check(not importer.parse_config({"scael": 10}).is_empty(), "a typo is rejected")
 	check(not importer.parse_config({"scale": "10"}).is_empty(), "a wrong type is rejected")
 	check(not importer.parse_config({"scale": -1}).is_empty(), "a negative scale is rejected")
-	check(not importer.parse_config({"up_axis": "x"}).is_empty(), "an unknown axis is rejected")
+	check(importer.parse_config({"up_axis": "-z"}).is_empty() and importer.parse_config({"up_axis": "x"}).is_empty(), "every axis direction is valid")
+	check(not importer.parse_config({"up_axis": "w"}).is_empty(), "an unknown axis is rejected")
 	check(not importer.parse_config({"colliders": {"buildings": "sphere"}}).is_empty(), "an unknown collider type is rejected")
 	check(not importer.parse_config({"category_rules": [{"category": "roofs", "prefix": "R"}]}).is_empty(), "an unknown category is rejected")
 	check(not importer.parse_config({"category_rules": [{"category": "ground", "prefix": "A", "regex": "B"}]}).is_empty(), "two match kinds in one rule are rejected")
@@ -166,20 +168,96 @@ func test_scale_check_and_fix() -> void:
 	scaled.model.free()
 
 
-func test_z_up_check_and_fix() -> void:
+func test_z_up_is_detected_and_turned() -> void:
 	var lying := func() -> Node3D:
 		return _scene([["ground", _plane(60.0, Vector3.ZERO, true)], ["block", _boxes([[Vector3(0, 0, 4), Vector3(8, 8, 8)]])]])
 	var importer := MapImporter.new()
-	check(not importer.process(lying.call()), "a Z-up model fails")
-	check(_result(importer, "C3") == "FAIL" and _checks(importer, "C3")[0].message.contains("\"up_axis\": \"z\""), "C3 names the fix: %s" % [_checks(importer, "C3")])
-	importer.model.free()
-	var turned := MapImporter.new()
-	turned.parse_config({"up_axis": "z"})
-	check(turned.process(lying.call()), "with up_axis z it passes")
-	check(_result(turned, "C3") == "FIXED", "C3 fixed")
-	var ground := turned.model.get_node("ground") as MeshInstance3D
+	check(importer.process(lying.call()), "a Z-up model passes: the tool turns it")
+	check(_result(importer, "C3") == "FIXED" and _checks(importer, "C3")[0].message.contains("+Z up"), "C3 says what it did: %s" % [_checks(importer, "C3")])
+	var ground := importer.model.get_node("ground") as MeshInstance3D
 	check(MapGeometry.stats(ground.mesh, ground.transform.basis).up > 3000.0, "the ground faces up now")
-	turned.model.free()
+	check(ground.transform.basis.is_equal_approx(MapUnits.TO_Y_UP["+z"]) and ground.mesh.get_aabb().size.z < 0.01, "turned rigidly by the node, the mesh not rebaked")
+	var block := importer.model.get_node("block") as MeshInstance3D
+	check((block.transform * block.mesh.get_aabb()).position.y > -0.01, "the block stands on the ground (%s)" % (block.transform * block.mesh.get_aabb()))
+	importer.model.free()
+	var kept := MapImporter.new()
+	kept.parse_config({"up_axis": "y"})
+	kept.process(lying.call())
+	check(_result(kept, "C3") == "WARN" and (kept.model.get_node("ground") as Node3D).transform.basis.is_equal_approx(Basis.IDENTITY), "up_axis y keeps the file's axes, with a warning")
+	kept.model.free()
+	var configured := MapImporter.new()
+	configured.parse_config({"up_axis": "z"})
+	check(configured.process(lying.call()) and _result(configured, "C3") == "FIXED", "up_axis z turns it too")
+	configured.model.free()
+
+
+func test_up_direction_from_box_faces_and_base() -> void:
+	# Faces: flat area toward each direction, with area-weighted coordinates.
+	var town := MapUnits.detect_up(Vector3(300, 40, 260), {"+y": 60000.0, "-y": 3000.0, "+x": 4000.0, "-x": 4000.0, "+z": 4000.0, "-z": 4000.0})
+	check(town.decided and town.up == "+y", "a town: flat across Y, ground facing up (%s)" % town.reason)
+	# A printed relief (Z-up slab): both sides alike, so the base decides.
+	var slab_faces := {"+z": 65000.0, "-z": 65000.0, "at_+z": 65000.0 * 1.1, "at_-z": 65000.0 * 11.0, "+x": 2000.0, "-x": 2000.0}
+	var slab := MapUnits.detect_up(Vector3(255, 255, 19), slab_faces)
+	check(slab.axis == "z", "the slab's axis is Z (%s)" % slab.reason)
+	var based := MapUnits.detect_up(Vector3(255, 255, 19), slab_faces, Vector2(65000.0, 100.0))
+	check(based.decided and based.up == "+z", "its base is at the low end: +Z up, whatever the winding (%s)" % based.reason)
+	# Upside down: the ground faces −Y and lies at the top.
+	var upside := MapUnits.detect_up(Vector3(200, 30, 200), {"+y": 500.0, "-y": 40000.0}, Vector2(0.0, 40000.0))
+	check(upside.decided and upside.up == "-y", "upside down: -Y up (%s)" % upside.reason)
+	# Inside out: the ground at the bottom but facing −Y: the cues disagree.
+	var inverted := MapUnits.detect_up(Vector3(200, 30, 200), {"+y": 500.0, "-y": 40000.0}, Vector2(40000.0, 0.0))
+	check(not inverted.decided and inverted.up == "+y", "base and faces disagree: undecided, the file's +Y kept (%s)" % inverted.reason)
+	var sideways := MapUnits.detect_up(Vector3(20, 300, 300), {"+x": 50000.0, "-x": 1000.0, "+y": 3000.0, "-y": 3000.0})
+	check(sideways.decided and sideways.up == "+x", "X-up (%s)" % sideways.reason)
+	var cube := MapUnits.detect_up(Vector3(10, 10, 10), {"+x": 100.0, "-x": 100.0, "+y": 100.0, "-y": 100.0, "+z": 100.0, "-z": 100.0})
+	check(not cube.decided, "a cube shows no up axis")
+	# A cluster of towers without ground: walls outweigh roofs, the box decides.
+	var towers := MapUnits.detect_up(Vector3(140, 24, 125), {"+y": 400.0, "-y": 400.0, "+x": 2900.0, "-x": 2900.0, "+z": 2900.0, "-z": 2900.0,
+			"at_+y": 400.0 * 20.0, "at_-y": 0.0})
+	check(towers.decided and towers.up == "+y", "towers on a very flat box: +Y (%s)" % towers.reason)
+
+
+func test_inside_out_closed_mesh_is_turned_outward() -> void:
+	var inverted := MapGeometry.turned_out(_boxes([[Vector3(0, 4, 0), Vector3(8, 8, 10)]]), true)
+	check(MapGeometry.stats(inverted).volume < 0.0, "the test box is inside out")
+	var importer := MapImporter.new()
+	importer.process(_scene([["ground_main", _plane(60.0)], ["house_1", inverted, Vector3(10, 0, 0)]]))
+	var house := importer.model.get_node("house_1") as MeshInstance3D
+	var stats := MapGeometry.stats(house.mesh)
+	check(_checks(importer, "C7").any(func(c: Dictionary) -> bool: return c.result == "FIXED"), "C7 FIXED: %s" % [_checks(importer, "C7")])
+	check(stats.volume > 0.0 and stats.flipped == 0 and is_equal_approx(stats.up, 80.0), "turned outward: positive volume, the normals agree, the roof faces up (%s)" % [stats])
+	var ground := importer.model.get_node("ground_main") as MeshInstance3D
+	check(is_equal_approx(MapGeometry.stats(ground.mesh).up, 3600.0), "the open ground plane is left facing up")
+	importer.model.free()
+
+
+func test_units_are_recognised() -> void:
+	check(MapUnits.unit_of(6000.0, 800.0).get("name", "") == "centimetres", "a 60 m town in centimetres (%s)" % [MapUnits.unit_of(6000.0, 800.0)])
+	check(MapUnits.unit_of(2400.0, 315.0).get("name", "") == "inches", "a town in inches (%s)" % [MapUnits.unit_of(2400.0, 315.0)])
+	check(MapUnits.unit_of(30000.0, 1000.0).get("name", "") == "centimetres", "a 300 m town in centimetres")
+	check(MapUnits.unit_of(3.4, 0.27).is_empty(), "a model in arbitrary units fits no common unit")
+	check(MapUnits.unit_of(5000.0, 450.0).has("choices"), "centimetres and inches fit about as well: the user decides (%s)" % [MapUnits.unit_of(5000.0, 450.0)])
+	check(MapUnits.suggest_scale(0.27, 0.065) == 100.0 and MapUnits.suggest_scale(0.8, 0.6) == 10.0, "suggestions from the typical object's height and width")
+	# A town modelled in centimetres: scaled by 0.01 without a configuration.
+	var importer := MapImporter.new()
+	check(importer.process(_scene([["ground", _plane(6000.0)], ["house_1", _boxes([[Vector3(0, 400, 0), Vector3(1000, 800, 1000)]]), Vector3(1000, 0, 0)],
+			["house_2", _boxes([[Vector3(0, 300, 0), Vector3(800, 600, 900)]]), Vector3(-1500, 0, 800)]])), "the centimetre town passes")
+	check(_result(importer, "C2") == "FIXED" and _checks(importer, "C2")[0].message.contains("centimetres"), "C2 names the unit: %s" % [_checks(importer, "C2")])
+	check(importer.summary.bounds.size.is_equal_approx(Vector3(60, 8, 60)), "60 m wide after the scale (%s)" % importer.summary.bounds.size)
+	importer.model.free()
+
+
+func test_scale_suggestion_counts_the_objects_in_one_mesh() -> void:
+	# The whole "city" in one mesh: 12 separate towers 0.05 units wide and
+	# 0.3 high, spread over 1.2 units; the mesh's own height says little.
+	var towers := []
+	for i in 12:
+		towers.append([Vector3((i % 4) * 0.4, 0.15, (i / 4) * 0.4), Vector3(0.05, 0.3, 0.05)])
+	var importer := MapImporter.new()
+	check(not importer.process(_scene([["city", _boxes(towers)]])), "fails C2")
+	var message: String = _checks(importer, "C2")[0].message
+	check(message.contains("suggested: 200") and message.contains("12 separate objects"), "the suggestion makes each tower 8 m wide: %s" % message)
+	importer.model.free()
 
 
 func test_classification_colliders_and_groups() -> void:

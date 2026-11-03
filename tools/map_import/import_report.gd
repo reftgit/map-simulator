@@ -68,7 +68,7 @@ static func markdown(importer: RefCounted, info: Dictionary) -> String:
 			lines.append("- Occluders (from the %s colliders): %d, %s triangles" % [" and ".join(PackedStringArray(importer.rules.occluder_categories)), summary.occluders, _thousands(summary.occluder_triangles)])
 		if summary.has("shells"):
 			var shells: Dictionary = summary.shells
-			lines.append("- Building shells: %d building meshes, %d checked, %d open, %d inside out; %d zero-area triangles; %d triangles disagree with their normals" % [shells.buildings, shells.checked, shells.open, shells.inside_out, summary.zero_area, summary.flipped])
+			lines.append("- Building shells: %d building meshes, %d checked, %d open; %d closed meshes (any category) turned outward; %d zero-area triangles; %d triangles disagree with their normals" % [shells.buildings, shells.checked, shells.open, shells.inside_out, summary.zero_area, summary.flipped])
 	if info.has("placement") and not (info.placement as Dictionary).is_empty():
 		lines.append("")
 		lines.append("## Placement")

@@ -43,6 +43,14 @@ static func other_primitives(mesh: Mesh) -> int:
 	return count
 
 
+## Triangles in the triangle surfaces of `mesh`.
+static func triangle_count(mesh: Mesh) -> int:
+	var count := 0
+	for surface: Array in triangle_surfaces(mesh):
+		count += ((surface[2] as PackedInt32Array).size() if surface[2] != null else (surface[0] as PackedVector3Array).size()) / 3
+	return count
+
+
 ## Whether every triangle surface of `mesh` has normals.
 static func has_normals(mesh: Mesh) -> bool:
 	for surface: Array in triangle_surfaces(mesh):
@@ -52,12 +60,23 @@ static func has_normals(mesh: Mesh) -> bool:
 
 
 ## Statistics of `mesh` placed with rotation `basis`: triangles, zero-area
-## triangles, total area, the area facing within 30° of +Y, −Y, +Z, −Z, the
-## vertical area (normals within 30° of horizontal), and the triangles whose
-## winding disagrees with their given normals.
+## triangles, total area, the area facing within 30° of +Y ("up"), −Y
+## ("down"), and each axis direction ("+x" … "-z"), the area-weighted
+## coordinate along its axis of the faces toward each direction ("at_+x" …,
+## after `basis`, for the up-axis detection), the vertical area (normals
+## within 30° of horizontal; "side_x", "side_z" for X or Z as the up axis),
+## the triangles whose winding disagrees with their given normals, the sum
+## of the area-weighted face normals (zero for a closed surface), and the
+## enclosed volume measured from the centre of the mesh's box (positive when
+## the faces point out; for a surface that is not closed it depends on that
+## centre by up to |normal_sum| times the box's half diagonal over 3).
 static func stats(mesh: Mesh, basis := Basis.IDENTITY) -> Dictionary:
-	var result := {"triangles": 0, "zero_area": 0, "area": 0.0, "up": 0.0, "down": 0.0, "pos_z": 0.0, "neg_z": 0.0,
-			"vertical": 0.0, "flipped": 0}
+	var result := {"triangles": 0, "zero_area": 0, "area": 0.0, "vertical": 0.0, "side_x": 0.0, "side_z": 0.0, "flipped": 0,
+			"normal_sum": Vector3.ZERO, "volume": 0.0}
+	# Per axis direction (+x, -x, +y, -y, +z, -z): facing area, area times coordinate.
+	var facing := PackedFloat64Array([0, 0, 0, 0, 0, 0])
+	var at := PackedFloat64Array([0, 0, 0, 0, 0, 0])
+	var center := mesh.get_aabb().get_center() if mesh else Vector3.ZERO
 	for surface: Array in triangle_surfaces(mesh):
 		var positions: PackedVector3Array = surface[0]
 		var normals = surface[1]
@@ -79,16 +98,26 @@ static func stats(mesh: Mesh, basis := Basis.IDENTITY) -> Dictionary:
 			var area := double_area * 0.5
 			var n := basis * (face / double_area)
 			result.area += area
-			if n.y >= COS_30:
-				result.up += area
-			elif n.y <= -COS_30:
-				result.down += area
-			elif absf(n.y) <= 0.5:
+			result.normal_sum += n * area
+			result.volume -= (a - center).dot((positions[i1] - center).cross(positions[i2] - center)) / 6.0
+			for axis in 3:
+				var component: float = n[axis]
+				if absf(component) >= COS_30:
+					var slot := axis * 2 + (0 if component > 0.0 else 1)
+					facing[slot] += area
+					at[slot] += area * (basis * ((a + positions[i1] + positions[i2]) / 3.0))[axis]
+			if absf(n.y) <= 0.5:
 				result.vertical += area
-			if n.z >= COS_30:
-				result.pos_z += area
-			elif n.z <= -COS_30:
-				result.neg_z += area
+			if absf(n.x) <= 0.5:
+				result.side_x += area
+			if absf(n.z) <= 0.5:
+				result.side_z += area
+	for slot in 6:
+		var direction: String = ["+x", "-x", "+y", "-y", "+z", "-z"][slot]
+		result[direction] = facing[slot]
+		result["at_" + direction] = at[slot]
+	result.up = facing[2]
+	result.down = facing[3]
 	return result
 
 
@@ -164,6 +193,33 @@ static func _gathered_uvs(source: PackedVector2Array, order: PackedInt32Array) -
 	for i in order.size():
 		out[i] = source[order[i]]
 	return out
+
+
+## A copy of `mesh` turned inside out: every triangle's winding reversed,
+## and its normals negated when `normals_too` (tangents dropped).
+static func turned_out(mesh: Mesh, normals_too: bool) -> ArrayMesh:
+	var out_mesh := ArrayMesh.new()
+	out_mesh.resource_name = mesh.resource_name
+	for surface in mesh.get_surface_count():
+		var arrays := mesh.surface_get_arrays(surface)
+		var primitive: Mesh.PrimitiveType = mesh.surface_get_primitive_type(surface)
+		if primitive == Mesh.PRIMITIVE_TRIANGLES:
+			var order := _triangle_order(arrays)
+			for t in range(0, order.size(), 3):
+				var swap := order[t + 1]
+				order[t + 1] = order[t + 2]
+				order[t + 2] = swap
+			arrays[Mesh.ARRAY_INDEX] = order
+			if normals_too and arrays[Mesh.ARRAY_NORMAL] != null:
+				var normals: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
+				for i in normals.size():
+					normals[i] = -normals[i]
+				arrays[Mesh.ARRAY_NORMAL] = normals
+			arrays[Mesh.ARRAY_TANGENT] = null
+		out_mesh.add_surface_from_arrays(primitive, arrays)
+		out_mesh.surface_set_material(surface, mesh.surface_get_material(surface))
+		out_mesh.surface_set_name(surface, mesh.surface_get_name(surface))
+	return out_mesh
 
 
 ## A copy of `mesh` with `transform` (scale, shear, mirroring; no
