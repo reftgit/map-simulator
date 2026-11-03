@@ -41,6 +41,9 @@ var profile_name := ""
 var map_name := ""
 ## The map's vehicles; the overlay and PERF lines show whether each is awake.
 var vehicles: Array[VehicleController] = []
+## The loaded map's streamer (null when it loaded whole); the overlay and PERF
+## lines show its loaded and waiting cells and their size.
+var streamer: MapStreamer
 ## Window size and safe area in window pixels (DisplayServer by default;
 ## tests and the screenshot tool put in fixed values).
 var safe_area_source := SafeAreaSource.new()
@@ -197,15 +200,26 @@ func vehicle_states() -> String:
 	return ",".join(states)
 
 
+## "cells <loaded>/<all> +<waiting> <MB> MB" for a streamed map, "cells off" otherwise.
+func streaming_text() -> String:
+	if streamer == null or streamer.index == null:
+		return "cells off"
+	var stats := streamer.stats()
+	return "cells %d/%d +%d %.1f MB" % [stats.loaded, stats.cells, stats.pending, stats.loaded_mb]
+
+
 func _update_debug() -> void:
 	var stats := perf_stats()
 	_debug_label.text = "FPS %d | %d draw calls | %.2f M prims | %d objects\n%s | vram %.0f MB | mem %.0f MB (peak %.0f)\n%s" % [
 		stats.fps, stats.draw_calls, stats.primitives / 1e6, stats.objects,
-		status_text(), stats.video_mem_mb, stats.static_mem_mb, stats.static_peak_mb, "%s  |  %s  |  quality %s" % [map_name, view_name, profile_name],
+		status_text(), stats.video_mem_mb, stats.static_mem_mb, stats.static_peak_mb,
+		"%s  |  %s  |  quality %s  |  %s" % [map_name, view_name, profile_name, streaming_text()],
 	]
 	_ticks += 1
 	if _ticks % perf_log_every == 0:
-		print("PERF map=%s profile=%s view=\"%s\" fps=%d draw_calls=%d primitives=%d objects=%d video_mem_mb=%.0f static_mem_mb=%.0f static_peak_mb=%.0f vehicles=%s" % [
+		var cells := streamer.stats() if streamer and streamer.index else {}
+		print("PERF map=%s profile=%s view=\"%s\" fps=%d draw_calls=%d primitives=%d objects=%d video_mem_mb=%.0f static_mem_mb=%.0f static_peak_mb=%.0f vehicles=%s cells=%s pending=%s cell_mb=%s" % [
 			map_name, profile_name, view_name, stats.fps, stats.draw_calls, stats.primitives, stats.objects,
 			stats.video_mem_mb, stats.static_mem_mb, stats.static_peak_mb, vehicle_states(),
+			cells.get("loaded", "off"), cells.get("pending", "-"), cells.get("loaded_mb", "-"),
 		])

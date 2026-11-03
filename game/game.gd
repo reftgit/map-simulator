@@ -80,6 +80,7 @@ func _ready() -> void:
 	if _experiment:
 		apply_runtime_settings(_experiment.runtime)
 	set_quality_profile(_initial_profile())
+	_prime_streaming()
 
 	if BuildFeatures.is_debug():
 		hud.view_name = get_view_names()[0]
@@ -101,9 +102,14 @@ func _ready() -> void:
 ## places its NPCs, and captures its render defaults for the quality profiles.
 func _load_map(definition: MapDefinition) -> void:
 	map_definition = definition
+	if _experiment:
+		world.streaming = _experiment.runtime.get("streaming", true)
+		world.streaming_index_override = _experiment.runtime.get("streaming_index", "")
 	world.load_map(definition)
 	player.teleport(world.get_spawn_transform())
 	camera_rig.snap_behind_target()
+	if world.streamer:
+		world.streamer.focus = camera_rig.camera
 	if vehicle_scene:
 		for vehicle in world.spawn_vehicles(vehicle_scene):
 			vehicle_interaction.register_vehicle(vehicle)
@@ -115,6 +121,17 @@ func _load_map(definition: MapDefinition) -> void:
 	_car_index = -1
 	render_settings = RenderSettings.new(world.map_root, camera_rig.camera, get_viewport(), definition.occluders_path, definition.category_rules)
 	hud.map_name = definition.id
+	hud.streamer = world.streamer
+
+
+## With a streamed map: loads the cells the camera needs before the first
+## frame (or before the loading screen goes), once the profile's ranges are set.
+func _prime_streaming() -> void:
+	if world.streamer == null:
+		return
+	var cells := world.streamer.prime()
+	print("STREAMING %s primed %d cells in %.0f ms (%s)" % [map_definition.id, cells, world.streamer.totals.prime_ms,
+			JSON.stringify(world.streamer.stats())])
 
 
 ## Replaces the loaded map with `definition`: the HUD shows its loading
@@ -150,6 +167,7 @@ func switch_map(definition: MapDefinition) -> bool:
 	if _experiment:
 		apply_runtime_settings(_experiment.runtime)
 	set_quality_profile(quality_profile)
+	_prime_streaming()
 	_view_index = 0
 	hud.view_name = get_view_names()[0]
 	hud.set_loading(false)
@@ -187,6 +205,8 @@ func set_quality_profile(profile_name: String) -> Dictionary:
 	if _experiment:
 		layers.append(_experiment.settings)
 	var effective := render_settings.apply(RenderSettings.merge(layers))
+	if world.streamer:
+		world.streamer.set_ranges(effective)
 	hud.profile_name = profile_name
 	print("QUALITY profile=%s experiment=%s occluders=%s effective=%s" % [profile_name,
 			_experiment.experiment if _experiment else "none", JSON.stringify(render_settings.occluder_report),
@@ -434,11 +454,13 @@ func _log_startup() -> void:
 		await RenderingServer.frame_post_draw
 	var physics := physics_engine_name(world.get_world_3d().direct_space_state)
 	startup = {"map_ready_ms": map_ready_ms, "first_frame_ms": Time.get_ticks_msec(), "physics_3d": physics,
-			"map": map_definition.id, "vehicles": hud.vehicle_states(), "npcs": world.npcs.size()}
+			"map": map_definition.id, "vehicles": hud.vehicle_states(), "npcs": world.npcs.size(),
+			"streaming": world.streamer.stats() if world.streamer else {}}
 	startup.merge(build_info())
-	print("STARTUP map_ready_ms=%d first_frame_ms=%d map=%s profile=%s occluders=%s physics_3d=%s (setting %s) vehicles=%s npcs=%d build=%s user_dir=%s" % [map_ready_ms,
+	print("STARTUP map_ready_ms=%d first_frame_ms=%d map=%s profile=%s occluders=%s physics_3d=%s (setting %s) vehicles=%s npcs=%d streaming=%s build=%s user_dir=%s" % [map_ready_ms,
 			startup.first_frame_ms, map_definition.id, quality_profile, JSON.stringify(render_settings.occluder_report), physics,
-			ProjectSettings.get_setting("physics/3d/physics_engine"), startup.vehicles, startup.npcs, JSON.stringify(build_info()), OS.get_user_data_dir()])
+			ProjectSettings.get_setting("physics/3d/physics_engine"), startup.vehicles, startup.npcs,
+			JSON.stringify(startup.streaming) if world.streamer else "off", JSON.stringify(build_info()), OS.get_user_data_dir()])
 
 
 ## Build kind and the frame and physics settings in effect. Project

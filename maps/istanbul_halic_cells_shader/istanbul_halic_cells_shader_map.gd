@@ -13,21 +13,39 @@ const FACADE_MATERIAL := "Istanbul_FacadeWindows"
 var facade_material: ShaderMaterial
 
 var _facade_surfaces := []  # [MeshInstance3D, surface index]
+var _facade_seen := {}  # MeshInstance3D -> true once its facade surfaces are listed
+## What the facade surfaces are drawn with (facade_material, or a measurement
+## variant of apply_runtime_settings(); null: the GLB material).
+var _facade_override: Material
 
 
 func _ready() -> void:
 	super()
 	facade_material = ShaderMaterial.new()
 	facade_material.shader = FACADE_SHADER
-	for node in $Model.find_children("*", "MeshInstance3D", true, false):
+	_facade_override = facade_material
+	_use_facade_shader($Model.find_children("*", "MeshInstance3D", true, false))
+
+
+## The streamed meshes of a cell (docs/STREAMING.md): vertex colours, then the
+## facade shader on their facade surfaces, as at load.
+func prepare_streamed(instances: Array) -> void:
+	super(instances)
+	_use_facade_shader(instances)
+
+
+func _use_facade_shader(instances: Array) -> void:
+	for node in instances:
 		var instance := node as MeshInstance3D
 		if instance.mesh == null:
 			continue
 		for surface in instance.mesh.get_surface_count():
 			var material := instance.mesh.surface_get_material(surface)
 			if material and material.resource_name == FACADE_MATERIAL:
-				instance.set_surface_override_material(surface, facade_material)
-				_facade_surfaces.append([instance, surface])
+				instance.set_surface_override_material(surface, _facade_override)
+				if not _facade_seen.has(instance):
+					_facade_surfaces.append([instance, surface])
+		_facade_seen[instance] = true
 
 
 ## Measurement only (PerfConfig runtime keys, applied by Main): with
@@ -50,15 +68,21 @@ func apply_runtime_settings(runtime: Dictionary, camera: Camera3D) -> void:
 		elif runtime.facade_material == "simple":
 			material = ShaderMaterial.new()
 			material.shader = SIMPLE_SHADER
+		_facade_override = material
 		for entry in _facade_surfaces:
-			(entry[0] as MeshInstance3D).set_surface_override_material(entry[1], material)
+			var instance := entry[0] as MeshInstance3D
+			if instance.mesh:
+				instance.set_surface_override_material(entry[1], material)
 		print("FACADE material=%s surfaces=%d" % [runtime.facade_material, _facade_surfaces.size()])
 	if runtime.get("facade_warmup", false) and not _facade_surfaces.is_empty():
 		_warm_up.call_deferred(camera)
 
 
 func _warm_up(camera: Camera3D) -> void:
-	var source: MeshInstance3D = _facade_surfaces[0][0]
+	var with_mesh := _facade_surfaces.filter(func(entry: Array) -> bool: return (entry[0] as MeshInstance3D).mesh != null)
+	if with_mesh.is_empty():
+		return
+	var source: MeshInstance3D = with_mesh[0][0]
 	var bounds := source.mesh.get_aabb()
 	var probe := MeshInstance3D.new()
 	probe.mesh = source.mesh

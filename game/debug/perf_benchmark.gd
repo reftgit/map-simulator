@@ -7,6 +7,9 @@ extends Node
 ## With trace, the warm-up is sampled too, the GPU time of each frame is
 ## measured, pipeline compilations are counted, and every frame's times are
 ## kept in the results (tools/perf/trace_summary.py reads them).
+## On a streamed map each result records the cells loaded, freed, and given
+## their meshes and the longest main-thread time for that in a frame; a trace
+## also lists the frames in which cells got their meshes.
 ## Writes user://bench_results.json, logs one "BENCH {json}" line per result,
 ## saves screenshots under user://bench/, and quits the app when done (unless
 ## quit_when_done is false). On Android the results and screenshots also go to
@@ -104,7 +107,9 @@ func _session(view: String) -> void:
 
 
 ## Samples frames for `seconds`; returns FPS statistics and counter averages.
-func _sample(seconds: float) -> Dictionary:
+## With `check_missing` every frame also checks for cells the
+## camera needs that are not loaded (MapStreamer.missing_cells()).
+func _sample(seconds: float, check_missing := false) -> Dictionary:
 	var frame_us: PackedInt64Array = []
 	var counters := {"draw_calls": 0.0, "primitives": 0.0, "objects": 0.0}
 	var counter_samples := 0
@@ -121,6 +126,13 @@ func _sample(seconds: float) -> Dictionary:
 	var pipeline_events := []  # [frame index, compilations per PIPELINE_INFO source]
 	var pipelines_before := pipeline_compilations()
 	var pipelines_last := pipelines_before
+	# Streaming: frames in which cells got their meshes ([frame, cells, ms]),
+	# the longest such time, frames with a needed cell missing.
+	var streamer: MapStreamer = game.world.streamer
+	var totals_before: Dictionary = streamer.totals.duplicate() if streamer else {}
+	var attach_events := []
+	var attach_max := 0.0
+	var missing_frames := 0
 	var start := Time.get_ticks_usec()
 	var last := start
 	var next_counter := start
@@ -139,6 +151,12 @@ func _sample(seconds: float) -> Dictionary:
 					event.append(pipelines[k] - pipelines_last[k])
 				pipeline_events.append(event)
 				pipelines_last = pipelines
+		if streamer:
+			if streamer.frame_attached > 0:
+				attach_events.append([frame_us.size() - 1, streamer.frame_attached, snappedf(streamer.frame_attach_ms, 0.01)])
+				attach_max = maxf(attach_max, streamer.frame_attach_ms)
+			if check_missing and streamer.missing_cells() > 0:
+				missing_frames += 1
 		physics_us.append(roundi(Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1e6))
 		process_us.append(roundi(Performance.get_monitor(Performance.TIME_PROCESS) * 1e6))
 		for vehicle in vehicles:
@@ -167,6 +185,12 @@ func _sample(seconds: float) -> Dictionary:
 	stats["video_mem_mb"] = roundi(video_mem_max / 1048576.0)
 	stats["static_mem_mb"] = roundi(OS.get_static_memory_usage() / 1048576.0)
 	stats["static_peak_mb"] = roundi(OS.get_static_memory_peak_usage() / 1048576.0)
+	if streamer:
+		var now_stats := streamer.stats()
+		stats["streaming"] = {"loaded": now_stats.loaded, "loaded_mb": now_stats.loaded_mb, "pending": now_stats.pending,
+				"loads": now_stats.loads - totals_before.loads, "unloads": now_stats.unloads - totals_before.unloads,
+				"primes": now_stats.primes - totals_before.primes, "attach_frames": attach_events.size(),
+				"attach_max_ms": snappedf(attach_max, 0.01), "missing_frames": missing_frames if check_missing else -1}
 	if config.trace:
 		stats.merge(timing_stats("gpu", gpu_us))
 		stats.merge(timing_stats("render_cpu", render_cpu_us))
@@ -175,7 +199,7 @@ func _sample(seconds: float) -> Dictionary:
 			compiled.append(pipelines_last[k] - pipelines_before[k])
 		stats["pipelines"] = compiled
 		stats["trace"] = {"frame_ms": _joined_ms(frame_us), "gpu_ms": _joined_ms(gpu_us), "render_cpu_ms": _joined_ms(render_cpu_us),
-				"pipelines": pipeline_events}
+				"pipelines": pipeline_events, "cells": attach_events}
 	return stats
 
 

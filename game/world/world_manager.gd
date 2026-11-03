@@ -3,7 +3,9 @@ extends Node3D
 ## Loads the active map and keeps tracked bodies inside it: respawns them below
 ## the kill height (at their own spawn, or the map's player spawn) and holds
 ## them inside the playable bounds. Parks the map's vehicles (which reset
-## themselves) and places its NPCs. Knows nothing about input, camera, or UI.
+## themselves) and places its NPCs. A map with a streaming index loads its
+## resident scene and a MapStreamer for its cells (docs/STREAMING.md). Knows
+## nothing about input, camera, or UI.
 
 signal map_loaded(definition: MapDefinition)
 ## unload_map_and_wait() has seen the map `id`, its vehicles, and its NPCs freed.
@@ -17,6 +19,13 @@ const RELEASE_FRAMES := 3
 
 var definition: MapDefinition
 var map_root: Node
+## Streams the loaded map's visibility-range meshes; null when the map loaded
+## whole (no usable index, or `streaming` off).
+var streamer: MapStreamer
+## Whether load_map() may stream (measurement: false loads every map whole).
+var streaming := true
+## Measurement: an index to use instead of the definition's (another cell size).
+var streaming_index_override := ""
 ## Vehicles placed by spawn_vehicles().
 var vehicles: Array[VehicleController] = []
 ## NPCs placed by spawn_npcs().
@@ -30,14 +39,34 @@ var _spawns := {}
 func load_map(new_definition: MapDefinition) -> void:
 	unload_map()
 	definition = new_definition
-	var packed := load(definition.scene_path) as PackedScene
-	assert(packed != null, "Map scene failed to load: %s" % definition.scene_path)
+	var index := _streaming_index() if streaming else null
+	var scene_path := index.resident_scene if index else definition.scene_path
+	var packed := load(scene_path) as PackedScene
+	assert(packed != null, "Map scene failed to load: %s" % scene_path)
 	map_root = packed.instantiate()
 	add_child(map_root)
+	if index:
+		streamer = MapStreamer.new()
+		streamer.name = "MapStreamer"
+		add_child(streamer)
+		streamer.setup(map_root, index)
 	map_loaded.emit(definition)
 
 
+## The definition's streaming index (or the override), if it can be used.
+func _streaming_index() -> MapStreamingIndex:
+	if streaming_index_override.is_empty():
+		return MapStreamingIndex.load_for(definition)
+	var override := definition.duplicate() as MapDefinition
+	override.streaming_index_path = streaming_index_override
+	return MapStreamingIndex.load_for(override)
+
+
 func unload_map() -> void:
+	if streamer:
+		streamer.shutdown()
+		streamer.queue_free()
+		streamer = null
 	if map_root:
 		map_root.queue_free()
 		map_root = null
@@ -62,6 +91,8 @@ func unload_map_and_wait() -> int:
 	freed.append_array(npcs)
 	if map_root:
 		freed.append(map_root)
+	if streamer:
+		freed.append(streamer)
 	var id := definition.id if definition else ""
 	unload_map()
 	var frames := 0

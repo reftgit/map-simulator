@@ -100,6 +100,11 @@ func test_in_vehicle_bench_key() -> void:
 	check(not PerfConfig.from_dict({"experiment": "x", "bench": {}}).in_vehicle, "off by default")
 
 
+func test_streaming_runtime_keys() -> void:
+	var config := PerfConfig.from_dict({"experiment": "x", "runtime": {"streaming": false, "streaming_index": "res://maps/x/streaming_100/x_index.tres"}})
+	check(config != null and config.runtime.streaming == false and config.runtime.streaming_index.ends_with("x_index.tres"), "streaming keys parsed (%s)" % PerfConfig.last_error)
+
+
 func test_runtime_keys_parse_and_reject_typos() -> void:
 	var config := PerfConfig.from_dict({"experiment": "x", "runtime": {"physics_ticks": 30, "physics_interpolation": false, "player_physics": false, "vehicles": false, "vehicle_sleep": false, "npcs": false, "npc_far_mode": false, "collider_radius": 100, "vsync_mode": "mailbox"}})
 	check(config != null, "all runtime keys accepted (%s)" % PerfConfig.last_error)
