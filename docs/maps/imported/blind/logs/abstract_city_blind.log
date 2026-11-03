@@ -1,0 +1,20 @@
+
+IMPORT abstract_city from <repo>/maps/abstract_city/source/abstract_city.glb
+IMPORT stage load 56 ms
+IMPORT stage collect 0 ms
+IMPORT stage fix 2 ms
+IMPORT stage audit 3 ms
+CHECK R8 INFO the model holds only meshes
+CHECK C1 PASS 2 mesh nodes
+CHECK R4 FIXED 2 meshes had no normals; flat normals computed from the triangles
+CHECK R5 PASS colour from textures, material colours, or vertex colours
+CHECK R6 PASS every material is single-sided
+CHECK C2 FAIL the model spans 3.4 × 3.0 units; with 1 unit = 1 m that is not a map. If it is in other units, set "scale" in the configuration (suggested: 20, which makes its typical object 9.5 m tall).
+CHECK C3 PASS +Y up: 11 m² face up, 0 m² down, 1 / 1 m² toward ±Z
+CHECK C5 PASS within 3 m of the origin, 0 m high
+CHECK C6 PASS 7742 triangles
+IMPORT abstract_city NOT written in 0.1 s; report res://docs/maps/imported/blind/abstract_city_blind.md
+WARNING: 4 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)
+ERROR: 2 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)

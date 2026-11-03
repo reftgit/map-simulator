@@ -1,0 +1,35 @@
+
+IMPORT abstract_city from <repo>/maps/abstract_city/source/abstract_city.glb
+IMPORT stage load 61 ms
+IMPORT stage collect 0 ms
+IMPORT stage fix 2 ms
+IMPORT stage audit 3 ms
+IMPORT stage classify 0 ms
+IMPORT stage shells 11 ms
+IMPORT stage colliders 23 ms
+IMPORT stage placement 16 ms
+IMPORT stage occluders 6 ms
+CHECK R8 INFO the model holds only meshes
+CHECK C1 PASS 2 mesh nodes
+CHECK R4 FIXED 2 meshes had no normals; flat normals computed from the triangles
+CHECK R5 PASS colour from textures, material colours, or vertex colours
+CHECK R6 PASS every material is single-sided
+CHECK C2 FIXED scaled by 20 (configuration; baked into 2 meshes, the nodes keep rotation and position): 68 × 61 m, typical object (90th percentile) 9.5 m tall
+CHECK C3 PASS +Y up: 4257 m² face up, 170 m² down, 573 / 585 m² toward ±Z
+CHECK C5 PASS within 63 m of the origin, 9 m high
+CHECK C6 PASS 7742 triangles
+CHECK R1 WARN 1 meshes matched no name rule and were classified by their shape (buildings 1)
+CHECK R7 INFO 0 water meshes
+CHECK R3 PASS no non-ground mesh is wider than 150 m
+CHECK C7 PASS 1 of 1 building meshes checked: closed and outward; no zero-area triangles
+CHECK R2 INFO no collision nodes; colliders generated from the categories: 2 bodies, 216 shapes (convex 215, trimesh 1), 2 trimesh triangles; 4 parts too small or flat for a collider
+CHECK C4 PASS 95.9 % of the map has walkable ground (978 samples)
+CHECK C8 PASS player spawn at (19.9, 0.1, -24.8) facing 90°, 40 m of clear walk ahead, 15 m from the centre of the walkable area
+CHECK C8 PASS vehicle at (19.9, 0.3, -32.8) facing 90°, 40 m of clear road ahead, 8 m from the spawn
+CHECK C8 PASS NPC route (25.9, 0.1, -32.8) → (17.4, 0.1, -41.3) (12 m), 10 m from the spawn
+CHECK C8 INFO no sloped viewpoint (ground 2–10° with room for a car): the device scenario skips its slope steps
+IMPORT abstract_city written in 0.3 s; report res://docs/maps/imported/blind/abstract_city_config.md
+WARNING: 4 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)
+ERROR: 2 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)

@@ -1,0 +1,170 @@
+
+SAFE_AREA window=(0, 0) safe=[P: (0, 0), S: (0, 0)] canvas=[P: (0.0, 0.0), S: (1440.0, 900.0)] viewport=(1440.0, 900.0)
+QUALITY profile=none experiment=none occluders={} effective={"camera_far":1500.0,"fog":false,"hide":[],"lod_threshold":1.0,"max_fps":0,"occlusion":false,"render_scale":1.0,"scaling_mode":"bilinear","shadows":"default","visibility_end":{}}
+STARTUP map_ready_ms=235 first_frame_ms=237 map=abstract_city profile=none occluders={} physics_3d=GodotPhysics3D (setting DEFAULT) vehicles=awake npcs=1 build={"android_frame_pacing":true,"debug_build":true,"display_refresh_rate":-1.0,"ios_allow_high_refresh_rate":false,"max_fps":0,"perf_feature":false,"physics_engine_setting":"DEFAULT","physics_interpolation":true,"physics_ticks":60,"screen_refresh_rate":-1.0,"vsync_mode":1} user_dir=<home>/Library/Application Support/Godot/app_userdata/İstanbul • Haliç
+PASS test_blind_abstract_city_config.gd::test_loads_and_spawns_on_the_ground (962 ms)
+SAFE_AREA window=(0, 0) safe=[P: (0, 0), S: (0, 0)] canvas=[P: (0.0, 0.0), S: (1440.0, 900.0)] viewport=(1440.0, 900.0)
+QUALITY profile=none experiment=none occluders={} effective={"camera_far":1500.0,"fog":false,"hide":[],"lod_threshold":1.0,"max_fps":0,"occlusion":false,"render_scale":1.0,"scaling_mode":"bilinear","shadows":"default","visibility_end":{}}
+STARTUP map_ready_ms=1173 first_frame_ms=1173 map=abstract_city profile=none occluders={} physics_3d=GodotPhysics3D (setting DEFAULT) vehicles=awake npcs=1 build={"android_frame_pacing":true,"debug_build":true,"display_refresh_rate":-1.0,"ios_allow_high_refresh_rate":false,"max_fps":0,"perf_feature":false,"physics_engine_setting":"DEFAULT","physics_interpolation":true,"physics_ticks":60,"screen_refresh_rate":-1.0,"vsync_mode":1} user_dir=<home>/Library/Application Support/Godot/app_userdata/İstanbul • Haliç
+PERF map=abstract_city profile=none view="Spawn" fps=145 draw_calls=0 primitives=0 objects=0 video_mem_mb=0 static_mem_mb=50 static_peak_mb=50 vehicles=awake
+VEHICLE PlaceholderCar asleep
+PERF map=abstract_city profile=none view="Spawn" fps=145 draw_calls=0 primitives=0 objects=0 video_mem_mb=0 static_mem_mb=50 static_peak_mb=50 vehicles=asleep
+PERF map=abstract_city profile=none view="Spawn" fps=145 draw_calls=0 primitives=0 objects=0 video_mem_mb=0 static_mem_mb=50 static_peak_mb=50 vehicles=asleep
+PERF map=abstract_city profile=none view="Spawn" fps=145 draw_calls=0 primitives=0 objects=0 video_mem_mb=0 static_mem_mb=50 static_peak_mb=50 vehicles=asleep
+PERF map=abstract_city profile=none view="Spawn" fps=145 draw_calls=0 primitives=0 objects=0 video_mem_mb=0 static_mem_mb=50 static_peak_mb=50 vehicles=asleep
+     abstract_city: walked 39.1 m in 10 s, on a floor 600 of 600 ticks, lowest 0.0 m below the spawn
+PASS test_blind_abstract_city_config.gd::test_walks_ten_seconds_without_falling_or_sticking (11019 ms)
+SAFE_AREA window=(0, 0) safe=[P: (0, 0), S: (0, 0)] canvas=[P: (0.0, 0.0), S: (1440.0, 900.0)] viewport=(1440.0, 900.0)
+QUALITY profile=none experiment=none occluders={} effective={"camera_far":1500.0,"fog":false,"hide":[],"lod_threshold":1.0,"max_fps":0,"occlusion":false,"render_scale":1.0,"scaling_mode":"bilinear","shadows":"default","visibility_end":{}}
+STARTUP map_ready_ms=12205 first_frame_ms=12205 map=abstract_city profile=none occluders={} physics_3d=GodotPhysics3D (setting DEFAULT) vehicles=awake npcs=1 build={"android_frame_pacing":true,"debug_build":true,"display_refresh_rate":-1.0,"ios_allow_high_refresh_rate":false,"max_fps":0,"perf_feature":false,"physics_engine_setting":"DEFAULT","physics_interpolation":true,"physics_ticks":60,"screen_refresh_rate":-1.0,"vsync_mode":1} user_dir=<home>/Library/Application Support/Godot/app_userdata/İstanbul • Haliç
+PERF map=abstract_city profile=none view="Spawn" fps=145 draw_calls=0 primitives=0 objects=0 video_mem_mb=0 static_mem_mb=50 static_peak_mb=51 vehicles=awake
+VEHICLE PlaceholderCar asleep
+PASS test_blind_abstract_city_config.gd::test_punch_and_roll (2567 ms)
+SAFE_AREA window=(0, 0) safe=[P: (0, 0), S: (0, 0)] canvas=[P: (0.0, 0.0), S: (1440.0, 900.0)] viewport=(1440.0, 900.0)
+QUALITY profile=none experiment=none occluders={} effective={"camera_far":1500.0,"fog":false,"hide":[],"lod_threshold":1.0,"max_fps":0,"occlusion":false,"render_scale":1.0,"scaling_mode":"bilinear","shadows":"default","visibility_end":{}}
+STARTUP map_ready_ms=14776 first_frame_ms=14776 map=abstract_city profile=none occluders={} physics_3d=GodotPhysics3D (setting DEFAULT) vehicles=awake npcs=1 build={"android_frame_pacing":true,"debug_build":true,"display_refresh_rate":-1.0,"ios_allow_high_refresh_rate":false,"max_fps":0,"perf_feature":false,"physics_engine_setting":"DEFAULT","physics_interpolation":true,"physics_ticks":60,"screen_refresh_rate":-1.0,"vsync_mode":1} user_dir=<home>/Library/Application Support/Godot/app_userdata/İstanbul • Haliç
+PERF map=abstract_city profile=none view="Spawn" fps=144 draw_calls=0 primitives=0 objects=0 video_mem_mb=0 static_mem_mb=50 static_peak_mb=51 vehicles=awake
+VEHICLE PlaceholderCar asleep
+VEHICLE PlaceholderCar awake
+PERF map=abstract_city profile=none view="Spawn" fps=145 draw_calls=0 primitives=0 objects=0 video_mem_mb=0 static_mem_mb=51 static_peak_mb=51 vehicles=awake
+PERF map=abstract_city profile=none view="Spawn" fps=145 draw_calls=0 primitives=0 objects=0 video_mem_mb=0 static_mem_mb=51 static_peak_mb=51 vehicles=awake
+     abstract_city: 5 s of throttle: 44.3 m, end speed 14.9 m/s
+PASS test_blind_abstract_city_config.gd::test_vehicle_parks_flat_and_drives (7834 ms)
+SAFE_AREA window=(0, 0) safe=[P: (0, 0), S: (0, 0)] canvas=[P: (0.0, 0.0), S: (1440.0, 900.0)] viewport=(1440.0, 900.0)
+QUALITY profile=none experiment=none occluders={} effective={"camera_far":1500.0,"fog":false,"hide":[],"lod_threshold":1.0,"max_fps":0,"occlusion":false,"render_scale":1.0,"scaling_mode":"bilinear","shadows":"default","visibility_end":{}}
+STARTUP map_ready_ms=22601 first_frame_ms=22602 map=abstract_city profile=none occluders={} physics_3d=GodotPhysics3D (setting DEFAULT) vehicles=awake npcs=1 build={"android_frame_pacing":true,"debug_build":true,"display_refresh_rate":-1.0,"ios_allow_high_refresh_rate":false,"max_fps":0,"perf_feature":false,"physics_engine_setting":"DEFAULT","physics_interpolation":true,"physics_ticks":60,"screen_refresh_rate":-1.0,"vsync_mode":1} user_dir=<home>/Library/Application Support/Godot/app_userdata/İstanbul • Haliç
+PERF map=abstract_city profile=none view="Spawn" fps=145 draw_calls=0 primitives=0 objects=0 video_mem_mb=0 static_mem_mb=51 static_peak_mb=51 vehicles=awake
+VEHICLE PlaceholderCar asleep
+PERF map=abstract_city profile=none view="Spawn" fps=145 draw_calls=0 primitives=0 objects=0 video_mem_mb=0 static_mem_mb=51 static_peak_mb=51 vehicles=asleep
+PERF map=abstract_city profile=none view="Spawn" fps=145 draw_calls=0 primitives=0 objects=0 video_mem_mb=0 static_mem_mb=51 static_peak_mb=51 vehicles=asleep
+PERF map=abstract_city profile=none view="Spawn" fps=144 draw_calls=0 primitives=0 objects=0 video_mem_mb=0 static_mem_mb=51 static_peak_mb=51 vehicles=asleep
+PERF map=abstract_city profile=none view="Spawn" fps=145 draw_calls=0 primitives=0 objects=0 video_mem_mb=0 static_mem_mb=51 static_peak_mb=51 vehicles=asleep
+PASS test_blind_abstract_city_config.gd::test_npc_patrols (11014 ms)
+SAFE_AREA window=(0, 0) safe=[P: (0, 0), S: (0, 0)] canvas=[P: (0.0, 0.0), S: (1440.0, 900.0)] viewport=(1440.0, 900.0)
+QUALITY profile=none experiment=none occluders={} effective={"camera_far":1500.0,"fog":false,"hide":[],"lod_threshold":1.0,"max_fps":0,"occlusion":false,"render_scale":1.0,"scaling_mode":"bilinear","shadows":"default","visibility_end":{}}
+STARTUP map_ready_ms=33621 first_frame_ms=33622 map=abstract_city profile=none occluders={} physics_3d=GodotPhysics3D (setting DEFAULT) vehicles=awake npcs=1 build={"android_frame_pacing":true,"debug_build":true,"display_refresh_rate":-1.0,"ios_allow_high_refresh_rate":false,"max_fps":0,"perf_feature":false,"physics_engine_setting":"DEFAULT","physics_interpolation":true,"physics_ticks":60,"screen_refresh_rate":-1.0,"vsync_mode":1} user_dir=<home>/Library/Application Support/Godot/app_userdata/İstanbul • Haliç
+QUALITY profile=low experiment=none occluders={"ms":9,"occluders":216,"source":"baked","triangles":3908} effective={"camera_far":400.0,"fog":true,"hide":[],"lod_threshold":4.0,"max_fps":30,"occlusion":true,"render_scale":0.6,"scaling_mode":"bilinear","shadows":"off","visibility_end":{"decor":100.0,"facade_detail":100.0,"lamps":100.0,"trees":100.0}}
+QUALITY profile=high experiment=none occluders={"ms":9,"occluders":216,"source":"baked","triangles":3908} effective={"camera_far":1500.0,"fog":false,"hide":[],"lod_threshold":1.0,"max_fps":60,"occlusion":true,"render_scale":1.0,"scaling_mode":"bilinear","shadows":"default","visibility_end":{"decor":200.0,"facade_detail":200.0,"lamps":200.0,"trees":200.0}}
+QUALITY profile=none experiment=none occluders={"ms":9,"occluders":216,"source":"baked","triangles":3908} effective={"camera_far":1500.0,"fog":false,"hide":[],"lod_threshold":1.0,"max_fps":0,"occlusion":false,"render_scale":1.0,"scaling_mode":"bilinear","shadows":"default","visibility_end":{}}
+FAIL test_blind_abstract_city_config.gd::test_quality_profiles_apply (1024 ms)
+     - low: 100 m on the 0 meshes with ranges
+SAFE_AREA window=(0, 0) safe=[P: (0, 0), S: (0, 0)] canvas=[P: (0.0, 0.0), S: (1440.0, 900.0)] viewport=(1440.0, 900.0)
+QUALITY profile=none experiment=none occluders={} effective={"camera_far":1500.0,"fog":false,"hide":[],"lod_threshold":1.0,"max_fps":0,"occlusion":false,"render_scale":1.0,"scaling_mode":"bilinear","shadows":"default","visibility_end":{}}
+STARTUP map_ready_ms=34643 first_frame_ms=34643 map=abstract_city profile=none occluders={} physics_3d=GodotPhysics3D (setting DEFAULT) vehicles=awake npcs=1 build={"android_frame_pacing":true,"debug_build":true,"display_refresh_rate":-1.0,"ios_allow_high_refresh_rate":false,"max_fps":0,"perf_feature":false,"physics_engine_setting":"DEFAULT","physics_interpolation":true,"physics_ticks":60,"screen_refresh_rate":-1.0,"vsync_mode":1} user_dir=<home>/Library/Application Support/Godot/app_userdata/İstanbul • Haliç
+QUALITY profile=none experiment=none occluders={} effective={"camera_far":1500.0,"fog":false,"hide":[],"lod_threshold":1.0,"max_fps":0,"occlusion":false,"render_scale":1.0,"scaling_mode":"bilinear","shadows":"default","visibility_end":{}}
+MAP test_district loaded in 23 ms (abstract_city freed after 20 ms, 4 frames)
+QUALITY profile=none experiment=none occluders={} effective={"camera_far":1500.0,"fog":false,"hide":[],"lod_threshold":1.0,"max_fps":0,"occlusion":false,"render_scale":1.0,"scaling_mode":"bilinear","shadows":"default","visibility_end":{}}
+MAP abstract_city loaded in 57 ms (test_district freed after 26 ms, 4 frames)
+PASS test_blind_abstract_city_config.gd::test_map_switch_without_leaks (1708 ms)
+SAFE_AREA window=(0, 0) safe=[P: (0, 0), S: (0, 0)] canvas=[P: (0.0, 0.0), S: (1440.0, 900.0)] viewport=(1440.0, 900.0)
+QUALITY profile=none experiment=none occluders={} effective={"camera_far":1500.0,"fog":false,"hide":[],"lod_threshold":1.0,"max_fps":0,"occlusion":false,"render_scale":1.0,"scaling_mode":"bilinear","shadows":"default","visibility_end":{}}
+STARTUP map_ready_ms=36347 first_frame_ms=36348 map=abstract_city profile=none occluders={} physics_3d=GodotPhysics3D (setting DEFAULT) vehicles=awake npcs=1 build={"android_frame_pacing":true,"debug_build":true,"display_refresh_rate":-1.0,"ios_allow_high_refresh_rate":false,"max_fps":0,"perf_feature":false,"physics_engine_setting":"DEFAULT","physics_interpolation":true,"physics_ticks":60,"screen_refresh_rate":-1.0,"vsync_mode":1} user_dir=<home>/Library/Application Support/Godot/app_userdata/İstanbul • Haliç
+SCENARIO step=start result=INFO t=0.0 scenario=vehicle_sleep rotate_hold_s=0
+PERF map=abstract_city profile=none view="Spawn" fps=145 draw_calls=0 primitives=0 objects=0 video_mem_mb=0 static_mem_mb=52 static_peak_mb=53 vehicles=awake
+VEHICLE PlaceholderCar asleep
+SCENARIO step=parked_car_asleep result=PASS t=1.4 car asleep
+CAR walk-up PlaceholderCar
+SCENARIO step=car_button result=PASS t=2.4 distance 2.4 m, car asleep, interact button true
+VEHICLE PlaceholderCar awake
+SCENARIO step=walk_into_car_wakes_it result=PASS t=2.8 player on a wall true, car awake
+PERF map=abstract_city profile=none view="Spawn" fps=144 draw_calls=0 primitives=0 objects=0 video_mem_mb=0 static_mem_mb=52 static_peak_mb=53 vehicles=awake
+VEHICLE PlaceholderCar asleep
+SCENARIO step=asleep_after_stopping result=PASS t=3.9 after 1.1 s
+PERF map=abstract_city profile=none view="Spawn" fps=145 draw_calls=0 primitives=0 objects=0 video_mem_mb=0 static_mem_mb=52 static_peak_mb=53 vehicles=asleep
+SCENARIO step=stays_asleep_beside_it result=PASS t=6.9 player touched the car true, distance 1.25 m
+VEHICLE PlaceholderCar awake
+PERF map=abstract_city profile=none view="Spawn" fps=145 draw_calls=0 primitives=0 objects=0 video_mem_mb=0 static_mem_mb=52 static_peak_mb=53 vehicles=awake
+SCENARIO step=get_in_wakes_it result=PASS t=7.4 driving true, car awake
+SCENARIO step=throttle result=PASS t=8.6 forward speed 5.0 m/s
+PERF map=abstract_city profile=none view="Spawn" fps=145 draw_calls=0 primitives=0 objects=0 video_mem_mb=0 static_mem_mb=52 static_peak_mb=53 vehicles=awake
+SCENARIO step=get_out result=PASS t=9.9 speed when stopped 0.08 m/s
+VEHICLE PlaceholderCar asleep
+SCENARIO step=asleep_after_getting_out result=PASS t=10.4 car asleep
+SCENARIO step=slope_skipped result=INFO t=10.4 the map has no sloped viewpoint (MapDefinition.sloped_viewpoint)
+SCENARIO step=done result=PASS t=10.4 passed=9 failed=0
+PASS test_blind_abstract_city_config.gd::test_device_scenario_vehicle_sleep (11435 ms)
+SAFE_AREA window=(0, 0) safe=[P: (0, 0), S: (0, 0)] canvas=[P: (0.0, 0.0), S: (1440.0, 900.0)] viewport=(1440.0, 900.0)
+QUALITY profile=none experiment=none occluders={} effective={"camera_far":1500.0,"fog":false,"hide":[],"lod_threshold":1.0,"max_fps":0,"occlusion":false,"render_scale":1.0,"scaling_mode":"bilinear","shadows":"default","visibility_end":{}}
+STARTUP map_ready_ms=47868 first_frame_ms=47868 map=apollo11_site profile=none occluders={} physics_3d=GodotPhysics3D (setting DEFAULT) vehicles=awake npcs=1 build={"android_frame_pacing":true,"debug_build":true,"display_refresh_rate":-1.0,"ios_allow_high_refresh_rate":false,"max_fps":0,"perf_feature":false,"physics_engine_setting":"DEFAULT","physics_interpolation":true,"physics_ticks":60,"screen_refresh_rate":-1.0,"vsync_mode":1} user_dir=<home>/Library/Application Support/Godot/app_userdata/İstanbul • Haliç
+PASS test_blind_apollo11_site_config.gd::test_loads_and_spawns_on_the_ground (987 ms)
+SAFE_AREA window=(0, 0) safe=[P: (0, 0), S: (0, 0)] canvas=[P: (0.0, 0.0), S: (1440.0, 900.0)] viewport=(1440.0, 900.0)
+QUALITY profile=none experiment=none occluders={} effective={"camera_far":1500.0,"fog":false,"hide":[],"lod_threshold":1.0,"max_fps":0,"occlusion":false,"render_scale":1.0,"scaling_mode":"bilinear","shadows":"default","visibility_end":{}}
+STARTUP map_ready_ms=48861 first_frame_ms=48862 map=apollo11_site profile=none occluders={} physics_3d=GodotPhysics3D (setting DEFAULT) vehicles=awake npcs=1 build={"android_frame_pacing":true,"debug_build":true,"display_refresh_rate":-1.0,"ios_allow_high_refresh_rate":false,"max_fps":0,"perf_feature":false,"physics_engine_setting":"DEFAULT","physics_interpolation":true,"physics_ticks":60,"screen_refresh_rate":-1.0,"vsync_mode":1} user_dir=<home>/Library/Application Support/Godot/app_userdata/İstanbul • Haliç
+PERF map=apollo11_site profile=none view="Spawn" fps=145 draw_calls=0 primitives=0 objects=0 video_mem_mb=0 static_mem_mb=66 static_peak_mb=85 vehicles=awake
+VEHICLE PlaceholderCar asleep
+PERF map=apollo11_site profile=none view="Spawn" fps=145 draw_calls=0 primitives=0 objects=0 video_mem_mb=0 static_mem_mb=66 static_peak_mb=85 vehicles=asleep
+PERF map=apollo11_site profile=none view="Spawn" fps=145 draw_calls=0 primitives=0 objects=0 video_mem_mb=0 static_mem_mb=66 static_peak_mb=85 vehicles=asleep
+PERF map=apollo11_site profile=none view="Spawn" fps=145 draw_calls=0 primitives=0 objects=0 video_mem_mb=0 static_mem_mb=66 static_peak_mb=85 vehicles=asleep
+PERF map=apollo11_site profile=none view="Spawn" fps=145 draw_calls=0 primitives=0 objects=0 video_mem_mb=0 static_mem_mb=66 static_peak_mb=85 vehicles=asleep
+     apollo11_site: walked 44.5 m in 10 s, on a floor 600 of 600 ticks, lowest 0.0 m below the spawn
+PASS test_blind_apollo11_site_config.gd::test_walks_ten_seconds_without_falling_or_sticking (11026 ms)
+SAFE_AREA window=(0, 0) safe=[P: (0, 0), S: (0, 0)] canvas=[P: (0.0, 0.0), S: (1440.0, 900.0)] viewport=(1440.0, 900.0)
+QUALITY profile=none experiment=none occluders={} effective={"camera_far":1500.0,"fog":false,"hide":[],"lod_threshold":1.0,"max_fps":0,"occlusion":false,"render_scale":1.0,"scaling_mode":"bilinear","shadows":"default","visibility_end":{}}
+STARTUP map_ready_ms=59904 first_frame_ms=59904 map=apollo11_site profile=none occluders={} physics_3d=GodotPhysics3D (setting DEFAULT) vehicles=awake npcs=1 build={"android_frame_pacing":true,"debug_build":true,"display_refresh_rate":-1.0,"ios_allow_high_refresh_rate":false,"max_fps":0,"perf_feature":false,"physics_engine_setting":"DEFAULT","physics_interpolation":true,"physics_ticks":60,"screen_refresh_rate":-1.0,"vsync_mode":1} user_dir=<home>/Library/Application Support/Godot/app_userdata/İstanbul • Haliç
+PERF map=apollo11_site profile=none view="Spawn" fps=145 draw_calls=0 primitives=0 objects=0 video_mem_mb=0 static_mem_mb=66 static_peak_mb=85 vehicles=awake
+PASS test_blind_apollo11_site_config.gd::test_punch_and_roll (2577 ms)
+SAFE_AREA window=(0, 0) safe=[P: (0, 0), S: (0, 0)] canvas=[P: (0.0, 0.0), S: (1440.0, 900.0)] viewport=(1440.0, 900.0)
+QUALITY profile=none experiment=none occluders={} effective={"camera_far":1500.0,"fog":false,"hide":[],"lod_threshold":1.0,"max_fps":0,"occlusion":false,"render_scale":1.0,"scaling_mode":"bilinear","shadows":"default","visibility_end":{}}
+STARTUP map_ready_ms=62475 first_frame_ms=62475 map=apollo11_site profile=none occluders={} physics_3d=GodotPhysics3D (setting DEFAULT) vehicles=awake npcs=1 build={"android_frame_pacing":true,"debug_build":true,"display_refresh_rate":-1.0,"ios_allow_high_refresh_rate":false,"max_fps":0,"perf_feature":false,"physics_engine_setting":"DEFAULT","physics_interpolation":true,"physics_ticks":60,"screen_refresh_rate":-1.0,"vsync_mode":1} user_dir=<home>/Library/Application Support/Godot/app_userdata/İstanbul • Haliç
+PERF map=apollo11_site profile=none view="Spawn" fps=145 draw_calls=0 primitives=0 objects=0 video_mem_mb=0 static_mem_mb=66 static_peak_mb=85 vehicles=awake
+VEHICLE PlaceholderCar asleep
+VEHICLE PlaceholderCar awake
+PERF map=apollo11_site profile=none view="Spawn" fps=145 draw_calls=0 primitives=0 objects=0 video_mem_mb=0 static_mem_mb=66 static_peak_mb=85 vehicles=awake
+PERF map=apollo11_site profile=none view="Spawn" fps=145 draw_calls=0 primitives=0 objects=0 video_mem_mb=0 static_mem_mb=66 static_peak_mb=85 vehicles=awake
+PERF map=apollo11_site profile=none view="Spawn" fps=145 draw_calls=0 primitives=0 objects=0 video_mem_mb=0 static_mem_mb=66 static_peak_mb=85 vehicles=awake
+     apollo11_site: 5 s of throttle: 44.3 m, end speed 15.0 m/s
+PASS test_blind_apollo11_site_config.gd::test_vehicle_parks_flat_and_drives (8103 ms)
+SAFE_AREA window=(0, 0) safe=[P: (0, 0), S: (0, 0)] canvas=[P: (0.0, 0.0), S: (1440.0, 900.0)] viewport=(1440.0, 900.0)
+QUALITY profile=none experiment=none occluders={} effective={"camera_far":1500.0,"fog":false,"hide":[],"lod_threshold":1.0,"max_fps":0,"occlusion":false,"render_scale":1.0,"scaling_mode":"bilinear","shadows":"default","visibility_end":{}}
+STARTUP map_ready_ms=70579 first_frame_ms=70579 map=apollo11_site profile=none occluders={} physics_3d=GodotPhysics3D (setting DEFAULT) vehicles=awake npcs=1 build={"android_frame_pacing":true,"debug_build":true,"display_refresh_rate":-1.0,"ios_allow_high_refresh_rate":false,"max_fps":0,"perf_feature":false,"physics_engine_setting":"DEFAULT","physics_interpolation":true,"physics_ticks":60,"screen_refresh_rate":-1.0,"vsync_mode":1} user_dir=<home>/Library/Application Support/Godot/app_userdata/İstanbul • Haliç
+PERF map=apollo11_site profile=none view="Spawn" fps=145 draw_calls=0 primitives=0 objects=0 video_mem_mb=0 static_mem_mb=66 static_peak_mb=85 vehicles=awake
+VEHICLE PlaceholderCar asleep
+PERF map=apollo11_site profile=none view="Spawn" fps=145 draw_calls=0 primitives=0 objects=0 video_mem_mb=0 static_mem_mb=66 static_peak_mb=85 vehicles=asleep
+PERF map=apollo11_site profile=none view="Spawn" fps=145 draw_calls=0 primitives=0 objects=0 video_mem_mb=0 static_mem_mb=66 static_peak_mb=85 vehicles=asleep
+PERF map=apollo11_site profile=none view="Spawn" fps=145 draw_calls=0 primitives=0 objects=0 video_mem_mb=0 static_mem_mb=66 static_peak_mb=85 vehicles=asleep
+PERF map=apollo11_site profile=none view="Spawn" fps=145 draw_calls=0 primitives=0 objects=0 video_mem_mb=0 static_mem_mb=66 static_peak_mb=85 vehicles=asleep
+PASS test_blind_apollo11_site_config.gd::test_npc_patrols (11015 ms)
+SAFE_AREA window=(0, 0) safe=[P: (0, 0), S: (0, 0)] canvas=[P: (0.0, 0.0), S: (1440.0, 900.0)] viewport=(1440.0, 900.0)
+QUALITY profile=none experiment=none occluders={} effective={"camera_far":1500.0,"fog":false,"hide":[],"lod_threshold":1.0,"max_fps":0,"occlusion":false,"render_scale":1.0,"scaling_mode":"bilinear","shadows":"default","visibility_end":{}}
+STARTUP map_ready_ms=81582 first_frame_ms=81583 map=apollo11_site profile=none occluders={} physics_3d=GodotPhysics3D (setting DEFAULT) vehicles=awake npcs=1 build={"android_frame_pacing":true,"debug_build":true,"display_refresh_rate":-1.0,"ios_allow_high_refresh_rate":false,"max_fps":0,"perf_feature":false,"physics_engine_setting":"DEFAULT","physics_interpolation":true,"physics_ticks":60,"screen_refresh_rate":-1.0,"vsync_mode":1} user_dir=<home>/Library/Application Support/Godot/app_userdata/İstanbul • Haliç
+QUALITY profile=low experiment=none occluders={"ms":15,"occluders":1,"source":"baked","triangles":142768} effective={"camera_far":400.0,"fog":true,"hide":[],"lod_threshold":4.0,"max_fps":30,"occlusion":true,"render_scale":0.6,"scaling_mode":"bilinear","shadows":"off","visibility_end":{"decor":100.0,"facade_detail":100.0,"lamps":100.0,"trees":100.0}}
+QUALITY profile=high experiment=none occluders={"ms":15,"occluders":1,"source":"baked","triangles":142768} effective={"camera_far":1500.0,"fog":false,"hide":[],"lod_threshold":1.0,"max_fps":60,"occlusion":true,"render_scale":1.0,"scaling_mode":"bilinear","shadows":"default","visibility_end":{"decor":200.0,"facade_detail":200.0,"lamps":200.0,"trees":200.0}}
+QUALITY profile=none experiment=none occluders={"ms":15,"occluders":1,"source":"baked","triangles":142768} effective={"camera_far":1500.0,"fog":false,"hide":[],"lod_threshold":1.0,"max_fps":0,"occlusion":false,"render_scale":1.0,"scaling_mode":"bilinear","shadows":"default","visibility_end":{}}
+FAIL test_blind_apollo11_site_config.gd::test_quality_profiles_apply (1017 ms)
+     - low: 100 m on the 0 meshes with ranges
+SAFE_AREA window=(0, 0) safe=[P: (0, 0), S: (0, 0)] canvas=[P: (0.0, 0.0), S: (1440.0, 900.0)] viewport=(1440.0, 900.0)
+QUALITY profile=none experiment=none occluders={} effective={"camera_far":1500.0,"fog":false,"hide":[],"lod_threshold":1.0,"max_fps":0,"occlusion":false,"render_scale":1.0,"scaling_mode":"bilinear","shadows":"default","visibility_end":{}}
+STARTUP map_ready_ms=82594 first_frame_ms=82595 map=apollo11_site profile=none occluders={} physics_3d=GodotPhysics3D (setting DEFAULT) vehicles=awake npcs=1 build={"android_frame_pacing":true,"debug_build":true,"display_refresh_rate":-1.0,"ios_allow_high_refresh_rate":false,"max_fps":0,"perf_feature":false,"physics_engine_setting":"DEFAULT","physics_interpolation":true,"physics_ticks":60,"screen_refresh_rate":-1.0,"vsync_mode":1} user_dir=<home>/Library/Application Support/Godot/app_userdata/İstanbul • Haliç
+QUALITY profile=none experiment=none occluders={} effective={"camera_far":1500.0,"fog":false,"hide":[],"lod_threshold":1.0,"max_fps":0,"occlusion":false,"render_scale":1.0,"scaling_mode":"bilinear","shadows":"default","visibility_end":{}}
+MAP test_district loaded in 23 ms (apollo11_site freed after 19 ms, 4 frames)
+QUALITY profile=none experiment=none occluders={} effective={"camera_far":1500.0,"fog":false,"hide":[],"lod_threshold":1.0,"max_fps":0,"occlusion":false,"render_scale":1.0,"scaling_mode":"bilinear","shadows":"default","visibility_end":{}}
+MAP apollo11_site loaded in 132 ms (test_district freed after 24 ms, 4 frames)
+PASS test_blind_apollo11_site_config.gd::test_map_switch_without_leaks (1734 ms)
+SAFE_AREA window=(0, 0) safe=[P: (0, 0), S: (0, 0)] canvas=[P: (0.0, 0.0), S: (1440.0, 900.0)] viewport=(1440.0, 900.0)
+QUALITY profile=none experiment=none occluders={} effective={"camera_far":1500.0,"fog":false,"hide":[],"lod_threshold":1.0,"max_fps":0,"occlusion":false,"render_scale":1.0,"scaling_mode":"bilinear","shadows":"default","visibility_end":{}}
+STARTUP map_ready_ms=84338 first_frame_ms=84339 map=apollo11_site profile=none occluders={} physics_3d=GodotPhysics3D (setting DEFAULT) vehicles=awake npcs=1 build={"android_frame_pacing":true,"debug_build":true,"display_refresh_rate":-1.0,"ios_allow_high_refresh_rate":false,"max_fps":0,"perf_feature":false,"physics_engine_setting":"DEFAULT","physics_interpolation":true,"physics_ticks":60,"screen_refresh_rate":-1.0,"vsync_mode":1} user_dir=<home>/Library/Application Support/Godot/app_userdata/İstanbul • Haliç
+SCENARIO step=start result=INFO t=0.0 scenario=vehicle_sleep rotate_hold_s=0
+PERF map=apollo11_site profile=none view="Spawn" fps=145 draw_calls=0 primitives=0 objects=0 video_mem_mb=0 static_mem_mb=66 static_peak_mb=85 vehicles=awake
+VEHICLE PlaceholderCar asleep
+SCENARIO step=parked_car_asleep result=PASS t=1.7 car asleep
+CAR walk-up PlaceholderCar
+SCENARIO step=car_button result=PASS t=2.7 distance 2.4 m, car asleep, interact button true
+PERF map=apollo11_site profile=none view="Spawn" fps=145 draw_calls=0 primitives=0 objects=0 video_mem_mb=0 static_mem_mb=66 static_peak_mb=85 vehicles=asleep
+VEHICLE PlaceholderCar awake
+SCENARIO step=walk_into_car_wakes_it result=PASS t=3.1 player on a wall true, car awake
+VEHICLE PlaceholderCar asleep
+SCENARIO step=asleep_after_stopping result=PASS t=4.4 after 1.3 s
+PERF map=apollo11_site profile=none view="Spawn" fps=144 draw_calls=0 primitives=0 objects=0 video_mem_mb=0 static_mem_mb=66 static_peak_mb=85 vehicles=asleep
+PERF map=apollo11_site profile=none view="Spawn" fps=145 draw_calls=0 primitives=0 objects=0 video_mem_mb=0 static_mem_mb=66 static_peak_mb=85 vehicles=asleep
+SCENARIO step=stays_asleep_beside_it result=PASS t=7.4 player touched the car true, distance 1.25 m
+VEHICLE PlaceholderCar awake
+SCENARIO step=get_in_wakes_it result=PASS t=7.9 driving true, car awake
+PERF map=apollo11_site profile=none view="Spawn" fps=144 draw_calls=0 primitives=0 objects=0 video_mem_mb=0 static_mem_mb=66 static_peak_mb=85 vehicles=awake
+SCENARIO step=throttle result=PASS t=9.1 forward speed 5.0 m/s
+SCENARIO step=get_out result=PASS t=10.4 speed when stopped 0.07 m/s
+VEHICLE PlaceholderCar asleep
+SCENARIO step=asleep_after_getting_out result=PASS t=10.9 car asleep
+SCENARIO step=slope_skipped result=INFO t=10.9 the map has no sloped viewpoint (MapDefinition.sloped_viewpoint)
+SCENARIO step=done result=PASS t=10.9 passed=9 failed=0
+PASS test_blind_apollo11_site_config.gd::test_device_scenario_vehicle_sleep (11946 ms)
+RESULT 14 passed, 2 failed, 0 skipped

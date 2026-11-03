@@ -1,0 +1,20 @@
+
+IMPORT apollo11_site from <repo>/maps/apollo11_site/source/apollo11_site.glb
+IMPORT stage load 6 ms
+IMPORT stage collect 0 ms
+IMPORT stage fix 24 ms
+IMPORT stage audit 68 ms
+CHECK R8 INFO the model holds only meshes
+CHECK C1 PASS 1 mesh nodes
+CHECK R4 FIXED 1 meshes had no normals; flat normals computed from the triangles
+CHECK R5 WARN 1 white untextured materials without vertex colours render white
+CHECK R6 PASS every material is single-sided
+CHECK C2 PASS 256 × 19 × 256 m; typical object (90th-percentile height) 255.5 m
+CHECK C3 FAIL most flat area faces +Z, not +Y: the model looks Z-up. Set "up_axis": "z" in the configuration (or re-export with +Y up).
+CHECK C5 PASS within 182 m of the origin, 256 m high
+CHECK C6 PASS 142768 triangles
+IMPORT apollo11_site NOT written in 0.1 s; report res://docs/maps/imported/blind/apollo11_site_blind.md
+WARNING: 4 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)
+ERROR: 2 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)

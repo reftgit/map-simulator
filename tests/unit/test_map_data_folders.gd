@@ -2,10 +2,12 @@ extends "res://tests/test_case.gd"
 ## The map generator's data folders stay out of Godot: without their
 ## .gdignore, Godot would import the elevation PNGs and pack the OSM extract
 ## and the JSON records into every build (PROJECT_CONTEXT.md, T39). The same
-## holds for the import tool's committed source GLB of the Kenney town
-## (Phase 6a): only its processed model is a game file.
+## holds for the import tool's committed source GLBs (the Kenney town of
+## Phase 6a, the two blind-test maps of Phase 6b): only processed models are
+## game files.
 
-const FOLDERS := ["res://maps/istanbul_halic/source", "res://maps/istanbul_halic/reference", "res://maps/kenney_town/source"]
+const FOLDERS := ["res://maps/istanbul_halic/source", "res://maps/istanbul_halic/reference", "res://maps/kenney_town/source",
+		"res://maps/abstract_city/source", "res://maps/apollo11_site/source"]
 
 
 func test_generator_data_folders_carry_a_gdignore() -> void:

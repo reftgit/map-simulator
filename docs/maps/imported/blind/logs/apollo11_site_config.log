@@ -1,0 +1,35 @@
+
+IMPORT apollo11_site from <repo>/maps/apollo11_site/source/apollo11_site.glb
+IMPORT stage load 6 ms
+IMPORT stage collect 0 ms
+IMPORT stage fix 24 ms
+IMPORT stage audit 59 ms
+IMPORT stage classify 0 ms
+IMPORT stage shells 0 ms
+IMPORT stage colliders 125 ms
+IMPORT stage placement 180 ms
+IMPORT stage occluders 38 ms
+CHECK R8 INFO the model holds only meshes
+CHECK C1 PASS 1 mesh nodes
+CHECK R4 FIXED 1 meshes had no normals; flat normals computed from the triangles
+CHECK R5 WARN 1 white untextured materials without vertex colours render white
+CHECK R6 PASS every material is single-sided
+CHECK C2 PASS 256 × 256 × 19 m; typical object (90th-percentile height) 18.7 m
+CHECK C3 FIXED rotated from Z-up to Y-up (configuration)
+CHECK C5 PASS within 182 m of the origin, 19 m high
+CHECK C6 PASS 142768 triangles
+CHECK R1 PASS every mesh matched a name rule (0 configured, 1 vocabulary)
+CHECK R7 INFO 0 water meshes
+CHECK R3 PASS no non-ground mesh is wider than 150 m
+CHECK C7 WARN 476 zero-area triangles
+CHECK R2 INFO no collision nodes; colliders generated from the categories: 1 bodies, 1 shapes (trimesh 1), 142768 trimesh triangles
+CHECK C4 PASS 100.0 % of the map has walkable ground (10000 samples)
+CHECK C8 PASS player spawn at (-1.3, 1.2, -1.3) facing 0°, 40 m of clear walk ahead, 2 m from the centre of the walkable area
+CHECK C8 PASS vehicle at (-3.8, 1.4, 6.4) facing 0°, 40 m of clear road ahead, 8 m from the spawn
+CHECK C8 PASS NPC route (-11.5, 1.2, -1.3) → (-11.5, 1.2, -13.3) (12 m), 10 m from the spawn
+CHECK C8 INFO no sloped viewpoint (ground 2–10° with room for a car): the device scenario skips its slope steps
+IMPORT apollo11_site written in 0.6 s; report res://docs/maps/imported/blind/apollo11_site_config.md
+WARNING: 4 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)
+ERROR: 2 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)
