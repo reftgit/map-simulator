@@ -216,3 +216,17 @@ func test_the_default_map_streams_what_its_profiles_draw() -> void:
 	for i in seen[true].size():
 		check(seen[true][i] == seen[false][i], "view %d: the same meshes are drawn (%d streamed, %d whole)" % [i, seen[true][i].size(), seen[false][i].size()])
 
+
+func test_the_registry_maps_cells_are_current() -> void:
+	var checked := []
+	for map in MapRegistry.load_default().definitions:
+		if map.streaming_index_path.is_empty() or not ResourceLoader.exists(map.streaming_index_path):
+			continue
+		var index := load(map.streaming_index_path) as MapStreamingIndex
+		check(index.problem().is_empty(), "%s: its cells are current (%s)" % [map.id, index.problem()])
+		check(map.streaming_index_path == map.resource_path.get_base_dir().path_join("streaming/%s_index.tres" % map.id), "%s: index beside the map" % map.id)
+		checked.append(map.id)
+	if checked.is_empty():
+		skip("no map's cells are written here (tools/cell_map.gd -- --all)")
+		return
+	print("cells current: ", checked)

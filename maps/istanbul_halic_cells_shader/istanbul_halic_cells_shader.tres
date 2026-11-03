@@ -19,6 +19,7 @@ script = ExtResource("1_definition")
 id = "istanbul_halic_cells_shader"
 display_name = "İstanbul • Haliç (cells, shader facades)"
 scene_path = "res://maps/istanbul_halic_cells_shader/istanbul_halic_cells_shader.tscn"
+streaming_index_path = "res://maps/istanbul_halic_cells_shader/streaming/istanbul_halic_cells_shader_index.tres"
 player_spawn_position = Vector3(-109.0365, 6.5477, 204.2572)
 player_spawn_yaw_degrees = -27.0
 bounds = Rect2(-1931.65, -1558.48, 2687.51, 2671.68)

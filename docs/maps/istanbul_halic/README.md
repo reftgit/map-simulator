@@ -152,9 +152,17 @@ A clone carries no map GLB: `assets/istanbul_halic.glb` is copied in from the so
    On the Mac (Apple Silicon, 16 GB) the run took 122.8 s with a peak resident size of 2.4 GiB (peak memory footprint 2.4 GiB). It needs no other generated file: the map's occluders (the cells map's, `maps/istanbul_halic_cells/istanbul_halic_cells_occluders.scn`) are committed.
 3. `godot --headless --path . --import` (the shader GLB's import took 8.7 s on the Mac), then `godot --path .` starts on `istanbul_halic_cells_shader`; a debug build logs `STARTUP … map=istanbul_halic_cells_shader`.
 4. Optional, for İstanbul • Haliç as a selectable map and its tests: copy its GLB as in "The model file is not in Git". The other generated maps: "The cells map" and "Facade variants" above.
-5. `godot --headless --path . --script res://tests/run_tests.gd`: without a GLB the tests of its map report SKIP and the run exits 2.
+5. Split the maps into a resident scene and streaming cells (`docs/STREAMING.md`; about 10 s for every map on the Mac), then import again:
 
-A device build packs every map whose GLB is imported (five maps: Release Perf APK 675 MB); a release package should carry only the default map's GLB (open question 36).
+   ```bash
+   godot --headless --path . --script res://tools/cell_map.gd -- --all
+   godot --headless --path . --import
+   ```
+
+   Without this step every map loads whole, as before (the definitions point at indexes that do not exist yet); with it the default map streams its facade detail, trees, lamps, and decor. Run it again after regenerating or copying in a GLB (a stale index is ignored with a warning).
+6. `godot --headless --path . --script res://tests/run_tests.gd`: without a GLB the tests of its map report SKIP and the run exits 2.
+
+A device build packs every map whose GLB is imported (five maps: Release Perf APK 675 MB), and their streaming files when they are written (about 740 MB more for the four İstanbul maps); a release package should carry only the default map's files (open question 36).
 
 ## Attribution
 

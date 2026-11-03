@@ -13,6 +13,7 @@ script = ExtResource("3_k0to7")
 id = "abstract_city"
 display_name = "Abstract city (public domain)"
 scene_path = "res://maps/abstract_city/abstract_city.tscn"
+streaming_index_path = "res://maps/abstract_city/streaming/abstract_city_index.tres"
 player_spawn_position = Vector3(41.763355, 0.09999619, -24.749489)
 player_spawn_yaw_degrees = 180.0
 bounds = Rect2(-102.68672, -206.40771, 332.8734, 299.04782)

@@ -13,6 +13,7 @@ script = ExtResource("3_qks20")
 id = "kenney_town"
 display_name = "Kenney town (CC0)"
 scene_path = "res://maps/kenney_town/kenney_town.tscn"
+streaming_index_path = "res://maps/kenney_town/streaming/kenney_town_index.tres"
 player_spawn_position = Vector3(20.86, 0.20000228, -1.0301437)
 bounds = Rect2(-58.14, -58.030144, 116, 116)
 kill_height = -11.0
