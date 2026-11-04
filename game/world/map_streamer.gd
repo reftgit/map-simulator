@@ -32,8 +32,12 @@ const REEVALUATE_DISTANCE := 2.0
 ## Seconds of the camera's velocity looked ahead (cells are also wanted around
 ## the point it will reach).
 @export var lookahead := 1.5
-## Threaded requests in flight at once.
-@export var max_requests := 4
+## Threaded requests in flight at once. One: cells are small (26 KB on
+## average on the default map) and one at a time keeps up with a driving
+## camera (no needed cell missing on the routes), while more at once added
+## frames of 51–57 ms on the Galaxy Tab A7 (loading threads competing with
+## the game's).
+@export var max_requests := 1
 ## Main-thread milliseconds per frame for giving loaded cells their meshes;
 ## at least one cell per frame.
 @export var attach_budget_ms := 2.0
@@ -60,6 +64,7 @@ var _grid := {}  # "category:i:j" -> cell
 var _categories: Array[String] = []
 var _cells_of := {}  # category -> Array of its cells
 var _failed := {}  # cell -> true: not requested again
+var _pinned := {}  # cell -> true: a warm cell, never freed
 var _loaded_now := {}  # cell -> MapCell loaded on the main thread (not threaded)
 var _loaded := {}  # cell -> MapCell
 var _nodes := {}  # cell -> Array of MeshInstance3D
@@ -96,6 +101,21 @@ func setup(new_map_root: Node, new_index: MapStreamingIndex) -> void:
 		_cells_of.get_or_add(category, []).append(cell)
 	for path in index.material_paths:
 		_materials.append(load(path))
+	# Let the map script change these materials now, at load, as it changes the
+	# whole map's in _ready(): a material changed when its first cell arrives
+	# makes the renderer build its shader then (stalls of 100–200 ms on the
+	# Galaxy Tab A7 when the İstanbul maps' vertex-colour fix ran at first use).
+	if map_root.has_method(&"prepare_streamed_materials"):
+		map_root.prepare_streamed_materials(_materials)
+	# Warm cells: the smallest cell using each material, loaded now and kept,
+	# so every material is in the scene from the start as with the whole map
+	# (on the Galaxy Tab A7 the first cell bringing a material into the scene
+	# stalled a frame for about 100 ms, the whole map never did).
+	for cell in index.warm_cells:
+		var resource := load(index.cell_paths[cell]) as MapCell
+		if resource:
+			_attach(cell, resource)
+			_pinned[cell] = true
 
 
 ## Takes the visibility ranges from RenderSettings' effective settings: a
@@ -194,6 +214,7 @@ func shutdown() -> void:
 	_queue.clear()
 	_loaded.clear()
 	_loaded_now.clear()
+	_pinned.clear()
 	_nodes.clear()
 	_materials.clear()
 	index = null
@@ -256,7 +277,7 @@ func _evaluate(position: Vector3) -> void:
 			if not _wanted.has(cell):
 				_wanted[cell] = cell_distance(cell, position)
 	for cell in _loaded.keys():
-		if not _wanted.has(cell) and not _within(cell, position, margin + hysteresis):
+		if not _wanted.has(cell) and not _pinned.has(cell) and not _within(cell, position, margin + hysteresis):
 			_detach(cell)
 	for cell in _fetched.keys():
 		if not _wanted.has(cell):

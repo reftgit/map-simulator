@@ -7,9 +7,12 @@ extends Node
 ## With trace, the warm-up is sampled too, the GPU time of each frame is
 ## measured, pipeline compilations are counted, and every frame's times are
 ## kept in the results (tools/perf/trace_summary.py reads them).
-## On a streamed map each result records the cells loaded, freed, and given
-## their meshes and the longest main-thread time for that in a frame; a trace
-## also lists the frames in which cells got their meshes.
+## With a route, the player (or the vehicle) is moved along it at a fixed
+## speed instead, out and back, one result per direction. On a streamed map
+## each result records the cells loaded, freed, and given their meshes, the
+## longest main-thread time for that in a frame, and (on a route) the frames
+## in which a cell the camera needed was missing; a trace also lists the
+## frames in which cells got their meshes.
 ## Writes user://bench_results.json, logs one "BENCH {json}" line per result,
 ## saves screenshots under user://bench/, and quits the app when done (unless
 ## quit_when_done is false). On Android the results and screenshots also go to
@@ -34,6 +37,11 @@ var config: PerfConfig
 var game: Node
 var results: Array = []
 
+## Route mode: the body moved along the path and how far along it is (m).
+var _route_body: Node3D
+var _route_path: Array[Vector3] = []
+var _route_distance := 0.0
+
 
 func _ready() -> void:
 	# A results file signals completion to the host scripts, so drop stale ones.
@@ -47,7 +55,9 @@ func _run() -> void:
 	if config.trace:
 		RenderingServer.viewport_set_measure_render_time(get_viewport().get_viewport_rid(), true)
 	var names: Array[String] = game.get_view_names()
-	if config.session_minutes > 0:
+	if not config.route.is_empty():
+		await _route()
+	elif config.session_minutes > 0:
 		var view := config.session_view if not config.session_view.is_empty() else names[0]
 		await _session(view)
 	else:
@@ -95,6 +105,92 @@ func _measure_view(view: String) -> void:
 		await _screenshot(view)
 
 
+## Route mode: moves the player (with in_vehicle the vehicle, the player in
+## it) along config.route at config.route_speed, out and back: every physics
+## tick, without input or collision (the player's physics and the vehicle's
+## simulation are off meanwhile), so every run takes the same path at the
+## same speed. Each direction: placed at its start, warmed up, then measured
+## from start to end.
+func _route() -> void:
+	var body: Node3D = game.player
+	if config.in_vehicle:
+		if not game.vehicle_interaction.is_driving():
+			game.vehicle_interaction.enter(game.world.vehicles[0])
+		body = game.vehicle_interaction.vehicle
+		(body as RigidBody3D).freeze_mode = RigidBody3D.FREEZE_MODE_KINEMATIC
+		(body as RigidBody3D).freeze = true
+	else:
+		game.player.set_physics_process(false)
+	var length := route_length(config.route)
+	var forward: Array[Vector3] = config.route.duplicate()
+	var backward: Array[Vector3] = config.route.duplicate()
+	backward.reverse()
+	var legs := {"out": forward}
+	if config.route_back:
+		legs["back"] = backward
+	for leg: String in legs:
+		_route_path = legs[leg]
+		_route_distance = 0.0
+		_place_on_route(body, true)
+		game.camera_rig.snap_behind_target()
+		var view := "Route %s%s" % [leg, " (vehicle)" if config.in_vehicle else ""]
+		game.hud.view_name = "%s  [BENCH %s]" % [view, config.experiment]
+		await _wait_seconds(config.warmup_s)
+		_route_body = body
+		var result := await _sample(length / config.route_speed, true)
+		_route_body = null
+		result["view"] = view
+		result["route_m"] = snappedf(length, 0.1)
+		result["route_speed"] = config.route_speed
+		_record(result)
+		if config.screenshots:
+			await _screenshot(view)
+	if config.in_vehicle:
+		(body as RigidBody3D).freeze = false
+	else:
+		game.player.set_physics_process(true)
+
+
+func _physics_process(delta: float) -> void:
+	if _route_body == null:
+		return
+	_route_distance += config.route_speed * delta
+	_place_on_route(_route_body, false)
+
+
+## Puts `body` at _route_distance along _route_path, facing along it (a
+## vehicle drives along its +Z, 0.5 m above the route's ground height).
+func _place_on_route(body: Node3D, jump: bool) -> void:
+	var at := route_point(_route_path, _route_distance)
+	var ahead := route_point(_route_path, _route_distance + 1.0) - at
+	ahead.y = 0.0
+	var facing := Basis.looking_at(ahead.normalized() if ahead.length() > 0.01 else Vector3.FORWARD, Vector3.UP)
+	if config.in_vehicle:
+		body.global_transform = Transform3D(facing * Basis(Vector3.UP, PI), at + Vector3.UP * 0.5)
+	else:
+		body.global_transform = Transform3D(facing, at)
+	if jump:
+		body.reset_physics_interpolation()
+
+
+## Total length of a polyline (m).
+static func route_length(path: Array[Vector3]) -> float:
+	var length := 0.0
+	for i in range(1, path.size()):
+		length += path[i].distance_to(path[i - 1])
+	return length
+
+
+## The point `distance` metres along a polyline (its end beyond it).
+static func route_point(path: Array[Vector3], distance: float) -> Vector3:
+	for i in range(1, path.size()):
+		var segment := path[i].distance_to(path[i - 1])
+		if distance <= segment and segment > 0.0:
+			return path[i - 1].lerp(path[i], distance / segment)
+		distance -= segment
+	return path[-1]
+
+
 func _session(view: String) -> void:
 	_go_to(view)
 	for minute in config.session_minutes:
@@ -107,7 +203,7 @@ func _session(view: String) -> void:
 
 
 ## Samples frames for `seconds`; returns FPS statistics and counter averages.
-## With `check_missing` every frame also checks for cells the
+## With `check_missing` (route mode) every frame also checks for cells the
 ## camera needs that are not loaded (MapStreamer.missing_cells()).
 func _sample(seconds: float, check_missing := false) -> Dictionary:
 	var frame_us: PackedInt64Array = []

@@ -1,0 +1,4 @@
+{"experiment": "c_route_drive_shader", "device": "android", "battery_c_start": 31.0, "battery_c_end": 32.0,
+ "thermal_status_start": "0", "thermal_status_end": "0",
+ "pss_peak_kb": 0, "wall_s": 107, "started": "2026-11-04 19:49:49",
+ "cool_wait_s": 0, "cool_target_c": ""}

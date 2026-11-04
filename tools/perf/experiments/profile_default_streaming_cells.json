@@ -1,0 +1,1 @@
+{"experiment": "profile_default_streaming_cells", "map": "istanbul_halic_cells", "bench": {"warmup_s": 15, "measure_s": 20}}

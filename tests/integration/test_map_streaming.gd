@@ -133,6 +133,25 @@ func test_what_is_drawn_is_the_same_with_and_without_streaming() -> void:
 	check(seen[false].any(func(view: Array) -> bool: return view.any(func(path: String) -> bool: return path.contains("Tree_"))), "the views include streamed meshes")
 
 
+func test_route_benchmark_records_streaming() -> void:
+	definition = _map()
+	await _start(definition, RANGES)
+	var config := PerfConfig.from_dict({"experiment": "route_test", "visibility_end": RANGES, "bench": {"warmup_s": 0.2,
+			"screenshots": false, "quit_when_done": false, "trace": true, "route_speed": 60.0, "route": [[-95, 0.5, 30], [95, 0.5, 30]]}})
+	var bench: PerfBenchmark = game.apply_perf_experiment(config)
+	var results: Array = await bench.finished
+	check(results.size() == 2 and results[0].view == "Route out" and results[1].view == "Route back", "one result per direction")
+	for result: Dictionary in results:
+		var streaming: Dictionary = result.get("streaming", {})
+		check(is_equal_approx(result.route_m, 190.0), "route length recorded")
+		check(streaming.get("loads", 0) > 0 and streaming.get("unloads", 0) > 0, "%s: cells loaded and freed on the way (%s)" % [result.view, streaming])
+		check(streaming.get("missing_frames", -1) == 0, "%s: no frame with a needed cell missing" % result.view)
+		check(not (result.trace.cells as Array).is_empty(), "%s: the trace lists the frames with attached cells" % result.view)
+	check(game.player.global_position.distance_to(Vector3(-95, 0.5, 30)) < 2.0, "the player ends where the route began")
+	check(game.player.is_physics_processing(), "the player's physics is back on")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(PerfBenchmark.RESULTS_PATH))
+
+
 func test_a_map_without_an_index_loads_whole() -> void:
 	definition = _map()
 	await _start(load("res://maps/test_district/test_district.tres"))
@@ -158,6 +177,12 @@ func test_a_map_switch_frees_the_cells() -> void:
 	check(not loaded_paths.is_empty(), "cells loaded before the switch")
 	var switched: bool = await game.switch_map(load("res://maps/test_district/test_district.tres"))
 	check(switched and not is_instance_valid(streamer), "switched; the streamer is freed with the map")
+	check(game.hud.streamer == null and game.hud.streaming_text() == "cells off", "the overlay lets go of it")
+	var gone := MapStreamer.new()
+	game.hud.streamer = gone
+	gone.free()
+	check(game.hud.streaming_text() == "cells off", "and a streamer freed under it reads as none")
+	game.hud.streamer = null
 	check(not loaded_paths.any(func(path: String) -> bool: return ResourceLoader.has_cached(path)), "no cell is held any more")
 	switched = await game.switch_map(definition)
 	await process_frames(2)

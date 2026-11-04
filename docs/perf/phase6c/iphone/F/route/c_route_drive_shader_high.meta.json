@@ -1,0 +1,33 @@
+{
+ "experiment": "c_route_drive_shader_high",
+ "device": "ios",
+ "wall_s": 101,
+ "cooldown_s": 0,
+ "app_args": "",
+ "thermal_start": "Nominal",
+ "thermal_end": "Nominal",
+ "thermal_max": "Nominal",
+ "footprint_peak_mib": 585,
+ "probes": [
+  {
+   "t": 0,
+   "thermal": "Nominal",
+   "footprint_mib": null
+  },
+  {
+   "t": 40,
+   "thermal": "Nominal",
+   "footprint_mib": 579
+  },
+  {
+   "t": 91,
+   "thermal": "Nominal",
+   "footprint_mib": 585
+  },
+  {
+   "t": 102,
+   "thermal": "Nominal",
+   "footprint_mib": null
+  }
+ ]
+}

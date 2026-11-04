@@ -100,6 +100,21 @@ func test_in_vehicle_bench_key() -> void:
 	check(not PerfConfig.from_dict({"experiment": "x", "bench": {}}).in_vehicle, "off by default")
 
 
+func test_route_bench_keys() -> void:
+	var config := PerfConfig.from_dict({"experiment": "x", "bench": {"route": [[0, 1, 0], [30, 2, 40]], "route_speed": 15, "route_back": false}})
+	check(config != null and config.route == [Vector3(0, 1, 0), Vector3(30, 2, 40)], "route points parsed (%s)" % PerfConfig.last_error)
+	check(config != null and is_equal_approx(config.route_speed, 15.0) and not config.route_back, "speed and one way")
+	check(PerfConfig.from_dict({"experiment": "x", "bench": {}}).route.is_empty(), "no route by default (viewpoints)")
+	check(PerfConfig.from_dict({"experiment": "x", "bench": {"route": [[0, 0, 0]]}}) == null, "one point is no route")
+	check(PerfConfig.from_dict({"experiment": "x", "bench": {"route": [[0, 0]]}}) == null, "a point needs three numbers")
+	check(PerfConfig.from_dict({"experiment": "x", "bench": {"route": [[0, 0, 0], [1, 0, 0]], "route_speed": 0}}) == null, "speed must be positive")
+	var path: Array[Vector3] = [Vector3.ZERO, Vector3(30, 0, 40), Vector3(30, 0, 50)]
+	check(is_equal_approx(PerfBenchmark.route_length(path), 60.0), "route length")
+	check(PerfBenchmark.route_point(path, 25.0).is_equal_approx(Vector3(15, 0, 20)), "point halfway along the first segment")
+	check(PerfBenchmark.route_point(path, 55.0).is_equal_approx(Vector3(30, 0, 45)), "point on the second segment")
+	check(PerfBenchmark.route_point(path, 99.0) == Vector3(30, 0, 50), "beyond the end: the end")
+
+
 func test_streaming_runtime_keys() -> void:
 	var config := PerfConfig.from_dict({"experiment": "x", "runtime": {"streaming": false, "streaming_index": "res://maps/x/streaming_100/x_index.tres"}})
 	check(config != null and config.runtime.streaming == false and config.runtime.streaming_index.ends_with("x_index.tres"), "streaming keys parsed (%s)" % PerfConfig.last_error)

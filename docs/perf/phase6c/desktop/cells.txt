@@ -1,0 +1,52 @@
+# godot --headless --path . --script res://tools/cell_map.gd -- --all   (Mac, Apple M5; 2026-11-03; 10.8 s)
+CELLS istanbul_halic_cells_shader: 4726 of 6129 meshes streamed in 2612 cells of 50 m; resident scene 31.4 MB, cells 67.2 MB
+CELLS   facade_detail: 2591 meshes, 673039 triangles, 1560 cells (21.2 MB)
+CELLS   trees: 1319 meshes, 1246592 triangles, 577 cells (33.4 MB)
+CELLS   lamps: 517 meshes, 305368 triangles, 264 cells (7.7 MB)
+CELLS   decor: 299 meshes, 159048 triangles, 211 cells (5.0 MB)
+CELLS istanbul_halic_cells_shader done in 2.2 s
+CELLS istanbul_halic: 1652 of 3055 meshes streamed in 1056 cells of 50 m; resident scene 31.3 MB, cells 155.3 MB
+CELLS   facade_detail: 371 meshes, 4536517 triangles, 360 cells (109.3 MB)
+CELLS   trees: 465 meshes, 1246592 triangles, 221 cells (33.4 MB)
+CELLS   lamps: 517 meshes, 305368 triangles, 264 cells (7.7 MB)
+CELLS   decor: 299 meshes, 159048 triangles, 211 cells (5.0 MB)
+CELLS istanbul_halic done in 2.7 s
+CELLS test_district: nothing to stream (no mesh in facade_detail, trees, lamps, decor); the map loads whole
+CELLS istanbul_halic_cells: 4726 of 6129 meshes streamed in 2613 cells of 50 m; resident scene 31.4 MB, cells 161.7 MB
+CELLS   facade_detail: 2591 meshes, 4536517 triangles, 1561 cells (115.7 MB)
+CELLS   trees: 1319 meshes, 1246592 triangles, 577 cells (33.4 MB)
+CELLS   lamps: 517 meshes, 305368 triangles, 264 cells (7.7 MB)
+CELLS   decor: 299 meshes, 159048 triangles, 211 cells (5.0 MB)
+CELLS istanbul_halic_cells done in 3.0 s
+CELLS istanbul_halic_cells_light: 4726 of 6129 meshes streamed in 2613 cells of 50 m; resident scene 31.4 MB, cells 107.0 MB
+CELLS   facade_detail: 2591 meshes, 2441523 triangles, 1561 cells (61.0 MB)
+CELLS   trees: 1319 meshes, 1246592 triangles, 577 cells (33.4 MB)
+CELLS   lamps: 517 meshes, 305368 triangles, 264 cells (7.7 MB)
+CELLS   decor: 299 meshes, 159048 triangles, 211 cells (5.0 MB)
+CELLS istanbul_halic_cells_light done in 2.3 s
+CELLS kenney_town: 93 of 269 meshes streamed in 27 cells of 50 m; resident scene 0.7 MB, cells 0.1 MB
+CELLS   trees: 41 meshes, 1722 triangles, 11 cells (0.0 MB)
+CELLS   lamps: 20 meshes, 1200 triangles, 8 cells (0.0 MB)
+CELLS   decor: 32 meshes, 4992 triangles, 8 cells (0.1 MB)
+CELLS kenney_town done in 0.1 s
+CELLS abstract_city: 13 of 220 meshes streamed in 2 cells of 50 m; resident scene 0.3 MB, cells 0.0 MB
+CELLS   decor: 13 meshes, 172 triangles, 2 cells (0.0 MB)
+CELLS abstract_city done in 0.1 s
+CELLS apollo11_site: nothing to stream (no mesh in facade_detail, trees, lamps, decor); the map loads whole
+CELLS apollo11_site done in 0.1 s
+
+# The test imports (not in Git): --definition=res://tests/imported/safranbolu_test/safranbolu_test.tres,res://tests/imported/istanbul_halic_import/istanbul_halic_import.tres (2.3 s)
+CELLS safranbolu_test: 523 of 1173 meshes streamed in 87 cells of 50 m; resident scene 9.6 MB, cells 5.7 MB
+CELLS   facade_detail: 523 meshes, 674200 triangles, 87 cells (5.7 MB)
+CELLS istanbul_halic_import: 1652 of 3055 meshes streamed in 1056 cells of 50 m; resident scene 18.5 MB, cells 79.4 MB
+CELLS   facade_detail: 371 meshes, 4536517 triangles, 360 cells (53.8 MB)
+CELLS   trees: 465 meshes, 1246592 triangles, 221 cells (18.7 MB)
+CELLS   lamps: 517 meshes, 305368 triangles, 264 cells (4.3 MB)
+CELLS   decor: 299 meshes, 159048 triangles, 211 cells (2.6 MB)
+
+# The second cell size for the comparison: --map=istanbul_halic_cells_shader --cell-size=100 --out=res://maps/istanbul_halic_cells_shader/streaming_100 --no-link (1.8 s)
+CELLS istanbul_halic_cells_shader: 4726 of 6129 meshes streamed in 1254 cells of 100 m; resident scene 31.4 MB, cells 66.7 MB
+CELLS   facade_detail: 2591 meshes, 673039 triangles, 536 cells (20.8 MB)
+CELLS   trees: 1319 meshes, 1246592 triangles, 276 cells (33.3 MB)
+CELLS   lamps: 517 meshes, 305368 triangles, 258 cells (7.7 MB)
+CELLS   decor: 299 meshes, 159048 triangles, 184 cells (5.0 MB)

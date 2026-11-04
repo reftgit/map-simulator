@@ -1,0 +1,9 @@
+         1793811706.296   555   555 I lmkd    : 0(delay),50(swap), 11(freelimit) memory pressure events were skipped after a kill!
+         1793811709.645   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793811709.648   555   555 I lmkd    : Reclaim 'com.google.android.apps.turbo' (16389), uid 10155, oom_score_adj 999, state 19 to free 7148kB rss, 47832kB swap; reason: min2x watermark is breached and swap is low (1889920kB < 786428kB)
+         1793811709.712   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793811709.715   555   555 I lmkd    : Reclaim 'com.google.process.gservices' (14020), uid 10157, oom_score_adj 999, state 19 to free 7576kB rss, 46612kB swap; reason: min2x watermark is breached even after kill
+         1793811709.865   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793811709.869   555   555 I lmkd    : Reclaim 'com.samsung.android.fmm' (18598), uid 1000, oom_score_adj 999, state 19 to free 8256kB rss, 49452kB swap; reason: min2x watermark is breached and swap is low (1894204kB < 786428kB)
+         1793811709.947   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793811709.951   555   555 I lmkd    : Reclaim 'com.sec.android.app.soundalive' (15256), uid 10047, oom_score_adj 999, state 19 to free 9056kB rss, 45784kB swap; reason: min2x watermark is breached even after kill

@@ -21,6 +21,14 @@ func prepare_streamed(instances: Array) -> void:
 	_use_vertex_colors(instances)
 
 
+## The materials of the streamed meshes, at load (MapStreamer.setup()): the
+## same vertex-colour albedo, set before any of their cells arrives.
+func prepare_streamed_materials(materials: Array) -> void:
+	for material in materials:
+		if material is BaseMaterial3D:
+			(material as BaseMaterial3D).vertex_color_use_as_albedo = true
+
+
 ## The map stores all colors in COLOR_0 with white base colors; Godot imports
 ## the materials without vertex-color albedo, which renders the city white.
 ## The 6 materials are shared, so this touches each one once.

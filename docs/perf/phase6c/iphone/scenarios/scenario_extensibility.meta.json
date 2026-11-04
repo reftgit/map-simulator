@@ -1,0 +1,28 @@
+{
+ "experiment": "scenario_extensibility",
+ "device": "ios",
+ "wall_s": 52,
+ "cooldown_s": 0,
+ "app_args": "",
+ "thermal_start": "Nominal",
+ "thermal_end": "Nominal",
+ "thermal_max": "Nominal",
+ "footprint_peak_mib": 461,
+ "probes": [
+  {
+   "t": 0,
+   "thermal": "Nominal",
+   "footprint_mib": null
+  },
+  {
+   "t": 41,
+   "thermal": "Nominal",
+   "footprint_mib": 461
+  },
+  {
+   "t": 52,
+   "thermal": "Nominal",
+   "footprint_mib": null
+  }
+ ]
+}

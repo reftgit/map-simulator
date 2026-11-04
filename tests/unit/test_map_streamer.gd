@@ -63,7 +63,9 @@ func test_cells_within_range_and_margin_are_loaded() -> void:
 	check(_has_mesh("Ground_0") and _has_mesh("Building_A"), "resident meshes are always there")
 	check(streamer.missing_cells() == 0, "nothing in range is missing")
 	var stats := streamer.stats()
-	check(stats.loaded == 3 and stats.meshes == 3 and stats.pending == 0, "three cells loaded (%s)" % stats)
+	var warm := streamer.index.warm_cells.size()
+	check(warm == 2 and _has_mesh("Decor_bench_west") and _has_mesh("Lamp_-15"), "the two warm cells (the smallest using each material) are loaded too")
+	check(stats.loaded == 3 + warm and stats.pending == 0, "three cells and the warm ones loaded (%s)" % stats)
 
 
 func test_cells_beyond_range_margin_and_hysteresis_are_freed() -> void:
@@ -76,6 +78,7 @@ func test_cells_beyond_range_margin_and_hysteresis_are_freed() -> void:
 	for x in range(-52, -39):
 		step(Vector3(x, 1.5, 0))
 	check(not _has_mesh("Tree_-90"), "50 m away it is freed")
+	check(_has_mesh("Lamp_-15") and _has_mesh("Decor_bench_west"), "warm cells are never freed")
 	check(streamer.totals.unloads >= 1 and streamer.totals.primes == 1, "freed while walking, no second prime")
 	check(streamer.missing_cells() == 0, "nothing in range is missing on the way")
 
@@ -92,8 +95,8 @@ func test_a_jump_loads_the_cells_before_the_frame_is_drawn() -> void:
 func test_hidden_and_unranged_categories() -> void:
 	_stream()
 	streamer.set_ranges({"visibility_end": {"lamps": RANGE, "facade_detail": RANGE, "decor": RANGE}, "hide": ["decor"]})
-	step(Vector3(-85, 1.5, 44))
-	check(not _has_mesh("Decor_bench_west"), "a hidden category is not loaded, even 1 m away")
+	step(Vector3(-5, 1.5, 44))
+	check(not _has_mesh("Prop_7"), "a hidden category is not loaded, even 1 m away")
 	for x: int in StreamingMap.TREE_X:
 		check(_has_mesh("Tree_%d" % x), "trees without a range: every one is loaded (%d)" % x)
 	check(streamer.radius_of("trees") == INF and streamer.radius_of("decor") == -1.0, "radius INF without a range, -1 hidden")
@@ -126,7 +129,7 @@ func test_budget_gives_one_cell_per_frame_at_zero_budget() -> void:
 		frames += 1
 	check(streamer.missing_cells() == 0, "every cell loaded in the end (%d frames)" % frames)
 	check(most == 1, "at most one cell given its meshes per frame (%d)" % most)
-	check(frames >= streamer.index.cell_count() - streamer.totals.prime_cells, "so one frame per cell")
+	check(frames >= streamer.index.cell_count() - streamer.totals.prime_cells - streamer.index.warm_cells.size(), "so one frame per cell")
 
 
 func test_cells_ahead_of_a_moving_camera_are_wanted() -> void:
@@ -161,8 +164,18 @@ class SlowLoads extends MapStreamer:
 		return load(index.cell_paths[cell]) as MapCell
 
 
+func test_one_load_is_in_flight_by_default() -> void:
+	_stream(SlowLoads)
+	var slow := streamer as SlowLoads
+	step(Vector3(-90, 1.5, 0))
+	step(Vector3(-80, 1.5, 0))
+	check(slow.started == 1 and streamer._requested.size() == 1, "one request (%d)" % slow.started)
+	check(streamer._queue.size() > 0, "the other wanted cells wait their turn")
+
+
 func test_loads_in_flight_are_finished_or_dropped() -> void:
 	_stream(SlowLoads)
+	streamer.max_requests = 4
 	var slow := streamer as SlowLoads
 	step(Vector3(-90, 1.5, 0))
 	step(Vector3(-80, 1.5, 0))
@@ -184,6 +197,7 @@ func test_loads_in_flight_are_finished_or_dropped() -> void:
 
 func test_a_load_that_arrives_after_the_camera_left_is_dropped() -> void:
 	_stream(SlowLoads)
+	streamer.max_requests = 4
 	step(Vector3(-90, 1.5, 0))
 	step(Vector3(-80, 1.5, 0))
 	var cell := _cell("trees_-3_0")
@@ -195,16 +209,34 @@ func test_a_load_that_arrives_after_the_camera_left_is_dropped() -> void:
 	check(not streamer.is_loaded(cell) and not _has_mesh("Tree_-50"), "when no longer wanted, and was dropped")
 
 
-func test_the_map_script_prepares_streamed_meshes() -> void:
+func test_the_map_script_prepares_streamed_meshes_and_materials() -> void:
 	var script := GDScript.new()
-	script.source_code = "extends Node3D\nvar prepared := []\nfunc prepare_streamed(instances: Array) -> void:\n\tprepared.append_array(instances)\n"
+	script.source_code = "extends Node3D\nvar prepared := []\nvar materials := []\nfunc prepare_streamed(instances: Array) -> void:\n\tprepared.append_array(instances)\nfunc prepare_streamed_materials(list: Array) -> void:\n\tmaterials.append_array(list)\n"
 	script.reload()
-	_stream()
+	var definition := StreamingMap.write(DIR)
+	var cells := MapCells.new()
+	check(cells.run(definition, DIR.path_join("streaming"), StreamingMap.CELL).is_empty(), "split")
+	resident = add_node((load(cells.index.resident_scene) as PackedScene).instantiate())
 	resident.set_script(script)
+	focus = add_node(Node3D.new())
+	streamer = MapStreamer.new()
+	streamer.margin = 10.0
+	streamer.hysteresis = 10.0
+	add_node(streamer)
+	streamer.set_process(false)
+	streamer.setup(resident, cells.index)
+	streamer.focus = focus
+	streamer.set_ranges(RANGES)
+	var materials: Array = (resident.get("materials") as Array).map(func(material: Material) -> String: return material.resource_name)
+	materials.sort()
+	check(materials == ["Lamp", "Shared"], "the streamed meshes' materials go to prepare_streamed_materials() at setup, before any cell (%s)" % [materials])
+	var warm: Array = (resident.get("prepared") as Array).map(func(node: Node) -> String: return str(node.name))
+	warm.sort()
+	check(warm == ["Decor_bench_west", "Lamp_-15"], "the warm cells' meshes at setup (%s)" % [warm])
 	step(Vector3(-90, 1.5, 0))
 	var names: Array = (resident.get("prepared") as Array).map(func(node: Node) -> String: return str(node.name))
 	names.sort()
-	check(names == ["Lamp_-75", "Tree_-70", "Tree_-90"], "each attached cell's meshes go to prepare_streamed() (%s)" % [names])
+	check(names == ["Decor_bench_west", "Lamp_-15", "Lamp_-75", "Tree_-70", "Tree_-90"], "then each attached cell's meshes go to prepare_streamed() (%s)" % [names])
 
 
 func test_streaming_follows_the_streamer_s_own_frames() -> void:

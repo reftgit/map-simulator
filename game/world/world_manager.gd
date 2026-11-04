@@ -26,6 +26,9 @@ var streamer: MapStreamer
 var streaming := true
 ## Measurement: an index to use instead of the definition's (another cell size).
 var streaming_index_override := ""
+## The last load_map(): whether it streamed, and the milliseconds for the
+## streaming index's check, loading the scene, and instancing it.
+var load_report := {}
 ## Vehicles placed by spawn_vehicles().
 var vehicles: Array[VehicleController] = []
 ## NPCs placed by spawn_npcs().
@@ -39,12 +42,17 @@ var _spawns := {}
 func load_map(new_definition: MapDefinition) -> void:
 	unload_map()
 	definition = new_definition
+	var started := Time.get_ticks_usec()
 	var index := _streaming_index() if streaming else null
+	var checked := Time.get_ticks_usec()
 	var scene_path := index.resident_scene if index else definition.scene_path
 	var packed := load(scene_path) as PackedScene
 	assert(packed != null, "Map scene failed to load: %s" % scene_path)
+	var loaded := Time.get_ticks_usec()
 	map_root = packed.instantiate()
 	add_child(map_root)
+	load_report = {"streamed": index != null, "index_ms": snappedf((checked - started) / 1000.0, 0.1),
+			"scene_ms": snappedf((loaded - checked) / 1000.0, 0.1), "instantiate_ms": snappedf((Time.get_ticks_usec() - loaded) / 1000.0, 0.1)}
 	if index:
 		streamer = MapStreamer.new()
 		streamer.name = "MapStreamer"

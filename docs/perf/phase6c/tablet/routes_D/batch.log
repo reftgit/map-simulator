@@ -1,0 +1,17 @@
+session start 18:17:12 battery 32.0 target 34.0
+tools/perf/experiments/c_route_walk_shader.json: 1 file pushed, 0 skipped. 0.1 MB/s (430 bytes in 0.005s)
+c_route_walk_shader done: 2 results, peak PSS 0 kB, battery 32.0 -> 34.0 C
+tools/perf/experiments/c_route_drive_shader.json: 1 file pushed, 0 skipped. 1.0 MB/s (452 bytes in 0.000s)
+c_route_drive_shader done: 2 results, peak PSS 0 kB, battery 34.0 -> 33.5 C
+tools/perf/experiments/c_route_walk_shader.json: 1 file pushed, 0 skipped. 0.9 MB/s (430 bytes in 0.000s)
+c_route_walk_shader done: 2 results, peak PSS 0 kB, battery 33.5 -> 34.5 C
+tools/perf/experiments/c_route_drive_shader.json: 1 file pushed, 0 skipped. 0.1 MB/s (452 bytes in 0.005s)
+c_route_drive_shader done: 2 results, peak PSS 0 kB, battery 34.0 -> 34.0 C
+session done 18:30:01
+session start 18:30:02 battery 34.0 target 34.0
+tools/perf/experiments/c_route_walk_shader_off.json: 1 file pushed, 0 skipped. 0.1 MB/s (467 bytes in 0.005s)
+c_route_walk_shader_off done: 2 results, peak PSS 0 kB, battery 34.0 -> 34.5 C
+tools/perf/experiments/c_route_drive_shader_off.json: 1 file pushed, 0 skipped. 1.0 MB/s (489 bytes in 0.000s)
+c_route_drive_shader_off done: 2 results, peak PSS 0 kB, battery 34.0 -> 35.5 C
+session done 18:38:25
+battery after routes:   level: 33

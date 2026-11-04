@@ -1,0 +1,101 @@
+--------- beginning of main
+11-04 20:05:49.590 25634 25662 I godot   : Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+11-04 20:05:49.742 25634 25662 I godot   : Vulkan 1.1.128 - Forward Mobile - Using Device #0: Qualcomm - Adreno (TM) 610
+11-04 20:05:50.225 25634 25662 I godot   : 
+11-04 20:05:51.898 25634 25662 I godot   : SAFE_AREA window=(2000, 1200) safe=[P: (0, 0), S: (2000, 1200)] canvas=[P: (0.0, 0.0), S: (1500.0, 900.0)] viewport=(1500.0, 900.0)
+11-04 20:05:56.245 25634 25662 I godot   : QUALITY profile=low experiment=scenario_extensibility occluders={"ms":127,"occluders":643,"source":"baked","triangles":317518} effective={"camera_far":400.0,"fog":true,"hide":[],"lod_threshold":4.0,"max_fps":30,"occlusion":true,"render_scale":0.6,"scaling_mode":"bilinear","shadows":"off","visibility_end":{"decor":100.0,"facade_detail":100.0,"lamps":100.0,"trees":100.0}}
+11-04 20:05:56.257 25634 25662 I godot   : STREAMING istanbul_halic_cells_shader primed 6 cells in 11 ms ({"attach_max_ms":0.0,"cells":2612,"failed":0,"loaded":12,"loaded_mb":0.1,"loads":12,"meshes":16,"pending":0,"prime_cells":6,"prime_ms":11.4,"primes":1,"unloads":0}), load {"index_ms":48.5,"instantiate_ms":1136.6,"scene_ms":2341.0,"streamed":true}
+11-04 20:05:56.317 25634 25662 I godot   : SCENARIO step=start result=INFO t=0.0 scenario=extensibility rotate_hold_s=0
+11-04 20:05:56.597 25634 25662 I godot   : STARTUP map_ready_ms=7097 first_frame_ms=7435 map=istanbul_halic_cells_shader profile=low occluders={"ms":127,"occluders":643,"source":"baked","triangles":317518} physics_3d=GodotPhysics3D (setting DEFAULT) vehicles=awake npcs=2 streaming={"attach_max_ms":0.0,"cells":2612,"failed":0,"loaded":12,"loaded_mb":0.1,"loads":12,"meshes":16,"pending":1,"prime_cells":6,"prime_ms":11.4,"primes":1,"unloads":0} load={"index_ms":48.5,"instantiate_ms":1136.6,"scene_ms":2341.0,"streamed":true} build={"android_frame_pacing":true,"debug_build":true,"display_refresh_rate":60.0000038146973,"ios_allow_high_refresh_rate":false,"max_fps":30,"perf_feature":false,"physics_engine_setting":"DEFAULT","physics_interpolation":true,"physics_ticks":60,"screen_refresh_rate":60.0000038146973,"vsync_mode":1} user_dir=/data/data/com.mirongi.mapsimulator/files
+11-04 20:06:01.673 25634 25662 I godot   : QUALITY profile=low experiment=scenario_extensibility occluders={"ms":126,"occluders":643,"source":"baked","triangles":317518} effective={"camera_far":400.0,"fog":true,"hide":[],"lod_threshold":4.0,"max_fps":30,"occlusion":true,"render_scale":0.6,"scaling_mode":"bilinear","shadows":"off","visibility_end":{"decor":100.0,"facade_detail":100.0,"lamps":100.0,"trees":100.0}}
+11-04 20:06:01.691 25634 25662 I godot   : STREAMING istanbul_halic primed 3 cells in 19 ms ({"attach_max_ms":0.0,"cells":1056,"failed":0,"loaded":8,"loaded_mb":0.3,"loads":8,"meshes":10,"pending":0,"prime_cells":3,"prime_ms":18.6,"primes":1,"unloads":0}), load {"index_ms":24.4,"instantiate_ms":872.0,"scene_ms":2315.0,"streamed":true}
+11-04 20:06:01.692 25634 25662 I godot   : MAP istanbul_halic loaded in 4329 ms (istanbul_halic_cells_shader freed after 454 ms, 4 frames)
+11-04 20:06:02.761 25634 25662 I godot   : PERF map=istanbul_halic profile=low view="Spawn" fps=5 draw_calls=11 primitives=1094 objects=303 video_mem_mb=220 static_mem_mb=71 static_peak_mb=184 vehicles= cells=off pending=- cell_mb=-
+11-04 20:06:02.903 25634 25662 I godot   : QUALITY profile=low experiment=scenario_extensibility occluders={"ms":3,"occluders":7,"source":"baked","triangles":84} effective={"camera_far":400.0,"fog":true,"hide":[],"lod_threshold":4.0,"max_fps":30,"occlusion":true,"render_scale":0.6,"scaling_mode":"bilinear","shadows":"off","visibility_end":{"decor":100.0,"facade_detail":100.0,"lamps":100.0,"trees":100.0}}
+11-04 20:06:02.904 25634 25662 I godot   : MAP test_district loaded in 537 ms (istanbul_halic freed after 507 ms, 4 frames)
+11-04 20:06:03.439 25634 25662 I godot   : SCENARIO step=map_test_district result=INFO t=7.1 loaded after 6.1 s
+11-04 20:06:04.455 25634 25662 I godot   : SCENARIO step=map_switch result=PASS t=8.1 map test_district, player 0.00 m from its spawn, vehicles 2, NPCs 3, nodes 220 (on istanbul_halic_cells_shader: 8550)
+11-04 20:06:04.687 25634 25662 I godot   : PERF map=test_district profile=low view="Spawn" fps=26 draw_calls=89 primitives=7104 objects=350 video_mem_mb=71 static_mem_mb=65 static_peak_mb=184 vehicles=awake,awake cells=off pending=- cell_mb=-
+11-04 20:06:05.316 25634 25662 I godot   : VEHICLE PlaceholderCar asleep
+11-04 20:06:05.614 25634 25662 I godot   : VEHICLE PlaceholderVan asleep
+11-04 20:06:05.617 25634 25662 I godot   : SCENARIO step=van_parked result=PASS t=9.3 PlaceholderVan (Van (placeholder)), asleep
+11-04 20:06:05.648 25634 25662 I godot   : CAR walk-up PlaceholderCar
+11-04 20:06:06.148 25634 25662 I godot   : CAR walk-up PlaceholderVan
+11-04 20:06:06.659 25634 25662 I godot   : SCENARIO step=van_walk_up result=PASS t=10.3 beside PlaceholderVan, interact button true
+11-04 20:06:06.683 25634 25662 I godot   : VEHICLE PlaceholderVan awake
+11-04 20:06:06.706 25634 25662 I godot   : PERF map=test_district profile=low view="Spawn" fps=30 draw_calls=87 primitives=5972 objects=352 video_mem_mb=72 static_mem_mb=66 static_peak_mb=184 vehicles=asleep,awake cells=off pending=- cell_mb=-
+11-04 20:06:07.186 25634 25662 I godot   : SCENARIO step=van_get_in result=PASS t=10.9 driving PlaceholderVan, awake, camera on it true
+11-04 20:06:08.685 25634 25662 I godot   : PERF map=test_district profile=low view="Spawn" fps=30 draw_calls=88 primitives=5286 objects=357 video_mem_mb=72 static_mem_mb=66 static_peak_mb=184 vehicles=asleep,awake cells=off pending=- cell_mb=-
+11-04 20:06:09.150 25634 25662 I godot   : SCENARIO step=van_throttle result=PASS t=12.8 forward speed 5.0 m/s (max 14)
+11-04 20:06:10.659 25634 25662 I godot   : SCENARIO step=van_get_out result=PASS t=14.3 speed when stopped 0.07 m/s
+11-04 20:06:10.686 25634 25662 I godot   : PERF map=test_district profile=low view="Spawn" fps=30 draw_calls=76 primitives=5504 objects=339 video_mem_mb=72 static_mem_mb=66 static_peak_mb=184 vehicles=asleep,awake cells=off pending=- cell_mb=-
+11-04 20:06:11.154 25634 25662 I godot   : VEHICLE PlaceholderVan asleep
+11-04 20:06:11.181 25634 25662 I godot   : SCENARIO step=van_asleep_after_getting_out result=PASS t=14.9 PlaceholderVan asleep
+11-04 20:06:12.688 25634 25662 I godot   : PERF map=test_district profile=low view="Spawn" fps=30 draw_calls=76 primitives=5508 objects=341 video_mem_mb=72 static_mem_mb=66 static_peak_mb=184 vehicles=asleep,asleep cells=off pending=- cell_mb=-
+11-04 20:06:14.187 25634 25662 I godot   : SCENARIO step=npc_patrols result=PASS t=17.9 Npc3 moved 6.8 m in 3 s, 0 arrivals, state Walk
+11-04 20:06:14.687 25634 25662 I godot   : PERF map=test_district profile=low view="Spawn" fps=30 draw_calls=70 primitives=5532 objects=335 video_mem_mb=72 static_mem_mb=66 static_peak_mb=184 vehicles=asleep,asleep cells=off pending=- cell_mb=-
+11-04 20:06:16.689 25634 25662 I godot   : PERF map=test_district profile=low view="Spawn" fps=30 draw_calls=63 primitives=5196 objects=328 video_mem_mb=72 static_mem_mb=66 static_peak_mb=184 vehicles=asleep,asleep cells=off pending=- cell_mb=-
+11-04 20:06:17.014 25634 25662 I godot   : SCENARIO step=npc_hit_reaction result=PASS t=20.7 Npc3 hit after 1 punch(es), state HitReaction
+11-04 20:06:18.022 25634 25662 I godot   : SCENARIO step=npc_one_hit_per_punch result=PASS t=21.7 1 hit(s) for the punch that landed
+11-04 20:06:18.684 25634 25662 I godot   : PERF map=test_district profile=low view="Spawn" fps=30 draw_calls=63 primitives=5196 objects=328 video_mem_mb=72 static_mem_mb=66 static_peak_mb=184 vehicles=asleep,asleep cells=off pending=- cell_mb=-
+11-04 20:06:20.688 25634 25662 I godot   : PERF map=test_district profile=low view="Spawn" fps=27 draw_calls=63 primitives=5196 objects=328 video_mem_mb=72 static_mem_mb=66 static_peak_mb=184 vehicles=asleep,asleep cells=off pending=- cell_mb=-
+11-04 20:06:21.213 25634 25662 I godot   : SCENARIO step=npc_patrol_resumes result=PASS t=24.9 Npc3 state Idle, moved 0.5 m, heading for point 1 (was 0)
+11-04 20:06:25.432 25634 25662 I godot   : QUALITY profile=low experiment=scenario_extensibility occluders={"ms":127,"occluders":643,"source":"baked","triangles":317518} effective={"camera_far":400.0,"fog":true,"hide":[],"lod_threshold":4.0,"max_fps":30,"occlusion":true,"render_scale":0.6,"scaling_mode":"bilinear","shadows":"off","visibility_end":{"decor":100.0,"facade_detail":100.0,"lamps":100.0,"trees":100.0}}
+11-04 20:06:25.633 25634 25662 I godot   : STREAMING istanbul_halic_cells primed 30 cells in 200 ms ({"attach_max_ms":0.0,"cells":2613,"failed":0,"loaded":35,"loaded_mb":2.0,"loads":35,"meshes":61,"pending":0,"prime_cells":30,"prime_ms":199.9,"primes":1,"unloads":0}), load {"index_ms":81.5,"instantiate_ms":923.4,"scene_ms":2319.6,"streamed":true}
+11-04 20:06:25.633 25634 25662 I godot   : MAP istanbul_halic_cells loaded in 4377 ms (test_district freed after 126 ms, 4 frames)
+11-04 20:06:31.125 25634 25662 I godot   : QUALITY profile=low experiment=scenario_extensibility occluders={"ms":129,"occluders":643,"source":"baked","triangles":317518} effective={"camera_far":400.0,"fog":true,"hide":[],"lod_threshold":4.0,"max_fps":30,"occlusion":true,"render_scale":0.6,"scaling_mode":"bilinear","shadows":"off","visibility_end":{"decor":100.0,"facade_detail":100.0,"lamps":100.0,"trees":100.0}}
+11-04 20:06:31.166 25634 25662 I godot   : STREAMING istanbul_halic_cells_light primed 6 cells in 41 ms ({"attach_max_ms":0.0,"cells":2613,"failed":0,"loaded":11,"loaded_mb":0.4,"loads":11,"meshes":14,"pending":0,"prime_cells":6,"prime_ms":40.9,"primes":1,"unloads":0}), load {"index_ms":61.3,"instantiate_ms":932.4,"scene_ms":2470.4,"streamed":true}
+11-04 20:06:31.167 25634 25662 I godot   : MAP istanbul_halic_cells_light loaded in 4833 ms (istanbul_halic_cells freed after 586 ms, 4 frames)
+11-04 20:06:31.661 25634 25662 I godot   : PERF map=istanbul_halic_cells_light profile=low view="Spawn" fps=9 draw_calls=112 primitives=50432 objects=357 video_mem_mb=128 static_mem_mb=186 static_peak_mb=187 vehicles=awake cells=11 pending=0 cell_mb=0.4
+11-04 20:06:33.003 25634 25662 I godot   : QUALITY profile=low experiment=scenario_extensibility occluders={"ms":33,"occluders":443,"source":"baked","triangles":18922} effective={"camera_far":400.0,"fog":true,"hide":[],"lod_threshold":4.0,"max_fps":30,"occlusion":true,"render_scale":0.6,"scaling_mode":"bilinear","shadows":"off","visibility_end":{"decor":100.0,"facade_detail":100.0,"lamps":100.0,"trees":100.0}}
+11-04 20:06:33.004 25634 25662 I godot   : STREAMING kenney_town primed 0 cells in 1 ms ({"attach_max_ms":0.0,"cells":27,"failed":0,"loaded":2,"loaded_mb":0.0,"loads":2,"meshes":2,"pending":0,"prime_cells":0,"prime_ms":0.6,"primes":1,"unloads":0}), load {"index_ms":2.4,"instantiate_ms":85.9,"scene_ms":349.6,"streamed":true}
+11-04 20:06:33.005 25634 25662 I godot   : MAP kenney_town loaded in 1127 ms (istanbul_halic_cells_light freed after 561 ms, 4 frames)
+11-04 20:06:34.225 25634 25662 I godot   : QUALITY profile=low experiment=scenario_extensibility occluders={"ms":24,"occluders":204,"source":"baked","triangles":5676} effective={"camera_far":400.0,"fog":true,"hide":[],"lod_threshold":4.0,"max_fps":30,"occlusion":true,"render_scale":0.6,"scaling_mode":"bilinear","shadows":"off","visibility_end":{"decor":100.0,"facade_detail":100.0,"lamps":100.0,"trees":100.0}}
+11-04 20:06:34.228 25634 25662 I godot   : STREAMING abstract_city primed 1 cells in 3 ms ({"attach_max_ms":0.0,"cells":2,"failed":0,"loaded":2,"loaded_mb":0.0,"loads":2,"meshes":13,"pending":0,"prime_cells":1,"prime_ms":3.3,"primes":1,"unloads":0}), load {"index_ms":8.8,"instantiate_ms":32.1,"scene_ms":371.6,"streamed":true}
+11-04 20:06:34.229 25634 25662 I godot   : MAP abstract_city loaded in 636 ms (kenney_town freed after 135 ms, 4 frames)
+11-04 20:06:34.816 25634 25662 I godot   : PERF map=abstract_city profile=low view="Spawn" fps=16 draw_calls=69 primitives=5430 objects=336 video_mem_mb=107 static_mem_mb=71 static_peak_mb=187 vehicles=awake cells=2 pending=0 cell_mb=0.0
+11-04 20:06:35.902 25634 25662 I godot   : QUALITY profile=low experiment=scenario_extensibility occluders={"ms":30,"occluders":1,"source":"baked","triangles":142768} effective={"camera_far":400.0,"fog":true,"hide":[],"lod_threshold":4.0,"max_fps":30,"occlusion":true,"render_scale":0.6,"scaling_mode":"bilinear","shadows":"off","visibility_end":{"decor":100.0,"facade_detail":100.0,"lamps":100.0,"trees":100.0}}
+11-04 20:06:35.902 25634 25662 I godot   : MAP apollo11_site loaded in 1044 ms (abstract_city freed after 104 ms, 4 frames)
+11-04 20:06:40.613 25634 25662 I godot   : QUALITY profile=low experiment=scenario_extensibility occluders={"ms":129,"occluders":643,"source":"baked","triangles":317518} effective={"camera_far":400.0,"fog":true,"hide":[],"lod_threshold":4.0,"max_fps":30,"occlusion":true,"render_scale":0.6,"scaling_mode":"bilinear","shadows":"off","visibility_end":{"decor":100.0,"facade_detail":100.0,"lamps":100.0,"trees":100.0}}
+11-04 20:06:40.689 25634 25662 I godot   : STREAMING istanbul_halic_cells_shader primed 31 cells in 76 ms ({"attach_max_ms":0.0,"cells":2612,"failed":0,"loaded":37,"loaded_mb":0.6,"loads":37,"meshes":66,"pending":0,"prime_cells":31,"prime_ms":76.0,"primes":1,"unloads":0}), load {"index_ms":85.0,"instantiate_ms":954.7,"scene_ms":2273.6,"streamed":true}
+11-04 20:06:40.690 25634 25662 I godot   : MAP istanbul_halic_cells_shader loaded in 4196 ms (apollo11_site freed after 66 ms, 4 frames)
+11-04 20:06:41.348 25634 25662 I godot   : SCENARIO step=map_istanbul_halic_cells_shader result=INFO t=45.0 loaded after 20.1 s
+11-04 20:06:41.808 25634 25662 I godot   : PERF map=istanbul_halic_cells_shader profile=low view="Spawn" fps=6 draw_calls=129 primitives=57950 objects=434 video_mem_mb=142 static_mem_mb=187 static_peak_mb=188 vehicles=awake cells=17 pending=0 cell_mb=0.4
+11-04 20:06:42.369 25634 25662 I godot   : SCENARIO step=map_back result=PASS t=46.1 map istanbul_halic_cells_shader, player 0.00 m from its spawn, vehicles 1, NPCs 2, nodes 8550 (before the switches 8550)
+11-04 20:06:43.400 25634 25662 I godot   : VEHICLE PlaceholderCar asleep
+11-04 20:06:43.429 25634 25662 I godot   : SCENARIO step=parked_car_asleep result=PASS t=47.1 car asleep
+11-04 20:06:43.464 25634 25662 I godot   : CAR walk-up PlaceholderCar
+11-04 20:06:43.801 25634 25662 I godot   : PERF map=istanbul_halic_cells_shader profile=low view="Spawn" fps=30 draw_calls=143 primitives=65202 objects=450 video_mem_mb=142 static_mem_mb=188 static_peak_mb=188 vehicles=asleep cells=32 pending=0 cell_mb=0.5
+11-04 20:06:44.438 25634 25662 I godot   : SCENARIO step=car_button result=PASS t=48.1 distance 2.5 m, car asleep, interact button true
+11-04 20:06:44.830 25634 25662 I godot   : VEHICLE PlaceholderCar awake
+11-04 20:06:44.832 25634 25662 I godot   : SCENARIO step=walk_into_car_wakes_it result=PASS t=48.5 player on a wall true, car awake
+11-04 20:06:45.805 25634 25662 I godot   : PERF map=istanbul_halic_cells_shader profile=low view="Spawn" fps=30 draw_calls=111 primitives=46742 objects=418 video_mem_mb=142 static_mem_mb=188 static_peak_mb=188 vehicles=awake cells=32 pending=0 cell_mb=0.5
+11-04 20:06:46.136 25634 25662 I godot   : VEHICLE PlaceholderCar asleep
+11-04 20:06:46.162 25634 25662 I godot   : SCENARIO step=asleep_after_stopping result=PASS t=49.8 after 1.3 s
+11-04 20:06:47.800 25634 25662 I godot   : PERF map=istanbul_halic_cells_shader profile=low view="Spawn" fps=30 draw_calls=111 primitives=46746 objects=420 video_mem_mb=142 static_mem_mb=188 static_peak_mb=188 vehicles=asleep cells=32 pending=0 cell_mb=0.5
+11-04 20:06:49.164 25634 25662 I godot   : SCENARIO step=stays_asleep_beside_it result=PASS t=52.8 player touched the car true, distance 1.36 m
+11-04 20:06:49.198 25634 25662 I godot   : VEHICLE PlaceholderCar awake
+11-04 20:06:49.683 25634 25662 I godot   : SCENARIO step=get_in_wakes_it result=PASS t=53.4 driving true, car awake
+11-04 20:06:49.786 25634 25662 I godot   : PERF map=istanbul_halic_cells_shader profile=low view="Spawn" fps=30 draw_calls=118 primitives=48332 objects=431 video_mem_mb=143 static_mem_mb=188 static_peak_mb=188 vehicles=awake cells=35 pending=0 cell_mb=0.5
+11-04 20:06:50.866 25634 25662 I godot   : SCENARIO step=throttle result=PASS t=54.5 forward speed 5.0 m/s
+11-04 20:06:51.783 25634 25662 I godot   : PERF map=istanbul_halic_cells_shader profile=low view="Spawn" fps=28 draw_calls=113 primitives=47988 objects=426 video_mem_mb=143 static_mem_mb=188 static_peak_mb=188 vehicles=awake cells=37 pending=3 cell_mb=0.5
+11-04 20:06:52.220 25634 25662 I godot   : SCENARIO step=get_out result=PASS t=55.9 speed when stopped 0.07 m/s
+11-04 20:06:52.717 25634 25662 I godot   : VEHICLE PlaceholderCar asleep
+11-04 20:06:52.746 25634 25662 I godot   : SCENARIO step=asleep_after_getting_out result=PASS t=56.4 car asleep
+11-04 20:06:52.785 25634 25662 I godot   : VEHICLE PlaceholderCar awake
+11-04 20:06:53.296 25634 25662 I godot   : VIEW Karaköy street, facing north
+11-04 20:06:53.796 25634 25662 I godot   : VIEW Galata street, facing south
+11-04 20:06:53.807 25634 25662 I godot   : PERF map=istanbul_halic_cells_shader profile=low view="Galata street, facing south" fps=29 draw_calls=128 primitives=52782 objects=483 video_mem_mb=142 static_mem_mb=188 static_peak_mb=188 vehicles=awake cells=32 pending=0 cell_mb=0.4
+11-04 20:06:55.781 25634 25662 I godot   : PERF map=istanbul_halic_cells_shader profile=low view="Galata street, facing south" fps=30 draw_calls=92 primitives=23771 objects=441 video_mem_mb=143 static_mem_mb=188 static_peak_mb=188 vehicles=awake cells=38 pending=0 cell_mb=0.4
+11-04 20:06:56.783 25634 25662 I godot   : SCENARIO step=slope_setup result=PASS t=60.5 view Galata street, facing south, ground slope under the car 12.6°
+11-04 20:06:57.281 25634 25662 I godot   : VEHICLE PlaceholderCar asleep
+11-04 20:06:57.519 25634 25662 I godot   : VEHICLE PlaceholderCar awake
+11-04 20:06:57.546 25634 25662 I godot   : SCENARIO step=slope_walk_into_car_wakes_it result=PASS t=61.2 player on a wall true, car awake
+11-04 20:06:57.792 25634 25662 I godot   : PERF map=istanbul_halic_cells_shader profile=low view="Galata street, facing south" fps=30 draw_calls=86 primitives=26696 objects=431 video_mem_mb=143 static_mem_mb=188 static_peak_mb=188 vehicles=awake cells=41 pending=0 cell_mb=0.5
+11-04 20:06:59.346 25634 25662 I godot   : VEHICLE PlaceholderCar asleep
+11-04 20:06:59.347 25634 25662 I godot   : SCENARIO step=slope_asleep_after_stopping result=PASS t=63.0 after 1.8 s
+11-04 20:06:59.786 25634 25662 I godot   : PERF map=istanbul_halic_cells_shader profile=low view="Galata street, facing south" fps=30 draw_calls=86 primitives=26692 objects=429 video_mem_mb=143 static_mem_mb=188 static_peak_mb=188 vehicles=asleep cells=41 pending=0 cell_mb=0.5
+11-04 20:07:01.784 25634 25662 I godot   : PERF map=istanbul_halic_cells_shader profile=low view="Galata street, facing south" fps=30 draw_calls=86 primitives=26696 objects=431 video_mem_mb=143 static_mem_mb=188 static_peak_mb=188 vehicles=asleep cells=41 pending=0 cell_mb=0.5
+11-04 20:07:02.378 25634 25662 I godot   : SCENARIO step=slope_stays_asleep_beside_it result=PASS t=66.1 player touched the car true, distance 1.26 m
+11-04 20:07:02.379 25634 25662 I godot   : SCENARIO step=done result=PASS t=66.1 passed=25 failed=0
+11-04 20:07:02.404 25634 25662 I godot   : BENCH_DONE

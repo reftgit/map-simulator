@@ -3,6 +3,7 @@
 
     python3 -I tools/perf/pss_trace.py sample OUT_DIR [--timeout S]
     python3 -I tools/perf/pss_trace.py summary OUT_DIR RESULTS_JSON
+    python3 -I tools/perf/pss_trace.py stable OUT_DIR [--skip S]
 
 sample: waits for the app to start (at most --timeout, default 1800 s), then
 reads `dumpsys meminfo` as often as the device answers (about every 0.6 s on
@@ -19,6 +20,10 @@ and the peak PSS of each switch (from its start until 5 s after it finished),
 against the larger of the two maps' stable PSS and against the largest map's,
 with the lowest PSS in between (the old map freed) and the peak of PSS plus
 swap PSS (zram), as a Markdown table.
+
+stable: for one benchmark launch traced with `sample` (no map switch): the
+peak PSS, and the stable PSS, the median of the samples from --skip seconds
+(default 20: the map loaded) after the app started until it quit.
 """
 import json
 import pathlib
@@ -145,12 +150,26 @@ def summary(out, results_path):
           max((s.get("pss_kb", 0) for s in samples), default=0) / 1024))
 
 
+def stable(out, skip):
+    samples = [json.loads(line) for line in open(out / "pss_trace.jsonl") if line.strip()]
+    samples = [s for s in samples if "pss_kb" in s]
+    if not samples:
+        sys.exit("no samples")
+    start = samples[0]["t"]
+    later = [s["pss_kb"] for s in samples if s["t"] - start >= skip]
+    print(json.dumps({"samples": len(samples), "peak_kb": max(s["pss_kb"] for s in samples),
+                      "stable_kb": round(statistics.median(later)) if later else None,
+                      "peak_with_swap_kb": max(s["pss_kb"] + s.get("swap_pss_kb", 0) for s in samples)}))
+
+
 def main():
     if len(sys.argv) >= 3 and sys.argv[1] == "sample":
         timeout = float(sys.argv[sys.argv.index("--timeout") + 1]) if "--timeout" in sys.argv else 1800.0
         sample(pathlib.Path(sys.argv[2]), timeout)
     elif len(sys.argv) == 4 and sys.argv[1] == "summary":
         summary(pathlib.Path(sys.argv[2]), sys.argv[3])
+    elif len(sys.argv) >= 3 and sys.argv[1] == "stable":
+        stable(pathlib.Path(sys.argv[2]), float(sys.argv[sys.argv.index("--skip") + 1]) if "--skip" in sys.argv else 20.0)
     else:
         sys.exit(__doc__)
 

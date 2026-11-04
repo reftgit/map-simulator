@@ -70,6 +70,13 @@ var in_vehicle := false
 ## Also sample the warm-up, measure the GPU time per frame, count pipeline
 ## compilations, and keep every frame's times in the results (PerfBenchmark).
 var trace := false
+## Route mode (instead of viewpoints): points [x, y, z] the player (or with
+## in_vehicle the vehicle) is moved along at route_speed m/s, out and, with
+## route_back, back again; one result per direction (tools/perf/make_route.gd
+## makes a route over walkable ground).
+var route: Array[Vector3] = []
+var route_speed := 4.5
+var route_back := true
 
 ## Device scenario to play (SCENARIOS), or "" for none.
 var scenario := ""
@@ -81,7 +88,8 @@ var scenario_rotate_hold_s := 0.0
 var scenario_maps: Array[String] = []
 var scenario_hold_s := 20.0
 
-const _BENCH_KEYS := ["warmup_s", "measure_s", "views", "session_minutes", "session_view", "screenshots", "quit_when_done", "in_vehicle", "trace"]
+const _BENCH_KEYS := ["warmup_s", "measure_s", "views", "session_minutes", "session_view", "screenshots", "quit_when_done", "in_vehicle", "trace",
+		"route", "route_speed", "route_back"]
 
 
 ## Why the last from_dict() call returned null.
@@ -129,6 +137,19 @@ static func from_dict(data: Dictionary) -> PerfConfig:
 		config.quit_when_done = bool(bench_data.get("quit_when_done", true))
 		config.in_vehicle = bool(bench_data.get("in_vehicle", false))
 		config.trace = bool(bench_data.get("trace", false))
+		for point in bench_data.get("route", []):
+			if not point is Array or (point as Array).size() != 3:
+				last_error = "a route point must be [x, y, z]"
+				return null
+			config.route.append(Vector3(float(point[0]), float(point[1]), float(point[2])))
+		if config.route.size() == 1:
+			last_error = "a route needs at least two points"
+			return null
+		config.route_speed = float(bench_data.get("route_speed", config.route_speed))
+		config.route_back = bool(bench_data.get("route_back", true))
+		if config.route_speed <= 0.0:
+			last_error = "bad route_speed %s" % config.route_speed
+			return null
 	if data.has("scenario"):
 		error = _parse_scenario(data.scenario, config)
 		if not error.is_empty():

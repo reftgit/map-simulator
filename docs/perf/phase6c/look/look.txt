@@ -1,0 +1,40 @@
+LOOK istanbul_halic_cells_shader low Spawn: 0 of 518400 pixels differ (0.000 %), largest 0/255; cells 6/2612 loaded, 10 meshes
+LOOK istanbul_halic_cells_shader low Karaköy street, facing north: 0 of 518400 pixels differ (0.000 %), largest 0/255; cells 21/2612 loaded, 37 meshes
+LOOK istanbul_halic_cells_shader low Galata street, facing south: 0 of 518400 pixels differ (0.000 %), largest 0/255; cells 31/2612 loaded, 54 meshes
+LOOK istanbul_halic_cells_shader high Spawn: 0 of 518400 pixels differ (0.000 %), largest 0/255; cells 38/2612 loaded, 66 meshes
+LOOK istanbul_halic_cells_shader high Karaköy street, facing north: 0 of 518400 pixels differ (0.000 %), largest 0/255; cells 56/2612 loaded, 96 meshes
+LOOK istanbul_halic_cells_shader high Galata street, facing south: 0 of 518400 pixels differ (0.000 %), largest 0/255; cells 95/2612 loaded, 173 meshes
+LOOK istanbul_halic low Spawn: 0 of 518400 pixels differ (0.000 %), largest 0/255; cells 3/1056 loaded, 5 meshes
+LOOK istanbul_halic low Karaköy street, facing north: 0 of 518400 pixels differ (0.000 %), largest 0/255; cells 9/1056 loaded, 16 meshes
+LOOK istanbul_halic low Galata street, facing south: 0 of 518400 pixels differ (0.000 %), largest 0/255; cells 11/1056 loaded, 13 meshes
+LOOK istanbul_halic high Spawn: 0 of 518400 pixels differ (0.000 %), largest 0/255; cells 18/1056 loaded, 27 meshes
+LOOK istanbul_halic high Karaköy street, facing north: 0 of 518400 pixels differ (0.000 %), largest 0/255; cells 26/1056 loaded, 40 meshes
+LOOK istanbul_halic high Galata street, facing south: 0 of 518400 pixels differ (0.000 %), largest 0/255; cells 37/1056 loaded, 52 meshes
+LOOK istanbul_halic_cells low Spawn: 0 of 518400 pixels differ (0.000 %), largest 0/255; cells 6/2613 loaded, 10 meshes
+LOOK istanbul_halic_cells low Karaköy street, facing north: 0 of 518400 pixels differ (0.000 %), largest 0/255; cells 21/2613 loaded, 37 meshes
+LOOK istanbul_halic_cells low Galata street, facing south: 0 of 518400 pixels differ (0.000 %), largest 0/255; cells 31/2613 loaded, 54 meshes
+LOOK istanbul_halic_cells high Spawn: 0 of 518400 pixels differ (0.000 %), largest 0/255; cells 38/2613 loaded, 66 meshes
+LOOK istanbul_halic_cells high Karaköy street, facing north: 0 of 518400 pixels differ (0.000 %), largest 0/255; cells 56/2613 loaded, 96 meshes
+LOOK istanbul_halic_cells high Galata street, facing south: 0 of 518400 pixels differ (0.000 %), largest 0/255; cells 95/2613 loaded, 173 meshes
+LOOK istanbul_halic_cells_light low Spawn: 0 of 518400 pixels differ (0.000 %), largest 0/255; cells 6/2613 loaded, 10 meshes
+LOOK istanbul_halic_cells_light low Karaköy street, facing north: 0 of 518400 pixels differ (0.000 %), largest 0/255; cells 21/2613 loaded, 37 meshes
+LOOK istanbul_halic_cells_light low Galata street, facing south: 0 of 518400 pixels differ (0.000 %), largest 0/255; cells 31/2613 loaded, 54 meshes
+LOOK istanbul_halic_cells_light high Spawn: 0 of 518400 pixels differ (0.000 %), largest 0/255; cells 38/2613 loaded, 66 meshes
+LOOK istanbul_halic_cells_light high Karaköy street, facing north: 0 of 518400 pixels differ (0.000 %), largest 0/255; cells 56/2613 loaded, 96 meshes
+LOOK istanbul_halic_cells_light high Galata street, facing south: 0 of 518400 pixels differ (0.000 %), largest 0/255; cells 95/2613 loaded, 173 meshes
+LOOK kenney_town low Spawn: 0 of 518400 pixels differ (0.000 %), largest 0/255; cells 27/27 loaded, 93 meshes
+LOOK kenney_town low View A: 0 of 518400 pixels differ (0.000 %), largest 1/255; cells 27/27 loaded, 93 meshes
+LOOK kenney_town low View B: 0 of 518400 pixels differ (0.000 %), largest 0/255; cells 27/27 loaded, 93 meshes
+LOOK kenney_town low View C: 0 of 518400 pixels differ (0.000 %), largest 0/255; cells 27/27 loaded, 93 meshes
+LOOK kenney_town high Spawn: 0 of 518400 pixels differ (0.000 %), largest 0/255; cells 27/27 loaded, 93 meshes
+LOOK kenney_town high View A: 1 of 518400 pixels differ (0.000 %) within x 891-892, y 296-297, largest 12/255; cells 27/27 loaded, 93 meshes
+LOOK kenney_town high View B: 0 of 518400 pixels differ (0.000 %), largest 0/255; cells 27/27 loaded, 93 meshes
+LOOK kenney_town high View C: 0 of 518400 pixels differ (0.000 %), largest 0/255; cells 27/27 loaded, 93 meshes
+LOOK abstract_city low Spawn: 0 of 518400 pixels differ (0.000 %), largest 0/255; cells 2/2 loaded, 13 meshes
+LOOK abstract_city low View A: 120 of 518400 pixels differ (0.023 %) within x 131-136, y 84-120, largest 135/255; cells 2/2 loaded, 13 meshes
+LOOK abstract_city low View B: 0 of 518400 pixels differ (0.000 %), largest 0/255; cells 2/2 loaded, 13 meshes
+LOOK abstract_city low View C: 0 of 518400 pixels differ (0.000 %), largest 0/255; cells 2/2 loaded, 13 meshes
+LOOK abstract_city high Spawn: 0 of 518400 pixels differ (0.000 %), largest 0/255; cells 2/2 loaded, 13 meshes
+LOOK abstract_city high View A: 1 of 518400 pixels differ (0.000 %) within x 526-527, y 307-308, largest 14/255; cells 2/2 loaded, 13 meshes
+LOOK abstract_city high View B: 0 of 518400 pixels differ (0.000 %), largest 0/255; cells 2/2 loaded, 13 meshes
+LOOK abstract_city high View C: 0 of 518400 pixels differ (0.000 %), largest 0/255; cells 2/2 loaded, 13 meshes

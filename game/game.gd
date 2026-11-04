@@ -130,8 +130,8 @@ func _prime_streaming() -> void:
 	if world.streamer == null:
 		return
 	var cells := world.streamer.prime()
-	print("STREAMING %s primed %d cells in %.0f ms (%s)" % [map_definition.id, cells, world.streamer.totals.prime_ms,
-			JSON.stringify(world.streamer.stats())])
+	print("STREAMING %s primed %d cells in %.0f ms (%s), load %s" % [map_definition.id, cells, world.streamer.totals.prime_ms,
+			JSON.stringify(world.streamer.stats()), JSON.stringify(world.load_report)])
 
 
 ## Replaces the loaded map with `definition`: the HUD shows its loading
@@ -159,6 +159,7 @@ func switch_map(definition: MapDefinition) -> bool:
 	# captures those and not the old map's profile values.
 	render_settings.apply({})
 	_static_bodies.clear()
+	hud.streamer = null
 	var old_id := map_definition.id
 	var frames: int = await world.unload_map_and_wait()
 	var freed_ms := Time.get_ticks_msec() - started
@@ -455,12 +456,12 @@ func _log_startup() -> void:
 	var physics := physics_engine_name(world.get_world_3d().direct_space_state)
 	startup = {"map_ready_ms": map_ready_ms, "first_frame_ms": Time.get_ticks_msec(), "physics_3d": physics,
 			"map": map_definition.id, "vehicles": hud.vehicle_states(), "npcs": world.npcs.size(),
-			"streaming": world.streamer.stats() if world.streamer else {}}
+			"streaming": world.streamer.stats() if world.streamer else {}, "load": world.load_report}
 	startup.merge(build_info())
-	print("STARTUP map_ready_ms=%d first_frame_ms=%d map=%s profile=%s occluders=%s physics_3d=%s (setting %s) vehicles=%s npcs=%d streaming=%s build=%s user_dir=%s" % [map_ready_ms,
+	print("STARTUP map_ready_ms=%d first_frame_ms=%d map=%s profile=%s occluders=%s physics_3d=%s (setting %s) vehicles=%s npcs=%d streaming=%s load=%s build=%s user_dir=%s" % [map_ready_ms,
 			startup.first_frame_ms, map_definition.id, quality_profile, JSON.stringify(render_settings.occluder_report), physics,
 			ProjectSettings.get_setting("physics/3d/physics_engine"), startup.vehicles, startup.npcs,
-			JSON.stringify(startup.streaming) if world.streamer else "off", JSON.stringify(build_info()), OS.get_user_data_dir()])
+			JSON.stringify(startup.streaming) if world.streamer else "off", JSON.stringify(world.load_report), JSON.stringify(build_info()), OS.get_user_data_dir()])
 
 
 ## Build kind and the frame and physics settings in effect. Project

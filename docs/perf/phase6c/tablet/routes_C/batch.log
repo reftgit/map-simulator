@@ -1,0 +1,6 @@
+session start 18:03:40 battery 27.5 target 34.0
+tools/perf/experiments/c_route_walk_shader.json: 1 file pushed, 0 skipped. 0.7 MB/s (430 bytes in 0.001s)
+c_route_walk_shader done: 2 results, peak PSS 0 kB, battery 27.5 -> 30.5 C
+tools/perf/experiments/c_route_drive_shader.json: 1 file pushed, 0 skipped. 2.7 MB/s (452 bytes in 0.000s)
+c_route_drive_shader done: 2 results, peak PSS 0 kB, battery 30.5 -> 31.5 C
+tools/perf/experiments/c_route_walk_shader.json: 1 file pushed, 0 skipped. 0.2 MB/s (430 bytes in 0.003s)

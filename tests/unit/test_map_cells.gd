@@ -82,6 +82,20 @@ func test_materials_and_meshes_used_in_several_places_are_shared() -> void:
 	resident.free()
 
 
+func test_warm_cells_are_the_smallest_cell_of_each_material() -> void:
+	var definition := StreamingMap.write(DIR)
+	var index := _split(definition).index
+	check(index.warm_cells.size() == 2, "one per material of the streamed meshes, two here (%s)" % [index.warm_cells])
+	for material_name in ["Shared", "Lamp"]:
+		var using := []
+		for cell in index.cell_count():
+			var resource := load(index.cell_paths[cell]) as MapCell
+			if resource.meshes.any(func(mesh: Mesh) -> bool: return mesh.surface_get_material(0).resource_name == material_name):
+				using.append(cell)
+		var smallest: int = using.reduce(func(a: int, b: int) -> int: return a if index.cell_bytes[a] <= index.cell_bytes[b] else b)
+		check(smallest in index.warm_cells, "%s: its smallest cell (%s) is warm" % [material_name, index.cell_paths[smallest].get_file()])
+
+
 func test_a_map_with_nothing_to_stream_gets_no_index() -> void:
 	var definition := StreamingMap.write(DIR)
 	var rules := CategoryRules.new()

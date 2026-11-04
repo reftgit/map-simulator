@@ -1,0 +1,4 @@
+{"experiment": "scenario_vehicle_sleep_kenney_town", "device": "android", "battery_c_start": 33.5, "battery_c_end": 33.5,
+ "thermal_status_start": "0", "thermal_status_end": "0",
+ "pss_peak_kb": 319140, "wall_s": 31, "started": "2026-11-04 20:07:06",
+ "cool_wait_s": 0, "cool_target_c": ""}

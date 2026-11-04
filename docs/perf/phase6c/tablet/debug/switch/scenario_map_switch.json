@@ -1,0 +1,154 @@
+{
+  "config": {
+    "experiment": "scenario_map_switch",
+    "map": "istanbul_halic_cells_shader",
+    "profile": "",
+    "runtime": {},
+    "scenario": {
+      "hold_s": 20.0,
+      "maps": [
+        "istanbul_halic",
+        "istanbul_halic_cells",
+        "istanbul_halic",
+        "istanbul_halic_cells_shader",
+        "istanbul_halic_cells",
+        "istanbul_halic_cells_shader"
+      ],
+      "name": "map_switch",
+      "rotate_hold_s": 0.0
+    },
+    "settings": {}
+  },
+  "profile": "low",
+  "scenario": [
+    {
+      "detail": "scenario=map_switch rotate_hold_s=0",
+      "result": "INFO",
+      "step": "start",
+      "t": 0.0
+    },
+    {
+      "detail": "unix 1793811709.480",
+      "result": "INFO",
+      "step": "hold_istanbul_halic_cells_shader",
+      "t": 0.0
+    },
+    {
+      "detail": "istanbul_halic_cells_shader -> istanbul_halic, nodes 8550, unix 1793811729.497",
+      "result": "INFO",
+      "step": "switch_1_start",
+      "t": 20.0
+    },
+    {
+      "detail": "istanbul_halic_cells_shader -> istanbul_halic in 3387 ms, player 0.00 m from its spawn, nodes 5476 (earlier on this map: -), unix 1793811733.937",
+      "result": "PASS",
+      "step": "switch_1",
+      "t": 24.5
+    },
+    {
+      "detail": "istanbul_halic -> istanbul_halic_cells, nodes 5476, unix 1793811753.965",
+      "result": "INFO",
+      "step": "switch_2_start",
+      "t": 44.5
+    },
+    {
+      "detail": "istanbul_halic -> istanbul_halic_cells in 3354 ms, player 0.00 m from its spawn, nodes 8550 (earlier on this map: -), unix 1793811758.350",
+      "result": "PASS",
+      "step": "switch_2",
+      "t": 48.9
+    },
+    {
+      "detail": "istanbul_halic_cells -> istanbul_halic, nodes 8550, unix 1793811778.398",
+      "result": "INFO",
+      "step": "switch_3_start",
+      "t": 68.9
+    },
+    {
+      "detail": "istanbul_halic_cells -> istanbul_halic in 3129 ms, player 0.00 m from its spawn, nodes 5476 (earlier on this map: 5476), unix 1793811782.549",
+      "result": "PASS",
+      "step": "switch_3",
+      "t": 73.1
+    },
+    {
+      "detail": "istanbul_halic -> istanbul_halic_cells_shader, nodes 5476, unix 1793811802.565",
+      "result": "INFO",
+      "step": "switch_4_start",
+      "t": 93.1
+    },
+    {
+      "detail": "istanbul_halic -> istanbul_halic_cells_shader in 3300 ms, player 0.00 m from its spawn, nodes 8550 (earlier on this map: 8550), unix 1793811806.921",
+      "result": "PASS",
+      "step": "switch_4",
+      "t": 97.4
+    },
+    {
+      "detail": "istanbul_halic_cells_shader -> istanbul_halic_cells, nodes 8550, unix 1793811826.924",
+      "result": "INFO",
+      "step": "switch_5_start",
+      "t": 117.4
+    },
+    {
+      "detail": "istanbul_halic_cells_shader -> istanbul_halic_cells in 3272 ms, player 0.00 m from its spawn, nodes 8550 (earlier on this map: 8550), unix 1793811831.281",
+      "result": "PASS",
+      "step": "switch_5",
+      "t": 121.8
+    },
+    {
+      "detail": "istanbul_halic_cells -> istanbul_halic_cells_shader, nodes 8550, unix 1793811851.402",
+      "result": "INFO",
+      "step": "switch_6_start",
+      "t": 141.9
+    },
+    {
+      "detail": "istanbul_halic_cells -> istanbul_halic_cells_shader in 4664 ms, player 0.00 m from its spawn, nodes 8550 (earlier on this map: 8550), unix 1793811857.148",
+      "result": "PASS",
+      "step": "switch_6",
+      "t": 147.7
+    },
+    {
+      "detail": "passed=6 failed=0",
+      "result": "PASS",
+      "step": "done",
+      "t": 167.7
+    }
+  ],
+  "startup": {
+    "android_frame_pacing": true,
+    "debug_build": true,
+    "display_refresh_rate": 60.0000038146973,
+    "first_frame_ms": 9566,
+    "ios_allow_high_refresh_rate": false,
+    "load": {
+      "index_ms": 35.5,
+      "instantiate_ms": 813.5,
+      "scene_ms": 1845.8,
+      "streamed": true
+    },
+    "map": "istanbul_halic_cells_shader",
+    "map_ready_ms": 8874,
+    "max_fps": 30,
+    "npcs": 2,
+    "perf_feature": false,
+    "physics_3d": "GodotPhysics3D",
+    "physics_engine_setting": "DEFAULT",
+    "physics_interpolation": true,
+    "physics_ticks": 60,
+    "screen_refresh_rate": 60.0000038146973,
+    "streaming": {
+      "attach_max_ms": 0.0,
+      "cells": 2612,
+      "failed": 0,
+      "loaded": 12,
+      "loaded_mb": 0.1,
+      "loads": 12,
+      "meshes": 16,
+      "pending": 1,
+      "prime_cells": 6,
+      "prime_ms": 10.0,
+      "primes": 1,
+      "unloads": 0
+    },
+    "vehicles": "awake",
+    "vsync_mode": 1
+  }
+}

@@ -29,6 +29,9 @@ extends Resource
 ## Meshes used in more than one cell (files of their own: loaded once, freed
 ## with the last cell using them).
 @export var shared_mesh_paths: Array[String] = []
+## The smallest cell using each streamed material: kept loaded for the whole
+## visit, so every material is in the scene from the start (MapStreamer).
+@export var warm_cells: Array[int] = []
 ## The map's binary model files when the index was written, with their sizes:
 ## a regenerated model makes the index stale.
 @export var source_files: Array[String] = []
@@ -56,12 +59,20 @@ static func load_for(definition: MapDefinition) -> MapStreamingIndex:
 
 
 ## Why the index cannot be used ("" when it can): a missing file, or a
-## model whose size changed since the cells were written.
+## model whose size changed since the cells were written. The cells are
+## looked up in one listing of their folder (thousands of ResourceLoader.exists()
+## calls took 60 ms on the Mac at every map load).
 func problem() -> String:
 	if not ResourceLoader.exists(resident_scene):
 		return "missing %s" % resident_scene
+	var listed := {}  # folder -> {file name: true}
 	for path in cell_paths + material_paths + shared_mesh_paths:
-		if not ResourceLoader.exists(path):
+		var folder := path.get_base_dir()
+		if not listed.has(folder):
+			listed[folder] = {}
+			for file in DirAccess.get_files_at(folder):
+				listed[folder][file] = true
+		if not listed[folder].has(path.get_file()):
 			return "missing %s" % path
 	for i in source_files.size():
 		var file := FileAccess.open(source_files[i], FileAccess.READ)

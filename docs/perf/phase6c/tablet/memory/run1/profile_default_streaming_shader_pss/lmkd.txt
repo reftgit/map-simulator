@@ -1,0 +1,3 @@
+         1793749089.360   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793749089.365   555   555 W lmkd    : Failed to get t_pid for '0' of pid(17699)
+         1793749089.365   555   555 I lmkd    : Reclaim 'com.samsung.android.rubin.app' (17699), uid 5010, oom_score_adj 999, state 19 to free 45792kB rss, 32340kB swap; reason: min2x watermark is breached and swap is low (2072664kB < 786428kB)

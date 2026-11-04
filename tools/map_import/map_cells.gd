@@ -112,6 +112,7 @@ func run(definition: MapDefinition, out_dir: String, cell_size := DEFAULT_CELL_S
 			triangles += triangle_count(mesh)
 		index.cell_triangles.append(triangles)
 		index.cell_bytes.append(_file_size(path))
+	index.warm_cells.assign(warm_cells(index, keys.map(func(key: String) -> Array: return cells[key].meshes)))
 	# The resident scene: every node, the streamed ones without their mesh.
 	for instance: MeshInstance3D in streamed:
 		instance.mesh = null
@@ -136,6 +137,27 @@ func run(definition: MapDefinition, out_dir: String, cell_size := DEFAULT_CELL_S
 	seconds = (Time.get_ticks_msec() - started) / 1000.0
 	lines.append_array(summary(definition.id, index))
 	return ""
+
+
+## The smallest cell using each material of the streamed meshes (cells in
+## index order, `cell_meshes` their meshes): MapStreamer keeps these loaded
+## for the whole visit, so every material is in the scene from the start, as
+## with the whole map (a material first drawn when its first cell arrived
+## stalled the tablet for about 100 ms).
+static func warm_cells(written: MapStreamingIndex, cell_meshes: Array) -> Array[int]:
+	var smallest := {}  # Material -> cell
+	for cell in cell_meshes.size():
+		for mesh: Mesh in cell_meshes[cell]:
+			for surface in mesh.get_surface_count():
+				var material := mesh.surface_get_material(surface)
+				if material and (not smallest.has(material) or written.cell_bytes[cell] < written.cell_bytes[smallest[material]]):
+					smallest[material] = cell
+	var cells: Array[int] = []
+	for cell: int in smallest.values():
+		if cell not in cells:
+			cells.append(cell)
+	cells.sort()
+	return cells
 
 
 ## Summary lines: meshes and triangles streamed per category, cells, sizes.

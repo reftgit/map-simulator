@@ -1,0 +1,1 @@
+{"experiment": "profile_default_streaming_shader_pss_100", "map": "istanbul_halic_cells_shader", "runtime": {"streaming_index": "res://maps/istanbul_halic_cells_shader/streaming_100/istanbul_halic_cells_shader_index.tres"}, "bench": {"warmup_s": 15, "measure_s": 20}}

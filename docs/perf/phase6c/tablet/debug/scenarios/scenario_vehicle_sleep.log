@@ -1,0 +1,46 @@
+--------- beginning of main
+11-04 20:05:01.584 25477 25506 I godot   : Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+11-04 20:05:01.756 25477 25506 I godot   : Vulkan 1.1.128 - Forward Mobile - Using Device #0: Qualcomm - Adreno (TM) 610
+11-04 20:05:02.324 25477 25506 I godot   : 
+11-04 20:05:03.945 25477 25506 I godot   : SAFE_AREA window=(2000, 1200) safe=[P: (0, 0), S: (2000, 1200)] canvas=[P: (0.0, 0.0), S: (1500.0, 900.0)] viewport=(1500.0, 900.0)
+11-04 20:05:08.349 25477 25506 I godot   : QUALITY profile=low experiment=scenario_vehicle_sleep occluders={"ms":139,"occluders":643,"source":"baked","triangles":317518} effective={"camera_far":400.0,"fog":true,"hide":[],"lod_threshold":4.0,"max_fps":30,"occlusion":true,"render_scale":0.6,"scaling_mode":"bilinear","shadows":"off","visibility_end":{"decor":100.0,"facade_detail":100.0,"lamps":100.0,"trees":100.0}}
+11-04 20:05:08.362 25477 25506 I godot   : STREAMING istanbul_halic_cells_shader primed 6 cells in 12 ms ({"attach_max_ms":0.0,"cells":2612,"failed":0,"loaded":12,"loaded_mb":0.1,"loads":12,"meshes":16,"pending":0,"prime_cells":6,"prime_ms":12.5,"primes":1,"unloads":0}), load {"index_ms":48.5,"instantiate_ms":1156.5,"scene_ms":2343.5,"streamed":true}
+11-04 20:05:08.424 25477 25506 I godot   : SCENARIO step=start result=INFO t=0.0 scenario=vehicle_sleep rotate_hold_s=0
+11-04 20:05:08.977 25477 25506 I godot   : STARTUP map_ready_ms=7246 first_frame_ms=7858 map=istanbul_halic_cells_shader profile=low occluders={"ms":139,"occluders":643,"source":"baked","triangles":317518} physics_3d=GodotPhysics3D (setting DEFAULT) vehicles=awake npcs=2 streaming={"attach_max_ms":0.0,"cells":2612,"failed":0,"loaded":12,"loaded_mb":0.1,"loads":12,"meshes":16,"pending":1,"prime_cells":6,"prime_ms":12.5,"primes":1,"unloads":0} load={"index_ms":48.5,"instantiate_ms":1156.5,"scene_ms":2343.5,"streamed":true} build={"android_frame_pacing":true,"debug_build":true,"display_refresh_rate":60.0000038146973,"ios_allow_high_refresh_rate":false,"max_fps":30,"perf_feature":false,"physics_engine_setting":"DEFAULT","physics_interpolation":true,"physics_ticks":60,"screen_refresh_rate":60.0000038146973,"vsync_mode":1} user_dir=/data/data/com.mirongi.mapsimulator/files
+11-04 20:05:10.722 25477 25506 I godot   : PERF map=istanbul_halic_cells_shader profile=low view="Spawn" fps=26 draw_calls=112 primitives=50556 objects=419 video_mem_mb=126 static_mem_mb=184 static_peak_mb=184 vehicles=awake cells=13 pending=0 cell_mb=0.3
+11-04 20:05:11.413 25477 25506 I godot   : VEHICLE PlaceholderCar asleep
+11-04 20:05:11.416 25477 25506 I godot   : SCENARIO step=parked_car_asleep result=PASS t=3.0 car asleep
+11-04 20:05:11.449 25477 25506 I godot   : CAR walk-up PlaceholderCar
+11-04 20:05:12.437 25477 25506 I godot   : SCENARIO step=car_button result=PASS t=4.0 distance 2.5 m, car asleep, interact button true
+11-04 20:05:12.744 25477 25506 I godot   : PERF map=istanbul_halic_cells_shader profile=low view="Spawn" fps=25 draw_calls=111 primitives=46746 objects=420 video_mem_mb=127 static_mem_mb=185 static_peak_mb=185 vehicles=asleep cells=31 pending=0 cell_mb=0.5
+11-04 20:05:12.800 25477 25506 I godot   : VEHICLE PlaceholderCar awake
+11-04 20:05:12.830 25477 25506 I godot   : SCENARIO step=walk_into_car_wakes_it result=PASS t=4.4 player on a wall true, car awake
+11-04 20:05:14.130 25477 25506 I godot   : VEHICLE PlaceholderCar asleep
+11-04 20:05:14.135 25477 25506 I godot   : SCENARIO step=asleep_after_stopping result=PASS t=5.7 after 1.3 s
+11-04 20:05:14.738 25477 25506 I godot   : PERF map=istanbul_halic_cells_shader profile=low view="Spawn" fps=30 draw_calls=111 primitives=46746 objects=420 video_mem_mb=127 static_mem_mb=185 static_peak_mb=185 vehicles=asleep cells=31 pending=0 cell_mb=0.5
+11-04 20:05:16.739 25477 25506 I godot   : PERF map=istanbul_halic_cells_shader profile=low view="Spawn" fps=29 draw_calls=111 primitives=46746 objects=420 video_mem_mb=127 static_mem_mb=185 static_peak_mb=185 vehicles=asleep cells=31 pending=0 cell_mb=0.5
+11-04 20:05:17.164 25477 25506 I godot   : SCENARIO step=stays_asleep_beside_it result=PASS t=8.7 player touched the car true, distance 1.37 m
+11-04 20:05:17.199 25477 25506 I godot   : VEHICLE PlaceholderCar awake
+11-04 20:05:17.687 25477 25506 I godot   : SCENARIO step=get_in_wakes_it result=PASS t=9.3 driving true, car awake
+11-04 20:05:18.718 25477 25506 I godot   : PERF map=istanbul_halic_cells_shader profile=low view="Spawn" fps=30 draw_calls=117 primitives=47268 objects=430 video_mem_mb=127 static_mem_mb=186 static_peak_mb=186 vehicles=awake cells=35 pending=0 cell_mb=0.5
+11-04 20:05:18.879 25477 25506 I godot   : SCENARIO step=throttle result=PASS t=10.5 forward speed 5.0 m/s
+11-04 20:05:20.237 25477 25506 I godot   : SCENARIO step=get_out result=PASS t=11.8 speed when stopped 0.07 m/s
+11-04 20:05:20.730 25477 25506 I godot   : VEHICLE PlaceholderCar asleep
+11-04 20:05:20.735 25477 25506 I godot   : SCENARIO step=asleep_after_getting_out result=PASS t=12.3 car asleep
+11-04 20:05:20.743 25477 25506 I godot   : PERF map=istanbul_halic_cells_shader profile=low view="Spawn" fps=29 draw_calls=112 primitives=47008 objects=419 video_mem_mb=127 static_mem_mb=186 static_peak_mb=186 vehicles=asleep cells=40 pending=0 cell_mb=0.6
+11-04 20:05:20.766 25477 25506 I godot   : VEHICLE PlaceholderCar awake
+11-04 20:05:21.264 25477 25506 I godot   : VIEW Karaköy street, facing north
+11-04 20:05:21.780 25477 25506 I godot   : VIEW Galata street, facing south
+11-04 20:05:22.719 25477 25506 I godot   : PERF map=istanbul_halic_cells_shader profile=low view="Galata street, facing south" fps=27 draw_calls=91 primitives=23727 objects=444 video_mem_mb=127 static_mem_mb=186 static_peak_mb=187 vehicles=awake cells=38 pending=0 cell_mb=0.4
+11-04 20:05:24.722 25477 25506 I godot   : PERF map=istanbul_halic_cells_shader profile=low view="Galata street, facing south" fps=30 draw_calls=85 primitives=24313 objects=436 video_mem_mb=127 static_mem_mb=187 static_peak_mb=187 vehicles=awake cells=41 pending=0 cell_mb=0.5
+11-04 20:05:24.784 25477 25506 I godot   : SCENARIO step=slope_setup result=PASS t=16.4 view Galata street, facing south, ground slope under the car 12.6°
+11-04 20:05:25.284 25477 25506 I godot   : VEHICLE PlaceholderCar asleep
+11-04 20:05:25.520 25477 25506 I godot   : VEHICLE PlaceholderCar awake
+11-04 20:05:25.546 25477 25506 I godot   : SCENARIO step=slope_walk_into_car_wakes_it result=PASS t=17.1 player on a wall true, car awake
+11-04 20:05:26.720 25477 25506 I godot   : PERF map=istanbul_halic_cells_shader profile=low view="Galata street, facing south" fps=30 draw_calls=86 primitives=26692 objects=429 video_mem_mb=127 static_mem_mb=187 static_peak_mb=187 vehicles=awake cells=41 pending=0 cell_mb=0.5
+11-04 20:05:27.346 25477 25506 I godot   : VEHICLE PlaceholderCar asleep
+11-04 20:05:27.348 25477 25506 I godot   : SCENARIO step=slope_asleep_after_stopping result=PASS t=18.9 after 1.8 s
+11-04 20:05:28.720 25477 25506 I godot   : PERF map=istanbul_halic_cells_shader profile=low view="Galata street, facing south" fps=30 draw_calls=86 primitives=26696 objects=431 video_mem_mb=127 static_mem_mb=187 static_peak_mb=187 vehicles=asleep cells=41 pending=0 cell_mb=0.5
+11-04 20:05:30.348 25477 25506 I godot   : SCENARIO step=slope_stays_asleep_beside_it result=PASS t=21.9 player touched the car true, distance 1.26 m
+11-04 20:05:30.348 25477 25506 I godot   : SCENARIO step=done result=PASS t=21.9 passed=13 failed=0
+11-04 20:05:30.384 25477 25506 I godot   : BENCH_DONE

@@ -1,0 +1,1 @@
+{"experiment": "profile_default_streaming_abstract_city_off", "map": "abstract_city", "runtime": {"streaming": false}, "bench": {"warmup_s": 15, "measure_s": 20}}
