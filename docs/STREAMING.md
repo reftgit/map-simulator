@@ -31,7 +31,7 @@ The meshes are what costs; their nodes cost about 2 KB each. So what streams is 
 | `cells/<category>_<i>_<j>.res` | A `MapCell`: the node paths and their meshes. |
 | `materials/*.res` | Every material, a file of its own, so the resident scene and the cells use the same material object. |
 | `meshes/*.res` | A mesh used in more than one cell (loaded once, freed with its last cell). |
-| `<id>_index.tres` | The `MapStreamingIndex`: the resident scene, the cell size, per cell its file, category, square, the bounds of its meshes' centres, and its mesh, triangle, and byte counts; the materials to hold; the map's binary model files and their sizes. |
+| `<id>_index.tres` | The `MapStreamingIndex`: the resident scene, the cell size, per cell its file, category, square, the bounds of its meshes' centres, and its mesh, triangle, and byte counts; the materials to hold; the warm cells; the map's binary model files and their sizes. |
 
 - **Link:** the cell step points the definition at its index (`MapDefinition.streaming_index_path`, a line added after `scene_path` in the `.tres`).
 - **The default map:** split by the same step from its GLB scene (`assets/istanbul_halic_cells_shader.glb`, the shader facade map's script), not by its generator. One mechanism for every map (D26); the generator, its pinned output (`60b9f729…`), and the shader facade script stay as they are; the streaming grid does not depend on the generator's 40 m mesh cells or 150 m chunks.
@@ -44,10 +44,11 @@ The meshes are what costs; their nodes cost about 2 KB each. So what streams is 
 - **Wanted:** every cell whose meshes' centres lie within R + margin of the camera, and within R + margin of the point the camera reaches in `lookahead` seconds at its current velocity (a driving player). Cells are found on the grid around the camera, not by scanning every cell.
 - **Loading:** missing wanted cells are queued nearest first and requested with `ResourceLoader.load_threaded_request`, at most `max_requests` at once; a loaded cell gets its meshes (`MeshInstance3D.mesh`) in the frame loop within `attach_budget_ms` of main-thread time per frame (at least one cell per frame), nearest first. A cell that arrives when it is no longer wanted is dropped.
 - **Freeing:** a loaded cell beyond R + margin + hysteresis that is not wanted gives its nodes `null` meshes; the cell and its meshes are freed.
+- **Warm cells:** the index names, for each material of the streamed meshes, the smallest cell using it; the streamer loads these when the map loads and never frees them (6 cells on the default map), so every material is in the scene from the start, as with the whole map. Without them the first cell bringing a material into the scene stalled the Galaxy Tab A7 for one frame of 100–109 ms and one of 77–79 ms, at the same spot of every route (the first traffic-signal glow), although attaching the cell took 0.2 ms; the whole map never stalled there. With them it was gone from the tablet's routes (the Mac and the iPhone never showed it).
 - **Jumps:** the streamer processes after the camera (process priority 100). When the camera moved farther than the margin since the last frame (a teleport, respawn, vehicle reset, VIEW, CAR, the map's first frame), every wanted cell is loaded before that frame is drawn (`prime()`). `Main` primes once more after a map load and the profile, before the first frame or before the loading screen goes.
 - **Primes load on the main thread.** Threaded requests made from `Main._ready()` at the app's start crashed a worker thread in 7 of 20 launches on the Mac (Metal; the same build loaded whole never crashed, and threaded requests made later from the frame loop never crashed in 40 launches); a prime is blocking anyway.
 - **Renderers without a RenderingDevice** (the dummy renderer of headless runs, Compatibility) load cells on the main thread within the same budget: the dummy renderer creates mesh RIDs only on the main thread, and loading meshes on worker threads raced (errors when 2,612 cells loaded at once headless).
-- **Map scripts:** a map script that sets meshes up at load (the İstanbul maps' vertex-colour albedo, the shader facade map's window shader) implements `prepare_streamed(instances)`, called for each cell's nodes after they got their meshes. The streamer holds the streamed meshes' materials while the map is loaded, so a material set up once stays the same object when its cells load again.
+- **Map scripts:** a map script that sets meshes up at load (the İstanbul maps' vertex-colour albedo, the shader facade map's window shader) implements `prepare_streamed(instances)`, called for each cell's nodes after they got their meshes, and `prepare_streamed_materials(materials)`, called once at load with the streamed meshes' materials. The streamer holds those materials while the map is loaded, so a material set up once stays the same object when its cells load again. A material must be changed at load, not when its first cell arrives: on the Galaxy Tab A7 the İstanbul maps' vertex-colour flag set at first use made the renderer build a new shader in that frame (frames of 120–167 ms followed by 72–80 ms, right after an attach that itself took 0.2 ms).
 - **Map switch:** `WorldManager.unload_map()` calls `MapStreamer.shutdown()`: requests in flight are waited for and dropped (Godot cannot cancel a threaded request, and an uncollected one keeps its resource), cells and materials are let go, and the streamer is freed with the map.
 - **Pause and focus loss:** the streamer stops with the scene tree; requests in flight finish on their threads and are collected when it runs again.
 
@@ -56,7 +57,7 @@ The meshes are what costs; their nodes cost about 2 KB each. So what streams is 
 | `margin` | 30 m | loaded ahead beyond the range; also the largest camera move in one frame that does not prime |
 | `hysteresis` | 30 m | further metres before a cell is freed |
 | `lookahead` | 1.5 s | the camera's velocity looked ahead |
-| `max_requests` | 4 | threaded requests in flight |
+| `max_requests` | 1 | threaded requests in flight (four gave more 51–57 ms frames on the tablet's routes; one keeps up with a car at 15 m/s) |
 | `attach_budget_ms` | 2 ms | main-thread time per frame for giving cells their meshes |
 
 ## Backward compatibility
@@ -69,8 +70,18 @@ Nothing to do in the model: name or classify the detail meshes (facade detail, t
 
 ## Cell size
 
-Two sizes were measured on the default map; the choice and its numbers: `PROJECT_STATE.md`, "Phase 6c".
+50 m, the default of `tools/cell_map.gd` (`--cell-size` changes it). Two sizes were measured on the default map (the 100 m split written beside the first with `--out … --no-link` and chosen at runtime with `"streaming_index"`):
+
+| | 50 m | 100 m |
+|---|---|---|
+| Cells, files | 2,612 cells, 67.2 MB | 1,254 cells, 66.7 MB |
+| Tablet (Release Perf, low), stable PSS | 464 / 464 / 475 MiB (three runs) | 464 / 463 MiB (two runs) |
+| Tablet, priming at the spawn | 6 cells, 68–100 ms | 5 cells, 81–106 ms |
+| Mac, loaded at the three viewpoints, low (high) | 7 / 21 / 32 cells, 0.3–0.4 MB (38 / 56 / 95 cells, 0.8–1.4 MB) | 6 / 14 / 16 cells, 0.4–0.6 MB (25 / 32 / 41 cells, 0.9–1.6 MB) |
+| Mac, driving route out and back (low): loads, longest attaching in a frame | 93 + 60, 0.27 ms | 49 + 31, 0.72 ms |
+
+Memory is the same within the runs' spread: what dominates is not loading the 4,726 meshes at all, not the cell grain. 50 m holds less around the camera on the high profile, gives smaller attaching steps per frame, and keeps a cell a fraction of the low profile's 100 m range, at twice the files; it was kept.
 
 ## Tests
 
-`tests/unit/test_map_cells.gd` (the split: cells by centre and category, the resident scene, shared materials and meshes, nothing to stream, the link, unusable indexes), `tests/unit/test_map_streamer.gd` (range and margin, hysteresis, jumps, hidden and unranged categories, profile changes, the budget, lookahead, loads in flight and shutdown, dropped late loads, the map script's hook, pause), `tests/integration/test_map_streaming.gd` (in the game: the resident scene, walking and driving routes with no needed cell missing, the same meshes drawn with and without streaming, maps without an index, a map switch, teleport and respawn; the default map's three viewpoints on both profiles).
+`tests/unit/test_map_cells.gd` (the split: cells by centre and category, the resident scene, shared materials and meshes, warm cells, nothing to stream, the link, unusable indexes, the import tool's categories), `tests/unit/test_map_streamer.gd` (range and margin, hysteresis, jumps, hidden and unranged categories, profile changes, the budget, lookahead, one request in flight by default, loads in flight and shutdown, dropped late loads, the map script's hook, pause), `tests/integration/test_map_streaming.gd` (in the game: the resident scene, walking and driving routes with no needed cell missing, the same meshes drawn with and without streaming, the route benchmark's streaming results, maps without an index, a map switch, teleport and respawn; the default map's three viewpoints on both profiles; the registry maps' cells up to date).

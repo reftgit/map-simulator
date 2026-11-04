@@ -151,6 +151,7 @@ Every key is optional; the tool works without a configuration file.
 | `maps/<id>/<id>.tres` | The `MapDefinition`: spawn, bounds, kill height, vehicle spawn, NPC route, viewpoints, occluders, category rules, required files. | yes |
 | `maps/<id>/<id>_categories.tres` | The `CategoryRules`. | yes |
 | `maps/<id>/<id>_occluders.scn` | Occluders baked from the `buildings` and `ground` colliders (`RenderSettings.build_occluders`). | yes |
+| `maps/<id>/streaming/` | The resident scene, the streaming cells, shared materials, and the index (`docs/STREAMING.md`); the definition's `streaming_index_path` points at the index. | no: generated on each machine (`tools/cell_map.gd`); without it the map loads whole |
 | `docs/maps/imported/<id>.md` | The report: every check, "How to improve this map" (what to change in the model for every rule that did not simply pass), with `--compare=<earlier report>[,…]` the earlier imports of the same map side by side, the categories, colliders, occluders, placement, timings, and files. | yes |
 | `game/world/maps.tres` | The map appended to the registry (selectable in debug and Release Perf builds; the default does not change). Skipped with `--no-register`. | yes |
 
@@ -181,6 +182,15 @@ What makes the import need no configuration and no guess; the report's "How to i
 7. **Collision (optional):** for exact collision, add `<name>-col` meshes; otherwise the tool builds hulls, trimeshes, boxes, and capsules by category and shape.
 8. **Size:** under 2,000,000 triangles for the tablet class; detail in separate named meshes so the quality profiles can hide it at a distance.
 
+## Streaming (what the categories mean at runtime)
+
+The meshes of the four visibility-range categories (`facade_detail`, `trees`, `lamps`, `decor`) are streamed: the cell step (`tools/cell_map.gd`; the import tool runs it after writing a map) puts them into cells of a 50 m grid by the centre of each mesh, and the game loads only the cells within the active profile's visibility range plus a margin of the camera (`docs/STREAMING.md`). Ground, buildings, water, meshes in no category, every collider, and the occluders stay loaded. Nothing changes in what is drawn within the ranges; what it means for a model:
+
+- **One object per mesh** keeps the cells fine: a mesh is streamed whole, so a decor mesh that spans the whole map is loaded wherever its centre is near, and a tree mesh holding a forest is drawn or not as one.
+- **Categories decide memory:** detail in the right categories is loaded only near the camera; detail classified as `buildings` (or in no category) is always loaded and always drawn (R1).
+- **A mesh used by several objects** (instanced pieces) is loaded once for all cells that use it; one also used by a building or the ground stays resident.
+- **Nothing to stream:** a map without meshes in those categories (the Apollo relief: one ground mesh) loads whole, as does any map whose cells were not written (they are generated on each machine, not kept in Git).
+
 ## Adding a map (user steps)
 
 1. Put the GLB anywhere on disk (it is read, never copied or changed).
@@ -192,4 +202,5 @@ What makes the import need no configuration and no guess; the report's "How to i
    ```
 
 4. Read the report (`docs/maps/imported/<id>.md`): every FAIL names the change to make, and "How to improve this map" lists what to change in the model for everything the tool had to guess or fix; fix it in the model or the configuration and run the command again (`--compare=<the previous report>` shows both runs side by side).
-5. In a debug build, press MAP until the overlay names the map, or start with `--map=<id>`.
+5. The tool has also split the map into streaming cells (its report's "Streaming" section; `--no-cells` skips it). On another machine, or after changing the map's files by hand, run `godot --headless --path . --script res://tools/cell_map.gd -- --map=<id>`, then `godot --headless --path . --import`.
+6. In a debug build, press MAP until the overlay names the map, or start with `--map=<id>`.

@@ -2,11 +2,13 @@
 
 What actually exists in the repository and how it was verified. Plans and decisions belong in `PROJECT_CONTEXT.md`; code structure, build, and test commands are in `docs/ARCHITECTURE.md`.
 
-Last updated: 2026-11-03 (Phase 6b, the blind test and hardening of the import tool, Claude Code)
+Last updated: 2026-11-04 (Phase 6c, the streaming loader for any map, Claude Code)
 
 ## Current phase
 
-**Phase 6b: the import tool passed a blind test on two maps it had never seen, after general fixes (2026-11-03, D26).** The unchanged Phase 6a tool was run first on two unseen public-domain maps, converted to GLB without any unit or axis change: Keenan Crane's abstract city (the whole city in one OBJ mesh, arbitrary units, no names) and NASA's Apollo 11 landing site relief (an STL for 3D printing: Z-up, millimetres, inside out). Blind, neither was written (C2 FAIL with a scale suggestion of 20; C3 FAIL "looks Z-up"); with the suggested configuration both played (7 of 8 gameplay tests each), but the city was a toy in one `buildings` mesh and only the relief's base was drawn. General fixes followed, none using the maps' names: axis, unit, and inside-out detection (C2, C3, C7), splitting a mesh that holds many objects and new shape rules (R1, R3), colliders by shape (capsules for trunks and posts, boxes for fences, trimesh for concave buildings, R2), scored spawn and vehicle places, and a report that says how to improve the map and compares runs. Both blind maps are now in the game with a user-style configuration (the city: `"scale": 100`, the tool's own new suggestion; the relief: a display name only) and pass 11 and 10 gameplay tests; the device scenarios passed on both on the Galaxy Tab A7 and the iPhone 13 Pro. Shape classification: 58 of 60 hand-labelled city objects; shape alone matches the names on 92.6 % of the Kenney town and 88.1 % of Safranbolu. Every mesh category of the eight maps is unchanged (25,955 meshes), the Kenney town's car parks on a road, its trees and fences stop the player. Details: "Phase 6b" below.
+**Phase 6c: one streaming loader for every map (2026-11-04, D26); the memory, switch, look, missing-cell, and scenario criteria pass; the tablet's map ready, Safranbolu's memory, and the relative long-frame criterion do not or were not completed, and the route and iPhone criteria pass only in part.** A common cell step (`tools/cell_map.gd`; the import tool runs it) splits any map by its own categories: the facade detail, tree, lamp, and decor meshes go into 50 m cells by the centre of each mesh, uncut, and a resident scene keeps every node, collider, and occluder; `MapStreamer` loads the cells within each category's visibility range + 30 m of the camera (and 1.5 s ahead of it) on a worker thread, one at a time, gives them their meshes within 2 ms per frame, frees them beyond range + 60 m, and loads the needed ones before the frame after a jump (teleport, respawn, VIEW, a switch). Every registry map with streamable meshes (the four İstanbul maps, the Kenney town, the abstract city) and the two test imports were split by the same command; the Apollo relief and the test district have nothing to stream, and a map without its generated cells loads whole. On the Galaxy Tab A7 the default map's stable PSS is 464 MiB instead of 622 (≤ 502: PASS) and six map switches took 3.1–4.7 s with peaks of 547–559 MiB (PASS); on the iPhone 13 Pro the footprint is 597 MiB instead of 862 and the map is ready in 0.77 s instead of 1.22 s at 60 FPS (PASS), but single long frames of 25–40 ms appear at Galata in two of three runs where the whole map has none (no cell loads in those windows); the look within the ranges is identical pixel for pixel on the İstanbul maps, no needed cell was ever missing along a 515 m route walked and driven, and the device scenarios passed on both devices. Not met: the tablet's map ready (median 4.5 s in the measured three-run set, 3.5 s in another session; the battery drained throughout, the Mac's USB port gives less than the load draws), Safranbolu's PSS (341 MiB; only its facade detail streams), the relative long-frame criterion (one pair at 6 % battery, below the limit; eight launches each not run), and the route criterion only partly (no frame over 50 ms next to a cell load and no presented interval longer than the whole map's, but 4 game frames of 51–55 ms the whole map did not have). Details: "Phase 6c" below.
+
+Before it: **Phase 6b: the import tool passed a blind test on two maps it had never seen, after general fixes (2026-11-03, D26).** The unchanged Phase 6a tool was run first on two unseen public-domain maps, converted to GLB without any unit or axis change: Keenan Crane's abstract city (the whole city in one OBJ mesh, arbitrary units, no names) and NASA's Apollo 11 landing site relief (an STL for 3D printing: Z-up, millimetres, inside out). Blind, neither was written (C2 FAIL with a scale suggestion of 20; C3 FAIL "looks Z-up"); with the suggested configuration both played (7 of 8 gameplay tests each), but the city was a toy in one `buildings` mesh and only the relief's base was drawn. General fixes followed, none using the maps' names: axis, unit, and inside-out detection (C2, C3, C7), splitting a mesh that holds many objects and new shape rules (R1, R3), colliders by shape (capsules for trunks and posts, boxes for fences, trimesh for concave buildings, R2), scored spawn and vehicle places, and a report that says how to improve the map and compares runs. Both blind maps are now in the game with a user-style configuration (the city: `"scale": 100`, the tool's own new suggestion; the relief: a display name only) and pass 11 and 10 gameplay tests; the device scenarios passed on both on the Galaxy Tab A7 and the iPhone 13 Pro. Shape classification: 58 of 60 hand-labelled city objects; shape alone matches the names on 92.6 % of the Kenney town and 88.1 % of Safranbolu. Every mesh category of the eight maps is unchanged (25,955 meshes), the Kenney town's car parks on a road, its trees and fences stop the player. Details: "Phase 6b" below.
 
 Before it: **Phase 6a: the project is a map infrastructure (2026-11-02, D26).** A map contract (`docs/MAP_CONTRACT.md`) says what a GLB must and should provide; the render categories moved from `RenderSettings` into each map's data (every one of the five existing maps' 21,458 mesh categories unchanged, the default map's Mac benchmark identical); a general import tool (`tools/import_map.gd`, one command) checks a GLB against the contract, fixes what it can (scale and axes when configured, normals, vertex colours), classifies its meshes, builds colliders and occluders, places the spawn, a vehicle, an NPC route, and viewpoints with physics queries, and writes the map files, the registry entry, and a report. Three maps were imported with configuration only: a CC0 town composed from Kenney's kits (in the game), the user's Safranbolu package (test input only), and the shipped İstanbul GLB under a test id (its 827 collision bodies and 643 occluders reproduced exactly); on each the player spawns, walks 10 s, punches and rolls, the car drives, the NPC patrols, the profiles apply, and a map switch leaves no nodes behind. The device scenario reads its positions from the map and passed on the imported town on both devices. Details: "Phase 6a" below.
 
@@ -32,7 +34,7 @@ Before Phase 4b: **Phase 4a (release baseline and diagnosis, measurement only) d
 
 ## Current objective
 
-Review of Phase 6b; then the next task (see "Recommended next task"): the streaming loader, designed for any imported map (D26), and, if the user wants it, a presented-frame measurement of the tablet's display pairs (open question 43).
+Review of Phase 6c; then the next task (see "Recommended next task"): a release preset with only the selected maps (open questions 36, 46), and the tablet's map-ready and long-frame criteria repeated with the tablet on a charger that keeps up (open question 51).
 
 ## Git
 
@@ -123,7 +125,13 @@ Review of Phase 6b; then the next task (see "Recommended next task"): the stream
 - `80adf44`: colliders by shape: capsules, boxes, trimesh for concave buildings.
 - `548d3e5`: scored spawn and vehicle places; the report's improvement advice and comparison.
 - `cc21cbe`: the blind-test maps in the game; the Phase 6a maps re-imported.
-- Phase 6b measurements and documentation: the commit after `cc21cbe` (`git log`).
+- `6a59417`: Phase 6b measurements and documentation.
+- `5f96ab7`: the streaming design note (`docs/STREAMING.md`).
+- `fce9b0c`: the cell step (`tools/cell_map.gd`, `tools/map_import/map_cells.gd`), `MapCell`, `MapStreamingIndex`, `MapDefinition.streaming_index_path`; the import tool runs it.
+- `7605e39`: the streaming loader (`MapStreamer`), `WorldManager`, `Main`, the map scripts' `prepare_streamed()`, overlay and logs, runtime keys.
+- `a01767f`: every map split and linked, the default map included.
+- `104d913`: the route benchmark, the loader changes from the device runs (one request in flight, warm cells, `prepare_streamed_materials()`, the overlay guard, the faster index check), the measurement tools, and the Phase 6c evidence (`docs/perf/phase6c/`).
+- Phase 6c documentation: the commit after `104d913` (`git log`).
 
 ## Repository contents
 
@@ -142,6 +150,11 @@ Review of Phase 6b; then the next task (see "Recommended next task"): the stream
 | `maps/abstract_city/`, `maps/apollo11_site/` | The Phase 6b blind-test maps made by the import tool (registry entries 9 and 10): scene, `MapDefinition`, category rules, processed model (7,798,796 B with its textures; 3,363,215 B), occluders; `source/` (`.gdignore`): the converted GLB, its configuration, the city's public-domain README. Sources and licences: `docs/maps/imported/abstract_city_source.md`, `apollo11_site_source.md`. |
 | `maps/kenney_town/` | The CC0 Kenney town made by the import tool (re-imported in Phase 6b with colliders by shape and a scored car place): scene, `MapDefinition`, category rules, processed model (975,741 B), occluders; `source/` (`.gdignore`): the composed GLB (2,463,348 B), its configuration, Kenney's licence. Composer: `tools/maps/kenney_town/compose_town.gd`. |
 | `docs/maps/imported/` | Import reports of the five imported maps (the Kenney town, Safranbolu, the İstanbul import, the abstract city, the Apollo relief), the sources and licences, four shots per map (`shots/`, `.gdignore`); `blind/`: the Phase 6b blind runs (reports, configurations, logs, shots), the hand labels and shape-only comparisons (`labels/`), and the final comparison (README). |
+| `game/world/map_streamer.gd`, `map_streaming_index.gd`, `map_cell.gd` | Streaming (Phase 6c): the loader, the index, a cell. `docs/STREAMING.md`. |
+| `tools/cell_map.gd`, `tools/map_import/map_cells.gd` | The cell step (Phase 6c): any map into a resident scene and streaming cells. |
+| `maps/<map>/streaming/` | **Not tracked**: each map's resident scene, cells, materials, and index, written by `tools/cell_map.gd -- --all` on each machine (the default map 104 MB; the four İstanbul maps 649 MB, plus 103 MB for the default map's 100 m comparison split in `streaming_100/`); without them a map loads whole. |
+| `tools/capture_streaming.gd`, `tools/perf/make_route.gd`, `tools/perf/streaming_summary.py` | Phase 6c: streaming on and off side by side with the pixel difference; a route over walkable ground for the route benchmark; streaming in benchmark results. |
+| `docs/perf/phase6c/` | Phase 6c evidence (README): the look comparison (40 sheets), the Mac cell sizes, probes, and every streamed map on and off, the tablet's memory, routes, relative pair, Safranbolu, switch, and scenarios, the iPhone's runs of builds B, D, F (`.gdignore`; large files gzipped). 5.7 MB. |
 | `docs/perf/phase6b/` | Phase 6b evidence: device scenario results and logs, the tablet measurements, the Mac benchmarks of the default map, the category dumps (`.gdignore`). |
 | `docs/perf/phase6a/` | Phase 6a evidence: device scenario results and logs, the tablet measurements, the Mac benchmarks of the default map, the category dump (`.gdignore`). 0.35 MB. |
 | `tests/imported/` | **Not tracked**: the test imports of Safranbolu and of the shipped İstanbul GLB (regenerated with the commands in their reports); excluded from every export with the rest of `tests/`. |
@@ -180,6 +193,7 @@ Review of Phase 6b; then the next task (see "Recommended next task"): the stream
 
 ## Implemented features
 
+- **Streaming (Phase 6c, 2026-11-03/04; all builds):** a map whose definition points at a usable streaming index loads its resident scene and streams its facade detail, trees, lamps, and decor around the camera (`MapStreamer`); every map of the registry with such meshes is linked (the cells are generated on each machine by `tools/cell_map.gd`; without them maps load whole). Debug and Release Perf builds: `STREAMING` and `STARTUP` lines, the runtime keys `streaming` and `streaming_index`, the route benchmark. Debug builds: the overlay's cells line. Tools: the cell step (also run by the import tool), `capture_streaming.gd`, `make_route.gd`.
 - **Import tool hardening (Phase 6b, 2026-11-03):** axis, unit, and inside-out detection, splitting of single-mesh cities, shape rules, colliders by shape, scored placement, improvement advice and comparisons in the report (desktop tool, not in builds); the abstract city and the Apollo relief in the registry (debug and Release Perf builds can select them; normal release builds load only the default); the Kenney town re-imported (trees, lamps, fences collide; its car on a road).
 - **Map infrastructure (Phase 6a, 2026-11-02):** render categories from each map's `CategoryRules` (all builds; behaviour of the existing maps unchanged); the import tool (`tools/import_map.gd`, desktop tool, not in builds); the Kenney town in the registry (debug and Release Perf builds can select it; normal release builds load only the default); the device scenario on any map's points (debug builds).
 - **Default map (2026-11-02; all builds):** the shader facade map (`istanbul_halic_cells_shader`) is first in the registry and the map plain launches and normal release builds load; the default is the first available map, so without its GLB the game starts on İstanbul • Haliç or the test district with a warning, and with no map available it shows "Harita yüklenemedi: harita dosyaları eksik." Host tools: presented frames (`present_trace.py`), the relative criterion (`relative_check.py`), the log lines of a plain launch on both platforms.
@@ -203,6 +217,247 @@ Review of Phase 6b; then the next task (see "Recommended next task"): the stream
 - **Quality profiles (all builds):** high (60 FPS cap, occlusion, 200 m visibility range for trees/lamps/decor/facade detail) and low (occlusion, 400 m far plane + depth fog, 100 m ranges, 0.6 render scale, shadows off, LOD threshold 4, 30 FPS cap). Default: iOS → high, Android → low, desktop → none. `--quality=<name>` overrides; debug builds can cycle profiles with the Q button.
 - **Baked occluders** loaded from `maps/istanbul_halic/istanbul_halic_occluders.scn` when a profile enables occlusion; runtime building from collision remains as a fallback with a warning.
 - Debug builds only: performance experiment flags (`PerfConfig`) layered on top of the profile (experiment > profile > defaults), and an automatic benchmark (`PerfBenchmark`) driven by host scripts in `tools/perf/`. Off unless an experiment file or `--perf-config` is given.
+
+## Phase 6c — a streaming loader for any map (2026-11-03/04)
+
+Task of 2026-11-03 (user): one streaming mechanism for every map the import tool writes and for the İstanbul generator's maps (D26), with no map-specific code; a map without an index loads whole, as before; the look within the profiles' ranges, collision, gameplay, the profile values, the physics, and the default map unchanged. The user's blind-test field was left empty ("YOK"), so no new map was imported blind. Decisions: `PROJECT_CONTEXT.md`, T54–T56; design: `docs/STREAMING.md`; evidence: `docs/perf/phase6c/` (README).
+
+### What exists now
+
+- **Design note** (`docs/STREAMING.md`, `5f96ab7`).
+- **The cell step** (`fce9b0c`, T54): `tools/cell_map.gd` (library `tools/map_import/map_cells.gd`) splits any map from its `MapDefinition`: the facade detail, tree, lamp, and decor meshes (by the map's own `CategoryRules`) go into `MapCell` files of a 50 m grid by their centres; the resident scene keeps every node and collider with those meshes taken out; materials and meshes used in more than one place get files of their own; a `MapStreamingIndex` is linked from `MapDefinition.streaming_index_path`. The import tool runs it after writing a map (`--no-cells` skips it). Outputs are generated on each machine and ignored by Git.
+- **The loader** (`7605e39`, T55): `MapStreamer` (`game/world/`), added by `WorldManager` for a map with a usable index; `Main` gives it the camera and the ranges and primes it after loads. Cells within range + 30 m of the camera (and 1.5 s ahead of it) are loaded with `load_threaded_request`, nearest first (four in flight in this commit, one since `104d913`), attached within 2 ms per frame, freed beyond range + 60 m; a camera jump beyond 30 m loads the needed cells before the frame on the main thread. Map scripts set streamed meshes up in `prepare_streamed()` (İstanbul's vertex colours, the shader facade). Overlay (`cells <loaded>/<all> +<waiting> <MB> MB`), `PERF`, `STARTUP`, `STREAMING` lines, and benchmark results show the cells; runtime keys `streaming` (off: whole) and `streaming_index` (another index).
+- **Every map split** (`a01767f`): the six maps with streamable meshes are linked to their indexes; the test district and the Apollo relief have nothing in a streamed category and load whole. `docs/maps/istanbul_halic/README.md` step 5 (and `docs/ARCHITECTURE.md`) gives the command for a new machine.
+- **Loader changes from the device runs** (`104d913`, T55): one threaded request in flight (four gave more 51–57 ms frames on the tablet); warm cells (the index names the smallest cell per material; loaded with the map, never freed); `prepare_streamed_materials()`, so a map script changes the streamed meshes' materials at load instead of at their first cell (the İstanbul maps' vertex colours).
+- **Route benchmark and measurement tools** (`104d913`): `"bench": {"route": …}` moves the player or the car along a fixed route both ways (`tools/perf/make_route.gd` makes one over walkable ground; the default map's is 515 m); `tools/capture_streaming.gd` (streaming on and off side by side with the pixel difference); `tools/perf/streaming_summary.py`; `pss_trace.py stable`. Also there: `MapStreamingIndex.problem()` lists the cells' folder once instead of 2,612 `ResourceLoader.exists()` calls, `WorldManager.load_report` (index, scene, and instancing times in `STARTUP`), and the overlay no longer reads a streamer freed by a map switch.
+
+### Acceptance criteria (task of 2026-11-03)
+
+| Criterion | Result | Status |
+|---|---|---|
+| Tablet (Release Perf, three runs, median): default map stable PSS ≤ 502 MiB | 464 / 464 / 475 MiB, median **464** (whole: 622) | PASS |
+| Tablet: default map ready ≤ 4.0 s | the three memory launches 4,520 / 3,711 / 5,315 ms, median **4,520** (whole: 6,884 / 6,500 / 9,238); in another session (build D, four route launches) median 3,534; the battery was draining in every session (below, and open question 51) | FAIL (met in one session only) |
+| Tablet (debug): a switch's peak PSS ≤ the larger map's stable PSS + 50 MiB; lmkd does not kill the app | six switches: peaks 547–559 MiB against limits of 595–606 MiB, 3.1–4.7 s each; lmkd reclaimed background processes, never the app | PASS |
+| Tablet: along a fixed route of ≥ 500 m, walking and driving, both ways, no frame over 50 ms caused by cell loading (traced; presented frames recorded) | final code (F), one run each: no frame over 50 ms in or next to a frame that attached cells; the drive's presented intervals at most 50.5 ms (the whole map: 50.6), none two refreshes late; but 4 game frames of 51–55 ms elsewhere (the whole map's runs: none). Builds C and D had one 100–167 ms stall per run after an attach, fixed in E | PARTIAL |
+| Tablet: long frames by D25's relative criterion against the default map without streaming; 1 % low at most 0.5 below 25.80 / 25.89 / 25.17 | one pair (nine launches each required) at 6–9 % battery: streamed 25.10 / 24.56 / 22.98 with 9 / 9 / 39 long frames, whole 25.42 / 25.83 / 25.01 with 4 / 4 / 3 | FAIL on the one pair; not completed |
+| Safranbolu: PSS < 328 MiB | 341 MiB streamed, 345 MiB whole (one run each) | FAIL |
+| Safranbolu: the cause of Phase 6b's View B long frames (three runs) | not investigated | NOT RUN |
+| iPhone (Release Perf): default map footprint ≤ 860 MiB (lower is the goal), 60 FPS, 0 long frames, map ready ≤ 1.2 s | build F, three runs: footprint 597 / 597 / 595 MiB (whole: 857–863), 60.00 FPS, map ready 781 / 765 / 765 ms (whole: 1,214–1,221); long frames 0 at Spawn and Karaköy, at Galata 1 / 0 / 1 (25.1 and 39.8 ms; the whole map 0), no cell loaded in those windows; routes walked and driven at 60.00 FPS without a long frame | PARTIAL (footprint, FPS, map ready PASS; long frames: median 1 at Galata) |
+| Seven maps (+ the Safranbolu and İstanbul test imports) split by the same command without configuration; a map without an index loads whole (test) | every map by `tools/cell_map.gd --all` (Safranbolu also through the import tool); the Apollo relief and the test district have nothing to stream and load whole; no blind map was given; `test_a_map_without_an_index_loads_whole`, `test_index_that_cannot_be_used_loads_the_map_whole` | PASS |
+| The look within range unchanged: streaming on and off side by side at ≥ 2 points on every map; collision and every gameplay test unchanged | 40 sheets (every streamed map, low and high, 3–4 points each): 0 pixels differ on the four İstanbul maps; 1 pixel or one 120-pixel edge sliver (explained below) on the imported maps; the drawn sets equal in the tests; every gameplay and collision test passes on the streamed maps | PASS |
+| No unloaded cell within the player's range along the route (budget delay aside, with a documented bound) | 0 frames with a needed cell missing on every route run (Mac, tablet, iPhone, the tests at 4.5–20 m/s); the bound: the 30 m margin, 2 s at 15 m/s | PASS |
+| Device scenarios (`vehicle_sleep`, `extensibility`) on the default map and an imported map on both devices | tablet (debug F) and iPhone (debug C): 13 / 13, 25 / 25, Kenney town 9 / 9 and 21 / 21 | PASS |
+| Every Phase 1–6b test; the Platform, preset, and `.gdignore` tests | 405 passed, 0 failed, 0 skipped (exit 0); unit 257; every Phase 6c commit in a clean clone without GLBs: 0 failed | PASS |
+
+### Every map split by the same command
+
+`godot --headless --path . --script res://tools/cell_map.gd -- --all` (Mac, 10.8 s for all; the test imports with `--definition=…`), no configuration (output: `docs/perf/phase6c/desktop/cells.txt`):
+
+| Map | Streamed meshes | Cells (50 m) | Resident scene | Cells | Note |
+|---|---|---|---|---|---|
+| Shader facade map (default) | 4,726 of 6,129 (facade detail 2,591, trees 1,319, lamps 517, decor 299) | 2,612 | 31.4 MB | 67.2 MB | from its GLB scene (imported 102 MB) |
+| İstanbul • Haliç | 1,652 of 3,055 | 1,056 | 31.3 MB | 155.3 MB | facade detail still in 150 m chunks (one mesh per chunk) |
+| Cells map | 4,726 of 6,129 | 2,613 | 31.4 MB | 161.7 MB | |
+| Light facade map | 4,726 of 6,129 | 2,613 | 31.4 MB | 107.0 MB | |
+| Kenney town | 93 of 269 (trees 41, lamps 20, decor 32) | 27 | 0.7 MB | 0.1 MB | colliders stay resident under the stand-in nodes |
+| Abstract city | 13 of 220 (decor) | 2 | 0.3 MB | 0.0 MB | + 7 MB of material files (its two textures) |
+| Apollo 11 site | 0 of 1 | — | — | — | nothing to stream (one ground mesh): loads whole |
+| Test district | 0 | — | — | — | nothing to stream: loads whole |
+| Safranbolu (test import) | 523 of 1,173 (facade detail) | 87 | 9.6 MB | 5.7 MB | also through the import tool (temporary build) |
+| İstanbul import (test import) | 1,652 of 3,055 | 1,056 | 18.5 MB | 79.4 MB | |
+
+### The look within range
+
+`tools/capture_streaming.gd` (Mac, Metal, 960×540): the same camera at the spawn and every viewpoint, streamed and whole, player, vehicles, and NPCs hidden, the game clock stopped, the water hidden; 40 sheets in `docs/perf/phase6c/look/` (`look.txt`):
+
+| Map | Views (low and high) | Pixels that differ (over 2 of 255) |
+|---|---|---|
+| Shader facade map, İstanbul • Haliç, cells map, light map | 3 each × 2 profiles × 4 maps | **0** in all 24 |
+| Kenney town | 4 × 2 | 0 in 7; 1 pixel (12/255) in one |
+| Abstract city | 4 × 2 | 0 in 6; 1 pixel (14/255) in one; 120 pixels (0.02 %) in one: a 5 × 36 px sliver along one edge in "View A" on the low profile, with both of its cells loaded in both runs (so the same meshes are drawn; the edge's pixels are resolved differently, probably by the changed drawing order) |
+
+In the tests the set of meshes Godot draws (a mesh, visible, its centre within its category's range) is the same with and without streaming: the synthetic map at five points, and the default map at the spawn and both viewpoints on the low and the high profile (`test_what_is_drawn_is_the_same_with_and_without_streaming`, `test_the_default_map_streams_what_its_profiles_draw`). The Mac benchmarks count the same draw calls with and without streaming at every viewpoint of every streamed map (below, "Every streamed map on and off"), apart from occasional outliers after a prime that also occur without streaming (below, "Found on the way").
+
+### Memory and startup
+
+| Galaxy Tab A7 (Release Perf, low profile; dense PSS trace, `docs/perf/phase6c/tablet/memory/`) | Streaming on (50 m) | Streaming off (the whole map) | On, 100 m cells |
+|---|---|---|---|
+| Stable PSS (three launches; median) | 464 / 464 / 475 MiB (**464**) | 622 / 621 / 633 MiB (**622**) | 464 / 463 / 475 MiB (**464**) |
+| Peak PSS | 481 / 482 / 492 MiB | 638 / 638 / 649 MiB | 483 / 480 / 491 MiB |
+| Map ready (same launches) | 4,520 / 3,711 / 5,315 ms | 6,884 / 6,500 / 9,238 ms | 3,814 / 5,239 / 5,225 ms |
+| Of that: the index check, the scene's load, instancing | 32–45 ms, 1,587–2,152 ms, 231–339 ms | —, 4,463–6,186 ms, 319–450 ms | 17–23 ms, 1,620–2,149 ms, 229–337 ms |
+| Map ready in other sessions | build D, route launches: 3,631 / 4,161 / 3,424 / 3,437 ms (median 3,534); build F: 3,855 ms, and 7,305 ms in the session's first launch (first launches after installing or restarting took 4.5–7.3 s); 8,818 ms at 6 % battery | build D: 5,984 / 6,351 ms; 9,337 ms at 6 % battery | — |
+
+The memory runs used build B (no warm cells: six cells, 0.1 MB, are loaded at the start since build E).
+
+| iPhone 13 Pro (Release Perf F, high profile, three runs; `docs/perf/phase6c/iphone/F/`) | Streaming on | Streaming off |
+|---|---|---|
+| Footprint (probes every ~45 s; highest per run) | 597 / 597 / 595 MiB, median **597** (lowest probe 568) | 857 / 862 / 863 MiB, median 862 (lowest 837) |
+| Map ready | 781 / 765 / 765 ms, median **765** | 1,214 / 1,221 / 1,217 ms, median 1,217 |
+| Of that: the index check, the scene's load, instancing | 10–11 ms, 306–311 ms, 18 ms | —, 812–821 ms, 26–29 ms |
+| Average FPS (Spawn / Karaköy / Galata) | 60.00 / 60.00 / 60.00 (59.98 once) | 60.00 / 60.00 / 60.00 |
+| Long frames per viewpoint (three runs) | 0,0,0 / 0,0,0 / **1,0,1** (25.1 and 39.8 ms) | 0,0,0 / 0,0,0 / 0,0,0 |
+| 1 % low (median) | 54.62 / 55.41 / 56.07 | 57.99 / 56.92 / 56.02 |
+| Draw calls | 261 / 167 / 90 (91 once), as off | 261 / 167 / 90 |
+| Thermal state | Nominal at every probe | Nominal |
+
+Builds B and D (same protocol, `iphone/B/`, `iphone/D/`): footprint 594 / 594 / 594 and 590 / 577 / 594 MiB streamed against 858–862 whole, map ready 765–823 ms against 1,220–1,252 ms; one long frame in one of nine windows each time (B: 21.0 ms at Spawn; D: 21.6 ms at Spawn and 25.5 ms at Karaköy). Over the three builds the streamed runs have 5 single long frames in 27 viewpoint windows, the whole map none; no cell was loaded or freed in any of those windows (all of them came with the prime), so they are not cell loads. In 15 of the 27 streamed windows (Karaköy in all nine, Spawn in six) the engine's process time reads 17.5–18 ms at the 99th percentile instead of 6–8 ms (the frame limiter's wait counted inside it) and the 1 % low is 1.5–3.6 FPS lower; the whole map shows that state in 2 of 27 windows. Why streaming makes it more frequent was not found.
+
+Routes on the iPhone (build F, high profile, `iphone/F/route/`): walking 515 m out and back at 4.5 m/s, 6,872 frames each way, and driving at 15 m/s, 2,062 frames each way, all at 60.00 FPS with no long frame (longest 19.6 ms walking, 17.9 ms driving), no frame with a needed cell missing, at most 0.25 ms attaching cells in a frame; 161 + 72 cells loaded on the drive.
+
+The tablet's map ready depends on its state: within a session it rose with the battery's temperature (33.5 → 37 °C) and, as found afterwards, the battery was draining towards 0 % (the Mac's USB port gives 300–350 mA, the measured load draws about 1.1 A), so the later launches ran slower, streamed or not (on/off pairs: 4.5 / 6.9, 3.7 / 6.5, 5.3 / 9.2 s). The PSS does not depend on it.
+
+### Every streamed map on and off
+
+Mac (Metal, 960×540, one launch each, warm-up 5 s and 3 s at every viewpoint; `docs/perf/phase6c/desktop/allmaps/`): map ready, the scene's load, and the highest engine static memory and video memory over the viewpoints. Draw calls are the same on and off at every viewpoint of every map.
+
+| Map | Profile | Map ready, on / off | Scene load, on / off | Static memory, on / off | Video memory, on / off | Cells loaded at the viewpoints |
+|---|---|---|---|---|---|---|
+| Shader facade map (default) | low | 1,360 (the batch's first launch) / 1,326 ms | 301 / 756 ms | 181 / 249 MB | 130 / 294 MB | 13 / 27 / 38 of 2,612 |
+| | high | 930 / 1,319 ms | 276 / 767 ms | 186 / 252 MB | 181 / 342 MB | 44 / 62 / 101 |
+| İstanbul • Haliç | low | 838 / 1,559 ms | 263 / 1,044 ms | 171 / 193 MB | 133 / 518 MB | 9 / 14 / 17 of 1,056 |
+| | high | 830 / 1,474 ms | 246 / 950 ms | 174 / 196 MB | 190 / 566 MB | 23 / 31 / 40 |
+| Cells map | low | 884 / 1,775 ms | 256 / 1,217 ms | 181 / 257 MB | 135 / 703 MB | 12 / 26 / 37 of 2,613 |
+| | high | 881 / 1,813 ms | 242 / 1,211 ms | 185 / 260 MB | 198 / 751 MB | 43 / 61 / 100 |
+| Light facade map | low | 869 / 1,517 ms | 241 / 967 ms | 181 / 255 MB | 132 / 530 MB | 12 / 26 / 37 of 2,613 |
+| | high | 949 / 1,514 ms | 280 / 958 ms | 186 / 258 MB | 188 / 579 MB | 43 / 61 / 100 |
+| Kenney town | low | 456 / 466 ms | 24 / 25 ms | 63 / 63 MB | 69 / 69 MB | 27 of 27 everywhere |
+| | high | 487 / 481 ms | 22 / 23 ms | 63 / 63 MB | 117 / 117 MB | 27 of 27 |
+| Abstract city | low | 557 / 488 ms | 57 / 43 ms | 55 / 55 MB | 98 / 99 MB | 2 of 2 everywhere |
+| | high | 514 / 515 ms | 51 / 52 ms | 56 / 56 MB | 147 / 147 MB | 2 of 2 |
+
+On the two small imported maps every cell lies within range + margin of every viewpoint, so streaming loads all of them and saves nothing (nor costs anything measurable). The Apollo relief and the test district have nothing to stream and load whole.
+
+iPhone 13 Pro (Release Perf F, high profile, one launch each, warm-up 15 s and 20 s at every viewpoint; `docs/perf/phase6c/iphone/F/allmaps/`; the default map: the three-run table above):
+
+| Map | Footprint (highest probe), on / off | Map ready, on / off | Scene load, on / off | Average FPS, long frames (on and off) |
+|---|---|---|---|---|
+| İstanbul • Haliç | 571 / 989 MiB | 714 / 1,404 ms | 307 / 1,017 ms | 59.99–60.00, none |
+| Cells map | 590 / 1,270 MiB | 778 / 1,650 ms | 306 / 1,243 ms | 60.00, none |
+| Light facade map | 581 / 1,096 MiB | 788 / 1,396 ms | 307 / 1,004 ms | 59.99–60.00, none |
+| Kenney town | 298 / 306 MiB | 403 / 386 ms | 27 / 27 ms | 59.99–60.00, none |
+| Abstract city | 323 / 323 MiB | 405 / 404 ms | 53 / 55 ms | 59.99–60.00, none |
+
+Draw calls equal on and off at every viewpoint; thermal state nominal.
+
+The tablet ran the default map (above) and Safranbolu (below); the other maps on the tablet were not run (the battery; the user chose to finish with the data at hand).
+
+### Routes (Galaxy Tab A7, Release Perf, low profile)
+
+The default map's route (`tools/perf/experiments/c_route_*.json`): 515 m over walkable ground from the Galata Bridge over the Karaköy waterfront up to the Galata street (13 points from `tools/perf/make_route.gd`), walked at 4.5 m/s and driven at 15 m/s, out and back, every frame traced, the presented frames recorded beside it on the drives (and on build C and D's walks). Builds: C (the loader of `7605e39` with the overlay guard and the faster index check), D (materials set at load), E (warm cells), F (warm cells and one request in flight: the final code); whole: the map loaded whole (build D). Raw files: `docs/perf/phase6c/tablet/routes_*`; table from `tools/perf/streaming_summary.py`.
+
+| Build, mode, direction | Frames, avg FPS, 1 % low | Long frames | Frames over 50 ms (of them next to an attach) | Longest frame | Cells loaded / freed | Longest attaching in a frame | Frames with a needed cell missing | Presented: longest interval, intervals over 67 ms |
+|---|---|---|---|---|---|---|---|---|
+| C drive, out | 1,024, 29.79, 25.60 | 5 | 3 (2) | 157.2 ms | 93 / 59 | 1.56 ms | 0 | 199.9 ms, 1 |
+| C drive, back | 1,031, 29.99, 25.61 | 3 | 1 (0) | 56.1 | 62 / 96 | 0.66 | 0 | 50.4, 0 |
+| C walk, out | 3,426, 29.90, 26.01 | 9 | 5 (4) | 167.0 | 69 / 36 | 0.80 | 0 | 216.9, 2 |
+| C walk, back | 3,436, 30.00, 25.99 | 4 | 1 (1) | 51.6 | 40 / 71 | 0.60 | 0 | 50.5, 0 |
+| D drive (two runs), out | 1,026 / 1,025, 29.86 / 29.83, 25.01 / 24.88 | 5 / 8 | 4 (2) / 5 (2) | 105.0 / 105.3 | 93 / 59 | 1.29 / 1.13 | 0 / 0 | 166.8, 1 / 166.7, 1 |
+| D drive, back | 1,031 / 1,030, 29.99 / 29.98, 25.55 / 25.48 | 1 / 1 | 0 / 0 | 48.3 / 46.4 | 61 / 95 | 0.80 / 0.70 | 0 / 0 | 50.6, 0 / 50.3, 0 |
+| D walk (two runs), out | 3,431 / 3,429, 29.95 / 29.93, 25.58 / 25.49 | 12 / 17 | 2 (2) / 8 (4) | 109.4 / 100.2 | 69 / 36 | 1.68 / 1.13 | 0 / 0 | 166.7, 1 / 150.0, 1 |
+| D walk, back | 3,436 / 3,435, 30.00 / 29.99, 25.79 / 25.81 | 5 / 6 | 0 / 2 (2) | 46.2 / 56.7 | 40 / 71 | 0.75 / 0.75 | 0 / 0 | 50.5, 0 / 50.5, 0 |
+| E walk, out | 3,434, 29.98, 25.89 | 7 | 3 (1) | 56.5 | 69 / 36 | 1.04 | 0 | — |
+| E walk, back | 3,436, 30.00, 25.96 | 3 | 1 (0) | 50.9 | 40 / 71 | 2.91 | 0 | — |
+| **F drive, out** | 1,028, 29.91, 24.86 | 6 | 3 (**0**) | 55.3 | 89 / 55 | 0.69 | 0 | **50.4, 0** |
+| **F drive, back** | 1,031, 30.00, 25.44 | 0 | 0 | 40.9 | 56 / 90 | 0.65 | 0 | **50.5, 0** |
+| **F walk, out** | 3,434, 29.98, 26.02 | 7 | 1 (**0**) | 52.1 | 69 / 36 | 2.04 | 0 | — |
+| **F walk, back** | 3,436, 30.00, 25.81 | 5 | 0 | 47.9 | 40 / 71 | 0.57 | 0 | — |
+| Whole drive, out | 1,029, 29.94, 25.28 | 4 | 0 | 47.8 | — | — | — | 50.4, 0 |
+| Whole drive, back | 1,031, 30.00, 25.43 | 0 | 0 | 41.2 | — | — | — | 50.6, 0 |
+| Whole walk, out | 3,435, 29.99, 25.76 | 4 | 0 | 47.7 | — | — | — | 50.7, 0 |
+| Whole walk, back | 3,436, 30.00, 25.77 | 2 | 0 | 42.9 | — | — | — | 50.8, 0 |
+
+"Next to an attach": in the frame before, of, or after a frame in which cells got their meshes. Presented intervals: at 30 FPS on the 60 Hz panel a frame is shown for 33.3 ms; 50 ms is one refresh late, which every run has 15–84 times per direction, the whole map too (the tablet's display pairs, open question 43); over 67 ms a frame was shown two or more refreshes late. The 100–217 ms stalls of builds C and D came once per run at the same spot (the first traffic-signal glow), right after an attach that itself took 0.2 ms (below, "Found on the way"); build E removed them. With the final code (F) no frame over 50 ms falls next to an attach and no presented interval is longer than the whole map's, but the streamed runs have 4 game frames of 51–55 ms elsewhere (drive out 3, walk out 1) where the whole map's runs have none; one run each, so whether the loading thread causes them was not settled. The drive keeps up with one request in flight: the camera at 15 m/s never had a needed cell missing (the margin of 30 m is 2 s of driving), and the loader's longest main-thread time in a frame was 0.69 ms.
+
+### Relative criterion (Galaxy Tab A7, Release Perf F, low profile)
+
+One pair only, the default map streamed and whole at the three viewpoints (`docs/perf/phase6c/tablet/frames/run1/`), at 6–9 % battery (33.0–34.5 °C, no cool-down wait):
+
+| | Spawn | Karaköy street | Galata street |
+|---|---|---|---|
+| Streamed: average FPS, 1 % low, long frames | 30.01, 25.10, 9 | 30.01, 24.56, 9 | 30.01, 22.98, 39 |
+| Whole: average FPS, 1 % low, long frames | 30.00, 25.42, 4 | 30.01, 25.83, 4 | 30.01, 25.01, 3 |
+| The task's lower limit for the 1 % low (25.80 / 25.89 / 25.17 − 0.5) | 25.30 | 25.39 | 24.67 |
+
+No frame over 50 ms in either launch (longest 42.9–46.5 ms) and no cell loaded while measuring (all cells in range came with the prime). The streamed launch is below the limit at all three viewpoints. One launch is not D25's protocol (nine alternating launches each); Galata's 39 long frames resemble the per-launch pacing state of earlier phases ("Known bugs and limitations", "Tablet frame pacing"), which hits any map, but that was not shown for this launch. The other eight launches each were not run: the tablet's battery was at 6 % and the user chose to finish with the data at hand.
+
+### Map switch (Galaxy Tab A7, debug F, `scenario_map_switch`, dense PSS trace)
+
+| Switch | Time | Peak PSS | Limit: larger stable PSS + 50 MiB |
+|---|---|---|---|
+| 1 shader map → İstanbul • Haliç | 3,387 ms | 547 MiB | 595 MiB |
+| 2 İstanbul • Haliç → cells map | 3,354 ms | 557 MiB | 602 MiB |
+| 3 cells map → İstanbul • Haliç | 3,129 ms | 548 MiB | 602 MiB |
+| 4 İstanbul • Haliç → shader map | 3,300 ms | 559 MiB | 605 MiB |
+| 5 shader map → cells map | 3,272 ms | 559 MiB | 605 MiB |
+| 6 cells map → shader map | 4,664 ms | 559 MiB | 606 MiB |
+
+Stable PSS: the median of the 15 s before a switch and of the 14 s from 5 s after it. Before streaming the same switches took 6.8–9.5 s and the cells map's load peaked at 810 MiB (2026-11-01). The low-memory killer reclaimed four background processes (score 999) during the run, never the app (`lmkd.txt`). 6 / 6 PASS (`docs/perf/phase6c/tablet/debug/switch/`).
+
+### Safranbolu (Galaxy Tab A7, a temporary Release Perf build F with the test import in the registry, low profile, one run each)
+
+| | Streamed | Whole |
+|---|---|---|
+| Stable PSS (dense trace) | 341 MiB | 345 MiB |
+| Peak PSS | 357 MiB | 362 MiB |
+| Map ready | 6,881 ms (the first launch after installing) | 3,064 ms |
+| Of that: the scene's load, instancing | 807 ms, 50 ms | 1,006 ms, 40 ms |
+| Average FPS (Spawn / View A / View B / View C / sloped street) | 26.27 / 26.53 / 24.91 / 25.90 / 26.70 | 26.48 / 25.94 / 24.57 / 25.45 / 26.65 |
+| Draw calls | 95 / 55 / 210 / 75 / 92 | the same |
+
+Only Safranbolu's facade detail streams (523 of 1,173 meshes, 5.7 MB of cells; no trees, lamps, or decor were classified there); its buildings, ground, and the rest stay resident (9.6 MB), so streaming saves 4 MiB and the < 328 MiB criterion is not met. Where its 341 MiB go was not measured further. The cause of Phase 6b's long frames at View B (three runs) was not investigated (NOT RUN; the tablet's battery). Raw files: `docs/perf/phase6c/tablet/safranbolu/`. The build: the user's Safranbolu GLB imported with the import tool (which ran the cell step) into the registry, the APK built, then the import removed and the registry restored (SHA-256 checked); the two experiments were temporary files, not committed.
+
+### Device scenarios
+
+| Scenario (debug builds) | Galaxy Tab A7 (build F) | iPhone 13 Pro (build C) |
+|---|---|---|
+| `vehicle_sleep` (default map) | 13 / 13, peak PSS 520 MiB | 13 / 13, footprint 604 MiB |
+| `extensibility` (through every map of the registry and back) | 25 / 25, 560 MiB | 25 / 25, 461 MiB |
+| `vehicle_sleep_kenney_town` | 9 / 9, 312 MiB | 9 / 9 |
+| `extensibility_kenney_town` | 21 / 21, 323 MiB | 21 / 21 |
+| `map_switch` | 6 / 6 (above) | not run |
+
+Thermal state nominal throughout. The iPhone's debug build C predates warm cells and one request in flight (the iPhone's Release Perf F runs cover the final code). Raw files: `docs/perf/phase6c/tablet/debug/scenarios/`, `docs/perf/phase6c/iphone/scenarios/`.
+
+### Cell size
+
+50 m (100 m compared; `docs/STREAMING.md`, "Cell size", T56): the tablet's stable PSS is the same within the runs' spread (464 / 464 / 475 against 464 / 463 / 475 MiB); on the Mac 100 m loads half as many cells on the driving route (49 + 31 against 93 + 60) but holds more around the camera on the high profile (0.9–1.6 against 0.8–1.4 MB of cells) and attaches larger cells (at most 0.72 against 0.27 ms in a frame).
+
+### Found on the way
+
+- **Threaded loads from `Main._ready()` crashed a worker thread** (signal 11, the official engine without symbols) in 7 of 20 quick launches on the Mac (Metal), and 4 of 8 three-viewpoint benchmarks; never with the map loaded whole. With the first prime on the main thread: 0 of 20; final code (every prime on the main thread, the frame loop's loads threaded): 0 of 20, and no crash in any later Mac, iPhone, or tablet run. Not reproduced by a stress test of 300 rounds of four concurrent cell loads. Probes: `docs/perf/phase6c/desktop/probes.md`.
+- **Headless runs** cannot create meshes off the main thread (the dummy renderer's mesh storage is not thread-safe; 37 RID errors when 2,612 cells loaded at once), so cells load on the main thread there (`threaded` follows whether the renderer has a RenderingDevice).
+- **Occlusion culling after a long frame** (an engine behaviour): a frame of about 20 ms or more right after a camera jump can leave Godot's occlusion culling drawing more hidden objects at that spot until the camera moves on (Galata: 96–103 objects instead of 22 with the HUD hidden); reproduced with the map loaded whole and a 25 ms stall after each jump (6 of 25 jumps; 0 without the stall; 0 with occlusion culling off). A prime is such a frame, so benchmarks at fixed viewpoints can count more draw calls in some launches (Mac: 10 of 47 streamed launches at Galata or Karaköy, 0 of 13 unstreamed). Nothing more is visible (the extra objects are hidden behind others). The Phase 6b Mac "glitch" belongs to the same family.
+- **The overlay's own objects:** on a streamed map the debug overlay's longer third line adds 22–24 objects and 44–48 primitives to the counters (same draw calls); Release Perf builds have no overlay.
+- **Stalls when a material was first changed on the tablet** (build C): on the walking and driving routes one or two frames of 120–167 ms (followed by one of 72–80 ms) came right after a cell was attached, although attaching took 0.2 ms: the İstanbul maps' vertex-colour flag was set on the materials only streamed meshes use (lamp lenses, signals, glass, the facade panels' GLB material) when their first cell arrived, and the renderer built their shaders in that frame. Since build D the map script sets them when the map loads (`prepare_streamed_materials()`), which removed one of the stalls; one frame of 100–109 ms and one of 77–79 ms stayed, once per run at the same spot (the first cell bringing a material into the scene, the first traffic-signal glow), never with the whole map. Since build E the index names a warm cell per material (the smallest cell using it), loaded with the map and never freed (6 cells, 0.1 MB, on the default map); with them the stall was gone from every later route run. Evidence: `docs/perf/phase6c/tablet/routes_C/`, `routes_D/`, `routes_E/`.
+- **Four requests in flight** (builds C–E) gave the routes more game frames of 51–57 ms than the whole map had; with one in flight (build F) fewer remained (4 in four directions) and the car at 15 m/s still never missed a needed cell.
+- **The overlay read a freed streamer** during a map switch (its timer fires while the old map is being freed): fixed in `104d913` (the HUD drops the streamer when a switch begins and checks `is_instance_valid`), with a test.
+- **The index check** listed 2,612 files one `ResourceLoader.exists()` at a time (60 ms on the Mac); one folder listing now (32–45 ms on the tablet, 10–11 ms on the iPhone).
+- **The tablet's power:** connected to the Mac it discharges under the measured load (about −1.1 A against a 300–350 mA supply); its battery reached 0 % during the first tablet session, which was stopped; the user charged it before the remaining runs, and the last session ended at 6 %, when the user chose to finish with the data at hand (the relative criterion's other launches and Safranbolu's View B were not run). Map ready and long frames vary with it; the PSS does not (open question 51).
+
+### D26: what streaming adds to the evidence
+
+| Kind of map | Streaming |
+|---|---|
+| The İstanbul generator's maps (four, 3,055–6,129 meshes) | split by the same command from their GLB scenes; the drawn set and the pixels identical at every compared view; the default map measured on both devices |
+| Imported maps with names (the Kenney town; Safranbolu, the İstanbul import as test imports) | split by the same command (Safranbolu also through the import tool itself); colliders stay resident under the stand-in nodes; the Kenney town's tests and scenarios pass streamed |
+| An imported map with few streamable meshes (the abstract city: 13 decor) | split; nearly nothing to gain |
+| A map with nothing in the streamed categories (the Apollo relief, the test district) | the step says so and the map loads whole |
+| A map whose cells were not written (a fresh clone), or a stale index | loads whole (tested), with a log line or a warning |
+
+### Tests (2026-11-04)
+
+| Check | Result |
+|---|---|
+| `godot --headless --path . --import` | exit 0 |
+| `run_tests.gd` (every suite, with the four GLBs, the test imports, and the cells) | `RESULT 405 passed, 0 failed, 0 skipped`, exit 0 (the code of `104d913`; the documentation commit after it changes no code) |
+| `run_tests.gd -- unit` | `RESULT 257 passed, 0 failed, 0 skipped`, exit 0 |
+| Clean clones without any GLB, test import, or cells (each Phase 6c commit) | `5f96ab7` 287 passed, 87 skipped; `fce9b0c` 294 / 87; `7605e39` 312 / 88; `a01767f` 312 / 89; `104d913` 316 / 89; 0 failed and exit 2 (skips) each; unit only 235, 242, 254, 254, 257 passed, exit 0 |
+| `tests/map/validate_scene.gd` | `VALIDATION PASS | failures=0` |
+| The four GLBs' SHA-256 at the start and the end | unchanged (`8b00c94b…`, `7973071a…`, `6531ca28…`, `60b9f729…`) |
+| Before the commits | secret scan of the staged files, a search for personal home-folder paths (only the test that forbids them matches), the evidence's gzipped files searched too, device serials absent, full device logcats left out (the evidence keeps the game's lines and the low-memory killer's), `export_presets.cfg` keystore fields empty |
+
+New tests: `tests/unit/test_map_cells.gd` (8), `tests/unit/test_map_streamer.gd` (12), `tests/integration/test_map_streaming.gd` (9), and in `test_perf_experiments.gd` the route keys. Found by the last run: two streamer tests assumed four requests in flight; they now set four themselves, and a new test pins the default of one.
 
 ## Phase 6b — blind test of the import tool and general hardening (2026-11-03)
 
@@ -1647,7 +1902,8 @@ Thermal state: Nominal at all 13 probes (0–601 s). App footprint 1,022–1,044
 | Behavior | Evidence |
 |---|---|
 | Project imports cleanly. | `godot --headless --path . --import`: exit 0, no errors or warnings (after adding `build/.gdignore`). |
-| Automated tests pass. | 2026-11-03, Phase 6b (`3db25ed` … `cc21cbe` and the documentation commit after them): `run_tests.gd` → `RESULT 374 passed, 0 failed, 0 skipped`, exit 0; unit only → 235 passed, exit 0; a clean clone without any GLB or test import → 287 passed, 87 skipped, exit 2; `validate_scene.gd` → `VALIDATION PASS`; all four GLBs' SHA-256 checked. 2026-11-02, Phase 6a (`cbaf661` … `0e542f9` and the documentation commit after them): `run_tests.gd` → `RESULT 337 passed, 0 failed, 0 skipped`, exit 0; unit only → 221 passed, exit 0; a clean clone without any GLB or test import → 250 passed, 87 skipped, exit 2; `validate_scene.gd` → `VALIDATION PASS`; all four GLBs' SHA-256 checked. 2026-11-02, the shader facade map as the default (`edadb59`, `b80c205`, and the documentation commit after them): `run_tests.gd` → `RESULT 279 passed, 0 failed, 0 skipped`, exit 0; unit only → 195 passed, exit 0; a clean clone without any GLB → 213 passed, 66 skipped, exit 2; with only İstanbul's GLB → 247 passed, 32 skipped, exit 2; `validate_scene.gd` → `VALIDATION PASS`; all four GLBs' SHA-256 checked. 2026-11-01, shader facade toward the default (`d8f78fb`, `4242efe`, `56aaf0d`, and the documentation commit after them): `run_tests.gd` → `RESULT 274 passed, 0 failed, 0 skipped`, exit 0; without the generated GLBs → 242 passed, 32 skipped, exit 2; without any GLB → 208 passed, 66 skipped, exit 2; unit only → 193 passed, exit 0; `validate_scene.gd` → `VALIDATION PASS`; all four GLBs' SHA-256 checked. 2026-11-01, with the facade maps (`83c8f0a` and the documentation commit after it): `run_tests.gd` → `RESULT 267 passed, 0 failed, 0 skipped`, exit 0 (550 s); without the generated GLBs → 237 passed, 30 skipped, exit 2; without any GLB → 203 passed, 64 skipped, exit 2; unit only → 190 passed, exit 0; `validate_scene.gd` → `VALIDATION PASS`; all four GLBs' SHA-256 checked. 2026-11-01, with the cells map (`3e00ada` and the documentation commit after it): `run_tests.gd` → `RESULT 246 passed, 0 failed, 0 skipped`, exit 0 (510 s); without the cells GLB → 237 passed, 9 skipped, exit 2; without both GLBs → 203 passed, 43 skipped, exit 2; unit only → 190 passed, exit 0; `validate_scene.gd` → `VALIDATION PASS`; both GLBs' SHA-256 checked. 2026-11-01, after the generator import (no game or test code changed): `run_tests.gd` → `RESULT 232 passed, 0 failed, 0 skipped`, exit 0 (491 s); `validate_scene.gd` → `VALIDATION PASS`; GLB SHA-256 unchanged. Phase 5: `run_tests.gd` → `RESULT 232 passed, 0 failed, 0 skipped`, exit 0; unit only → 185 passed, exit 0; without the GLB → `RESULT 198 passed, 0 failed, 34 skipped`, exit 2 (the 13 test district tests run without it) (2026-10-28, Phase 5; GLB SHA-256 re-verified afterwards). Phase 4d: 198; Phase 4c: 185; Phase 4b: 174; Phase 4a: 161. With Jolt (temporary `override.cfg`): 160 passed, 1 failed (the GodotPhysics3D pin). At 30 Hz physics: 148 passed, 13 failed (see "Phase 4a"). `tests/map/validate_scene.gd` → `VALIDATION PASS`. |
+| Automated tests pass. | 2026-11-04, Phase 6c (`5f96ab7` … `104d913` and the documentation commit after them): `run_tests.gd` → `RESULT 405 passed, 0 failed, 0 skipped`, exit 0; unit only → 257 passed, exit 0; clean clones of each Phase 6c commit without any GLB, test import, or cells → 0 failed, exit 2 (the last: 316 passed, 89 skipped); `validate_scene.gd` → `VALIDATION PASS`; all four GLBs' SHA-256 checked. 2026-11-03, Phase 6b (`3db25ed` … `cc21cbe` and the documentation commit after them): `run_tests.gd` → `RESULT 374 passed, 0 failed, 0 skipped`, exit 0; unit only → 235 passed, exit 0; a clean clone without any GLB or test import → 287 passed, 87 skipped, exit 2; `validate_scene.gd` → `VALIDATION PASS`; all four GLBs' SHA-256 checked. 2026-11-02, Phase 6a (`cbaf661` … `0e542f9` and the documentation commit after them): `run_tests.gd` → `RESULT 337 passed, 0 failed, 0 skipped`, exit 0; unit only → 221 passed, exit 0; a clean clone without any GLB or test import → 250 passed, 87 skipped, exit 2; `validate_scene.gd` → `VALIDATION PASS`; all four GLBs' SHA-256 checked. 2026-11-02, the shader facade map as the default (`edadb59`, `b80c205`, and the documentation commit after them): `run_tests.gd` → `RESULT 279 passed, 0 failed, 0 skipped`, exit 0; unit only → 195 passed, exit 0; a clean clone without any GLB → 213 passed, 66 skipped, exit 2; with only İstanbul's GLB → 247 passed, 32 skipped, exit 2; `validate_scene.gd` → `VALIDATION PASS`; all four GLBs' SHA-256 checked. 2026-11-01, shader facade toward the default (`d8f78fb`, `4242efe`, `56aaf0d`, and the documentation commit after them): `run_tests.gd` → `RESULT 274 passed, 0 failed, 0 skipped`, exit 0; without the generated GLBs → 242 passed, 32 skipped, exit 2; without any GLB → 208 passed, 66 skipped, exit 2; unit only → 193 passed, exit 0; `validate_scene.gd` → `VALIDATION PASS`; all four GLBs' SHA-256 checked. 2026-11-01, with the facade maps (`83c8f0a` and the documentation commit after it): `run_tests.gd` → `RESULT 267 passed, 0 failed, 0 skipped`, exit 0 (550 s); without the generated GLBs → 237 passed, 30 skipped, exit 2; without any GLB → 203 passed, 64 skipped, exit 2; unit only → 190 passed, exit 0; `validate_scene.gd` → `VALIDATION PASS`; all four GLBs' SHA-256 checked. 2026-11-01, with the cells map (`3e00ada` and the documentation commit after it): `run_tests.gd` → `RESULT 246 passed, 0 failed, 0 skipped`, exit 0 (510 s); without the cells GLB → 237 passed, 9 skipped, exit 2; without both GLBs → 203 passed, 43 skipped, exit 2; unit only → 190 passed, exit 0; `validate_scene.gd` → `VALIDATION PASS`; both GLBs' SHA-256 checked. 2026-11-01, after the generator import (no game or test code changed): `run_tests.gd` → `RESULT 232 passed, 0 failed, 0 skipped`, exit 0 (491 s); `validate_scene.gd` → `VALIDATION PASS`; GLB SHA-256 unchanged. Phase 5: `run_tests.gd` → `RESULT 232 passed, 0 failed, 0 skipped`, exit 0; unit only → 185 passed, exit 0; without the GLB → `RESULT 198 passed, 0 failed, 34 skipped`, exit 2 (the 13 test district tests run without it) (2026-10-28, Phase 5; GLB SHA-256 re-verified afterwards). Phase 4d: 198; Phase 4c: 185; Phase 4b: 174; Phase 4a: 161. With Jolt (temporary `override.cfg`): 160 passed, 1 failed (the GodotPhysics3D pin). At 30 Hz physics: 148 passed, 13 failed (see "Phase 4a"). `tests/map/validate_scene.gd` → `VALIDATION PASS`. |
+| Phase 6c: the cell step, the streaming loader, every map split, the route benchmark. | See "Phase 6c": the cell, streamer, and streaming tests (the drawn set equal with and without streaming, no needed cell missing walking and driving, teleport and respawn primes, a switch frees the cells, maps without an index load whole), the 40 look sheets, the device runs. |
 | Phase 6b: the blind test, axis, unit, and inside-out detection, splitting and shape rules, colliders by shape, scored placement, the two blind maps in the game. | See "Phase 6b": the blind reports and logs, the unit tests on synthetic scenes (Z-up, centimetres, inches, inside out, a U building, trunks, fences, a street and a grove), the gameplay tests on the five imported maps, the category dump, the hand-labelled sample, the shape-only comparisons, the scenarios on both devices, the tablet measurement, the default map's Mac benchmark. |
 | Phase 6a: categories as map data, the import tool, the three imported maps, the generalized scenario. | See "Phase 6a": the category dump and equivalence test, the scan test, the unit tests of the tool on synthetic scenes, the gameplay tests and the device scenario on each imported map, the scenarios on both devices, the default map's Mac benchmark. |
 | İstanbul • Haliç generator. | See "Map generator in the repository": two runs byte-identical, the path change output-neutral, inputs and `assets/` unchanged, Godot import of the regenerated GLB in a throwaway project. |
@@ -1672,6 +1928,7 @@ Thermal state: Nominal at all 13 probes (0–601 s). App footprint 1,022–1,044
 
 ## Unverified behaviors
 
+- Phase 6c (2026-11-04): the tablet's criteria with a power supply that keeps up (map ready, the relative criterion's nine launches each, the routes repeated; open question 51); what causes the streamed routes' 51–55 ms game frames on the tablet (one run each) and the iPhone's single 21–40 ms frames and more frequent pacing state at fixed viewpoints with streaming (no cell loads there; open question 51); Safranbolu's View B long frames (NOT RUN) and what its 341 MiB consist of (open question 50); the iPhone scenarios with build F (they ran debug C, before warm cells and one request in flight); streaming on the Compatibility renderer and on other GPUs (cells load on the main thread without a RenderingDevice, tested headless only); the Mac's worker-thread crash at startup in the engine itself (avoided by priming on the main thread, not root-caused); a map with very large decor or tree meshes (a mesh streams whole); the 100 m cells on the tablet's routes (only the memory runs); a release package without the GLBs (no preset does it yet).
 - Phase 6b (2026-11-03): two blind maps only, neither a typical named, multi-object GLB from a modelling tool (no complete CC0 town scene in a format Godot reads was found; T49); no `.gltf` with external files, no FBX map, no GLB with lights, cameras, or skeletons ran through the import tool (the converter's FBX path was tried on one CC0 FBX terrain piece only; R8 has unit tests only); the hand-labelled sample is 60 objects of one map, nearly all buildings (no trees, lamps, fences, or ground in it), labelled by the agent, not by the user; the shape rules were partly written after seeing the samples they are measured on (T51); the courtyard rule was checked on a synthetic U building and on the maps' concave parts, not on a real courtyard map; Safranbolu on the tablet only in a temporary build, not on the iPhone; the blind maps' look checked in Mac shots only; the abstract city's scale of 100 is a choice (arbitrary units), and its packed centre is not walkable at any scale.
 - Phase 6a (2026-11-02): the import tool only on the three maps and synthetic scenes (no Z-up or centimetre GLB from another tool, no GLB with lights, skins, or line primitives, no `.gltf` with external files); the shape classification only on synthetic meshes (every real mesh matched a name rule); the placement's choice is functional, not good-looking (the Kenney town's car stands in a courtyard among trees, which have no colliders); Safranbolu on the tablet only in a temporary build, not on the iPhone; the imported maps' look checked only in four Mac shots and the benchmark frames; occluders from convex hulls can hide what stands in a concave building's courtyard (not looked for); `--force` (writing a map that fails a mandatory rule) not exercised; `.scn` outputs are not byte-identical between runs (same size).
 
@@ -1720,6 +1977,7 @@ Thermal state: Nominal at all 13 probes (0–601 s). App footprint 1,022–1,044
 
 ## Known bugs and limitations
 
+- Streaming (Phase 6c, 2026-11-04): the resident scene's load still blocks behind the loading screen (3.1–4.7 s per switch on the tablet, debug; open question 37); only the four visibility-range categories stream, so a map whose memory is in its buildings or ground saves little (Safranbolu −4 MiB; open question 50); a mesh streams whole, so a huge decor mesh loads whenever its centre is near; the cells are generated on each machine and ignored by Git, so a fresh clone (or a machine that did not run `tools/cell_map.gd --all` after generating the GLBs) loads every map whole; the staleness check compares the model files' sizes, so a model edit that keeps a file's size is not noticed; a build made where the cells exist packs every map's `streaming/` folder (Release Perf APK 1.45 GB, iOS `.pck` 1.42 GB).
 - Import tool (Phase 6a, 6b): shape classification cannot tell lamps from other poles (decor) and finds facade detail only on top of a building's box; some objects stay in no category (always drawn, no collider: 3 of the abstract city's 219, 43 of Safranbolu's 1,173 in a shape-only import); concave building parts above 20,000 triangles keep their hull; units that give a plausible size (the NASA relief's millimetres) are read as metres; zero-area triangles are kept; double-sided materials stay double-sided unless configured; a materialless model renders white; the scored placement is the best of up to 150 candidates around the spawn, not the best of the map (Safranbolu's car is 84 m from the spawn); a map is written only when every mandatory rule passes (or with `--force`); reruns rewrite the binary scenes with other bytes. The `-convcolonly` replacement logs an owner warning (since Phase 6a; harmless).
 
 - Map switches (2026-11-01): fixed so that two maps are never in memory at once; loading a big map still holds 15–115 MiB of temporary data above its stable PSS (the tablet peaked at 810 MiB loading the cells map in a debug build, 64 MiB above the task's target), and the load blocks for 6.8–9.5 s on the tablet behind the loading screen. The tablet's low-memory killer reclaims other apps' processes during such loads.
@@ -1751,6 +2009,7 @@ Thermal state: Nominal at all 13 probes (0–601 s). App footprint 1,022–1,044
 
 ## Technical risks
 
+- **Streaming (Phase 6c):** Godot cannot cancel a threaded load, so a switch waits for the request in flight (one, 26 KB on average); every prime runs on the main thread because threaded requests at the app's start crashed a worker thread on the Mac (7 of 20 launches) for a reason inside the engine that was not found; after a long frame at a camera jump Godot's occlusion culling can draw more hidden objects at that spot (engine behaviour, reproduced without streaming); the tablet's frame times with a loading thread running are not settled (open question 51).
 - **Any map now enters the game (Phase 6a, 6b):** every imported map registered in `maps.tres` is packed into every build (the Kenney town 1 MB, the abstract city 7.8 MB, the Apollo relief 4.2 MB; a city-sized import hundreds of MB; the debug APK is 690 MB); a release preset that packs only the default map (open questions 36, 46) becomes more urgent the more maps are imported. Memory scales with the mesh count on the tablet: Safranbolu's 1,173 meshes peak at 328–332 MiB; streaming (next task) must work on the tool's output. The NASA relief's single ground occluder has 142,768 triangles (open question 49).
 
 - **Memory on the tablet (2026-11-01):** the PSS follows the mesh count, not the geometry (the facade variants keep the cells map's 6,129 meshes and its PSS within 18 MiB); a switch no longer holds two maps, but a big map's load peaks 15–115 MiB above its stable PSS, and the low-memory killer reclaims other processes meanwhile; any bigger map would need streaming.
@@ -1769,7 +2028,10 @@ Thermal state: Nominal at all 13 probes (0–601 s). App footprint 1,022–1,044
 
 ## Required manual actions
 
-- **Review Phase 6b**: the blind results and their classification (`docs/maps/imported/blind/README.md`), the new thresholds (`docs/MAP_CONTRACT.md`: C2, C3, C7, the shape rules, R2, the placement scores), and the hand labels (`docs/maps/imported/blind/labels/`); decide on open questions 44 (zero-area triangles, a neutral colour for materialless models), 46 (the imported maps in release packages, now three), 48 (unclassified objects), 49 (huge ground occluders). Questions 45 (the default map and streaming) and 47 (Safranbolu as a real map) stay open.
+- **Review Phase 6c**: the acceptance table ("Phase 6c"), the look comparison (`docs/perf/phase6c/look/`), the criteria that failed or were not completed (map ready, Safranbolu, the relative criterion, the route's 51–55 ms frames), and open questions 50 and 51.
+- **On a new machine, after generating the GLBs:** `godot --headless --path . --script res://tools/cell_map.gd -- --all` writes every map's cells (about 11 s on the Mac); without them maps load whole.
+- **For the tablet's repeat:** a charger or powered hub that supplies at least 1.5 A while the tablet stays connected to adb (the Mac's port gives 250–350 mA).
+- Phase 6b's review items, if still open: the blind results (`docs/maps/imported/blind/README.md`), the thresholds in `docs/MAP_CONTRACT.md` (C2, C3, C7, the shape rules, R2, the placement scores), the hand labels (`docs/maps/imported/blind/labels/`), and open questions 44 (zero-area triangles, a neutral colour for materialless models), 46 (the imported maps in release packages), 48 (unclassified objects), 49 (huge ground occluders). Question 45 was closed by T54; 47 (Safranbolu as a real map) stays open.
 - **A map of your own** would still be the best blind test: put its path in the next task (the field was empty this time).
 - The test imports are not in Git: to run their tests on another machine, import the Safranbolu GLB and `assets/istanbul_halic.glb` with the commands in `docs/maps/imported/safranbolu_test.md` and `istanbul_halic_import.md`.
 
@@ -1785,23 +2047,24 @@ Thermal state: Nominal at all 13 probes (0–601 s). App footprint 1,022–1,044
 
 ## Current priorities
 
-1. Review of Phase 6b ("Phase 6b").
-2. The streaming loader for any imported map (below; definition in `PROJECT_CONTEXT.md`, "Planned features"), before maps much larger than the Kenney town are added to the registry.
-3. If the user wants it, a presented-frame measurement of the tablet's display pairs (open question 43).
+1. Review of Phase 6c ("Phase 6c").
+2. A release preset with only the selected maps (open questions 36, 46): builds now carry every map's streaming files (1.45 GB).
+3. The tablet's map-ready and long-frame criteria repeated on a charger that keeps up (open question 51); Safranbolu's memory (open question 50).
+4. If the user wants it, a presented-frame measurement of the tablet's display pairs (open question 43).
 
 ## Recommended next task
 
-Order of the remaining work by the measurements of 2026-11-01/02 (each a separate task, measured against them):
+Order of the remaining work after Phase 6c (each a separate task, measured against the numbers of 2026-11-01/04):
 
 | # | Work | Why in this place | Measurable acceptance |
 |---|---|---|---|
-| 1 | **Streaming loader for any imported map** (definition: `PROJECT_CONTEXT.md`, "Planned features"): the import tool writes the visibility-range categories as cell scenes plus a resident part and an index; a streaming node loads the cells in range | The default map holds the cells map's 6,129 meshes: tablet stable PSS 615 MiB against İstanbul's 502, map ready 5.8 s, a switch 6.8–9.5 s (debug) with up to 810 MiB peak; the PSS follows the mesh count, also on imported maps (Safranbolu 328 MiB); D26 requires one design for every map | Tablet (Release Perf, three runs): the default map's stable PSS ≤ 502 MiB, map ready ≤ 4.0 s, switch peak ≤ the larger map's stable PSS + 50 MiB with no low-memory reclaim, no frame over 50 ms from part loading, long frames by D25's relative criterion, 1 % low within 0.5 FPS of 25.80 / 25.89 / 25.17; iPhone footprint ≤ 860 MiB, 60 FPS with 0 long frames, map ready ≤ 1.2 s; the Kenney town, Safranbolu, the İstanbul import, and the two blind-test maps split by the same tool command with their tests passing unchanged, Safranbolu's tablet PSS below 328 MiB; look, collision, and tests unchanged |
-| 2 | **The tablet's display pairs** (open question 43; only if the user wants it; measurement first, then at most one setting change) | Every launch shows about one 16.7 / 50 ms pair of presented intervals per second (2.6 % of the intervals on the shader map, 3.5 % on İstanbul) that the game loop does not see; the per-launch loop cycle is not visible | With `present_trace.py`, nine launches per variant: presented 50 ms intervals at most half of today's share (away from polls) at every viewpoint, the game loop's averages and 1 % low not worse, the iPhone unchanged |
+| 1 | **A release preset with only the selected maps** (open questions 36, 46; before store preparation) | A build made where the GLBs and cells exist packs every map and its streaming files (Release Perf APK 1.45 GB, iOS `.pck` 1.42 GB); the streamed default map needs only its `streaming/` folder (104 MB: resident scene 31 MB, cells 67 MB, materials) and the cells map's occluders, not its imported GLB scene (102 MB), but `MapDefinition.required_files` names the GLB | A "Release" preset (Android and iOS) that exports the default map's streaming folder and occluders and excludes every other map, GLB, and the 100 m split; `MapDefinition.is_available()` accepts a usable index in place of a missing GLB; APK and `.pck` sizes reported; a plain launch on both devices starts streamed on the default map (STARTUP and STREAMING lines); a preset test pins the include and exclude lists; every test passes |
+| 2 | **The tablet's criteria repeated with stable power** (open question 51; measurement only) | Map ready and long frames varied with a draining battery; the relative criterion has one pair, the routes one run each | With a supply of ≥ 1.5 A: map ready three runs (≤ 4.0 s median), D25's relative criterion with nine alternating launches each, the routes three runs each with presented frames; no code change unless a failure is traced to the loader |
 | 3 | **Simple colliders on the İstanbul maps** (imported maps without collision nodes have shape colliders since Phase 6b, T52) | The tablet's physics step (4.4–5.5 ms) is unchanged on every İstanbul map and variant and the largest CPU cost | Physics step ≥ 0.5 ms lower at the three viewpoints (three runs); Phase 1–5 tests pass |
 | 4 | **Occluders from building footprints** | Occlusion works (39 draw calls at Galata on the tablet); the bake costs about 40 MiB and 86–220 ms at load | Occluder triangles −80 %; draw calls within 10 %; load time and memory reported |
-| 5 | **A release preset with only the default map** (before store preparation) | A build made where all GLBs exist packs five maps (APK 675 MB); a release must carry only the shader map's GLB (open question 36) | Release APK and `.pck` with one İstanbul map; the plain launch on both devices starts on it; a preset test pins the exclusions |
+| 5 | **The tablet's display pairs** (open question 43; only if the user wants it; measurement first, then at most one setting change) | Every launch shows about one 16.7 / 50 ms pair of presented intervals per second (2.6 % of the intervals on the shader map, 3.5 % on İstanbul) that the game loop does not see; the per-launch loop cycle is not visible | With `present_trace.py`, nine launches per variant: presented 50 ms intervals at most half of today's share (away from polls) at every viewpoint, the game loop's averages and 1 % low not worse, the iPhone unchanged |
 | 6 | **Normals and degenerate triangles** | No measurable effect | Zero-area and flipped triangles 0, the rest byte-identical |
 
-Smaller follow-up: lamps, lamp glows, and decor in cells (the lamp post beside the spawn is still missing on the low profile).
+Smaller follow-ups: the resident scene's load threaded too, so a switch shows a moving loading screen (open question 37); Safranbolu's memory measured before deciding on building LOD (open question 50); lamps, lamp glows, and decor of İstanbul • Haliç in cells (its lamp post beside the spawn is still missing on the low profile).
 
-**Recommendation:** task 1, the streaming loader, built on the import tool's output so it serves every map (D26): the largest remaining memory and startup gain on the tablet, on the default map and on imported maps.
+**Recommendation:** task 1, the release preset: streaming made the default map's data smaller than its GLB, but every build now carries all maps' streaming files; a release package with only the selected maps is the next infrastructure step before store preparation, and the availability rule must learn that a streamed map needs its index, not its GLB.
