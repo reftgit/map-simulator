@@ -43,7 +43,8 @@ func load_map(new_definition: MapDefinition) -> void:
 	unload_map()
 	definition = new_definition
 	var started := Time.get_ticks_usec()
-	var index := _streaming_index() if streaming else null
+	# Without its required files a map can only stream, even with streaming off.
+	var index := _streaming_index() if streaming or not definition.has_required_files() else null
 	var checked := Time.get_ticks_usec()
 	var scene_path := index.resident_scene if index else definition.scene_path
 	var packed := load(scene_path) as PackedScene

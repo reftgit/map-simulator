@@ -33,7 +33,7 @@ func _check_map(id: String, meshes: int) -> void:
 	check(definition != null and definition.category_rules != null, "%s has category rules" % id)
 	if definition == null or definition.category_rules == null:
 		return
-	if not definition.is_available():
+	if not definition.has_required_files():
 		skip("%s: map files missing" % id)
 		return
 	var rules := definition.category_rules

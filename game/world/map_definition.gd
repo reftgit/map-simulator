@@ -33,8 +33,9 @@ extends Resource
 @export var category_rules: CategoryRules
 ## Files the map needs that are generated or copied in on each machine and
 ## kept out of Git (e.g. its GLB). While one is missing the map is not
-## available: the MAP button skips it, and the default and --map fall back to
-## the first available map (MapRegistry.default_map()).
+## available unless its streaming index can be used (is_available()): the MAP
+## button skips it, and the default and --map fall back to the first
+## available map (MapRegistry.default_map()).
 @export var required_files: Array[String] = []
 ## The streaming index tools/cell_map.gd writes for this map (MapStreamingIndex;
 ## docs/STREAMING.md). While it is empty, missing, or stale, the map loads whole.
@@ -53,12 +54,28 @@ extends Resource
 @export var sloped_viewpoint := -1
 
 
-## Whether every required file can be loaded.
+## Whether the map can be loaded: every required file can be loaded (it loads
+## whole, or streamed when its index can be used too), or, without them, its
+## streaming index can be used (a package that carries the map only as its
+## resident scene and cells, like the release presets; docs/STREAMING.md).
 func is_available() -> bool:
+	return has_required_files() or MapStreamingIndex.usable(self) != null
+
+
+## Whether every required file can be loaded, so the map can be loaded whole.
+func has_required_files() -> bool:
 	for path in required_files:
 		if not is_loadable(path):
 			return false
 	return true
+
+
+## Why the map is not available, for warnings: its missing files, and that
+## its streaming index cannot be used when it has one.
+func unavailable_reason() -> String:
+	var missing := PackedStringArray(required_files.filter(func(path: String) -> bool: return not is_loadable(path)))
+	var reason := "missing: %s" % ", ".join(missing)
+	return reason + ("; its streaming index cannot be used" if not streaming_index_path.is_empty() else "")
 
 
 ## Whether `path` can be loaded. For an imported file that is its import

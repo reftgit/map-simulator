@@ -145,6 +145,42 @@ func test_index_that_cannot_be_used_loads_the_map_whole() -> void:
 	check(MapStreamingIndex.load_for(definition) == null, "a missing index: whole")
 
 
+## The model stands for a map's GLB: its required file, and the file its index
+## is compared with. A release package carries the cells without the model.
+func test_a_usable_index_makes_a_map_available_without_its_model() -> void:
+	var definition := StreamingMap.write(DIR)
+	var model := DIR.path_join("model.scn")
+	definition.required_files.assign([model])
+	check(definition.is_available() and definition.has_required_files(), "model, no index: available (whole), as before")
+	var cells := _split(definition)
+	definition.streaming_index_path = cells.index_path
+	check(definition.is_available() and MapStreamingIndex.load_for(definition) != null, "model and index: available, streamed")
+	var cell := cells.index.cell_paths[0]
+	var cell_bytes := FileAccess.get_file_as_bytes(cell)
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(cell))
+	check(definition.is_available() and MapStreamingIndex.load_for(definition) == null, "model, a cell missing: available, whole")
+	FileAccess.open(cell, FileAccess.WRITE).store_buffer(cell_bytes)
+	var model_bytes := FileAccess.get_file_as_bytes(model)
+	var file := FileAccess.open(model, FileAccess.READ_WRITE)
+	file.seek_end()
+	file.store_8(0)
+	file.close()
+	check(definition.is_available() and MapStreamingIndex.load_for(definition) == null, "a changed model: available, whole (the index is stale)")
+	FileAccess.open(model, FileAccess.WRITE).store_buffer(model_bytes)
+	check(MapStreamingIndex.load_for(definition) != null, "the model as it was: streamed again")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(model))
+	check(not definition.has_required_files(), "the model is gone")
+	check(definition.is_available() and MapStreamingIndex.load_for(definition) != null, "no model, a usable index: available, streamed (nothing to be stale against)")
+	check(cells.index.problem(true).contains("missing %s" % model), "the release check still wants the model (%s)" % cells.index.problem(true))
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(cell))
+	check(not definition.is_available(), "no model, a cell missing: not available")
+	check(definition.unavailable_reason() == "missing: %s; its streaming index cannot be used" % model, "the reason says both (%s)" % definition.unavailable_reason())
+	definition.streaming_index_path = DIR.path_join("nowhere/index.tres")
+	check(not definition.is_available(), "no model, no index file: not available")
+	definition.streaming_index_path = ""
+	check(not definition.is_available() and definition.unavailable_reason() == "missing: %s" % model, "no model, no index: not available, as before")
+
+
 func test_the_import_tool_and_cell_step_agree_on_the_streamed_categories() -> void:
 	check(MapCells.STREAMED_CATEGORIES == ["facade_detail", "trees", "lamps", "decor"], "the categories the profiles give a visibility range")
 	for category in MapCells.STREAMED_CATEGORIES:

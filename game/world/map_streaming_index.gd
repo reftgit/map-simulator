@@ -5,7 +5,8 @@ extends Resource
 ## of their nodes) and one MapCell file per category and square of a grid on
 ## the ground plane. MapDefinition.streaming_index_path points here; while this
 ## index is missing, incomplete, or older than the map's model, the map loads
-## whole (load_for()).
+## whole (load_for()). A usable index makes the map available without its
+## model too (MapDefinition.is_available()).
 
 ## The map scene without the streamed meshes; loaded instead of scene_path.
 @export_file("*.scn") var resident_scene := ""
@@ -41,28 +42,43 @@ extends Resource
 @export var resident_meshes := 0
 
 
-## The index of `definition` if it can be used: its file exists and is_current().
-## Null (the map loads whole) otherwise, with the reason printed or warned.
+## The index of `definition` if it can be used: its file exists and problem()
+## finds nothing. Null (the map loads whole) otherwise, with the reason printed
+## or warned.
 static func load_for(definition: MapDefinition) -> MapStreamingIndex:
+	return _load(definition, true)
+
+
+## The same as load_for() without saying why not (MapDefinition.is_available()).
+static func usable(definition: MapDefinition) -> MapStreamingIndex:
+	return _load(definition, false)
+
+
+static func _load(definition: MapDefinition, tell: bool) -> MapStreamingIndex:
 	var path := definition.streaming_index_path
 	if path.is_empty():
 		return null
 	if not ResourceLoader.exists(path):
-		print("STREAMING %s: no index (%s); loading the map whole" % [definition.id, path])
+		if tell:
+			print("STREAMING %s: no index (%s); loading the map whole" % [definition.id, path])
 		return null
 	var index := load(path) as MapStreamingIndex
 	var problem := index.problem() if index else "not a MapStreamingIndex"
 	if not problem.is_empty():
-		push_warning("STREAMING %s: index %s cannot be used (%s); loading the map whole. Run tools/cell_map.gd again." % [definition.id, path, problem])
+		if tell:
+			push_warning("STREAMING %s: index %s cannot be used (%s); loading the map whole. Run tools/cell_map.gd again." % [definition.id, path, problem])
 		return null
 	return index
 
 
 ## Why the index cannot be used ("" when it can): a missing file, or a
-## model whose size changed since the cells were written. The cells are
+## model whose size changed since the cells were written. A model file that is
+## not there cannot make it stale (a package that carries the map only as its
+## cells, without the model); `need_model` makes that a problem too (the
+## release check, which must compare the cells with the model). The cells are
 ## looked up in one listing of their folder (thousands of ResourceLoader.exists()
 ## calls took 60 ms on the Mac at every map load).
-func problem() -> String:
+func problem(need_model := false) -> String:
 	if not ResourceLoader.exists(resident_scene):
 		return "missing %s" % resident_scene
 	var listed := {}  # folder -> {file name: true}
@@ -75,6 +91,10 @@ func problem() -> String:
 		if not listed[folder].has(path.get_file()):
 			return "missing %s" % path
 	for i in source_files.size():
+		if not FileAccess.file_exists(source_files[i]):
+			if need_model:
+				return "missing %s, the model to compare the cells with" % source_files[i]
+			continue
 		var file := FileAccess.open(source_files[i], FileAccess.READ)
 		var size := file.get_length() if file else -1
 		if size != source_sizes[i]:

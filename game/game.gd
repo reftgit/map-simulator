@@ -389,13 +389,13 @@ func _initial_map(args: PackedStringArray) -> MapDefinition:
 		var found := maps.find(id)
 		if found and found.is_available():
 			return found
-		var reason := "Map '%s' is not available (missing: %s)" % [id, ", ".join(PackedStringArray(found.required_files))] if found else "Unknown map '%s'" % id
+		var reason := "Map '%s' is not available (%s)" % [id, found.unavailable_reason()] if found else "Unknown map '%s'" % id
 		if fallback:
 			push_warning("%s; loading '%s'" % [reason, fallback.id])
 		return fallback
 	var first: MapDefinition = maps.definitions[0] if not maps.definitions.is_empty() else null
 	if fallback and fallback != first:
-		push_warning("Default map '%s' is not available (missing: %s); loading '%s'" % [first.id, ", ".join(PackedStringArray(first.required_files)), fallback.id])
+		push_warning("Default map '%s' is not available (%s); loading '%s'" % [first.id, first.unavailable_reason(), fallback.id])
 	return fallback
 
 
@@ -403,8 +403,7 @@ func _initial_map(args: PackedStringArray) -> MapDefinition:
 func _no_map_message() -> String:
 	var lacking := PackedStringArray()
 	for definition in maps.definitions:
-		var missing := PackedStringArray(definition.required_files.filter(func(path: String) -> bool: return not MapDefinition.is_loadable(path)))
-		lacking.append("%s (missing: %s)" % [definition.id, ", ".join(missing)])
+		lacking.append("%s (%s)" % [definition.id, definition.unavailable_reason()])
 	return "No map is available: %s. Generate or copy in a map's files (docs/maps/istanbul_halic/README.md)." % ("; ".join(lacking) if not lacking.is_empty() else "the registry is empty")
 
 

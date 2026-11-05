@@ -165,6 +165,25 @@ func test_a_map_without_an_index_loads_whole() -> void:
 	check(game.world.streamer == null and game.world.map_root.scene_file_path == definition.scene_path, "streaming off (measurement): whole")
 
 
+## As in a release package: the map's cells are there, its model (the GLB) is not.
+func test_a_map_without_its_model_starts_from_its_cells() -> void:
+	definition = _map()
+	var model := DIR.path_join("model.scn")
+	definition.required_files.assign([model])
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(model))
+	check(definition.is_available() and not definition.has_required_files(), "available through its index alone")
+	var registry := MapRegistry.new()
+	registry.definitions.assign([definition, load("res://maps/test_district/test_district.tres")])
+	game = (load("res://game/main.tscn") as PackedScene).instantiate()
+	game.maps = registry
+	add_node(game)
+	await process_frames(2)
+	check(game.map_definition == definition and game.world.streamer != null, "no map requested: the default, streamed (%s)" % game.map_definition.id)
+	check(game.world.map_root.scene_file_path == game.world.streamer.index.resident_scene and game.world.streamer.missing_cells() == 0, "its resident scene and every needed cell")
+	await _start(definition, {}, false)
+	check(game.world.streamer != null, "streaming off cannot load it whole, so it streams")
+
+
 func test_a_map_switch_frees_the_cells() -> void:
 	definition = _map()
 	await _start(definition, RANGES)
@@ -222,7 +241,7 @@ func _until_camera_moved(point: Vector3) -> void:
 
 func test_the_default_map_streams_what_its_profiles_draw() -> void:
 	var map := load(DEFAULT_MAP) as MapDefinition
-	if not map.is_available() or MapStreamingIndex.load_for(map) == null:
+	if not map.has_required_files() or MapStreamingIndex.load_for(map) == null:
 		skip("needs the default map's GLB and its cells (tools/cell_map.gd)")
 		return
 	var seen := {}

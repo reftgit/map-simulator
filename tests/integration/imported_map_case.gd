@@ -30,7 +30,7 @@ func expected_categories() -> Dictionary:
 func skip_reason() -> String:
 	if not ResourceLoader.exists(definition_path()):
 		return "%s missing; %s" % [definition_path(), regenerate_hint()]
-	if not (load(definition_path()) as MapDefinition).is_available():
+	if not (load(definition_path()) as MapDefinition).has_required_files():
 		return "the generated model of %s is missing; %s" % [definition_path().get_file(), regenerate_hint()]
 	return ""
 

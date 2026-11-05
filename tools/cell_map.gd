@@ -32,7 +32,7 @@ func _run() -> void:
 	var registry := MapRegistry.load_default()
 	if args.has("all"):
 		for definition in registry.definitions:
-			if definition.is_available():
+			if definition.has_required_files():
 				definitions.append(definition)
 			else:
 				print("CELLS %s skipped: its files are missing (%s)" % [definition.id, ", ".join(PackedStringArray(definition.required_files))])
