@@ -20,21 +20,23 @@ signal map_changed(definition: MapDefinition)
 ## the right so the camera behind the player sees it.
 const DUMMY_OFFSET := Vector3(0.35, 0.0, -1.3)
 ## Loading on threads: main-thread milliseconds of each loading frame given
-## to the loading thread while it reads the map (MapLoad.poll()).
-const LOAD_SERVICE_MS := 25.0
+## to the loading thread while it reads the map (MapLoad.poll()). 25 ms read
+## no faster on the Galaxy Tab A7 and made the frame that a run of collision
+## set-up lands in longer (112 ms on the iPhone).
+const LOAD_SERVICE_MS := 12.0
 ## Loading on threads: the steps after reading run until they have taken
 ## this many milliseconds of a frame; the next one waits for the next frame.
-const LOAD_FRAME_BUDGET_MS := 25.0
+const LOAD_FRAME_BUDGET_MS := 16.0
 ## Loading on threads: milliseconds per frame for grouping the map's meshes
 ## into render categories and for loading the first cells.
-const LOAD_STEP_BUDGET_MS := 30.0
+const LOAD_STEP_BUDGET_MS := 20.0
 ## Loading on threads: a step whose cost comes later in its frame (a material
 ## or shader prepared, a part of the map shown for the first time) runs one
 ## per frame, or more while the frames stay shorter than LOAD_FAST_FRAME_MS
-## (twice as many each frame, up to LOAD_MAX_RENDERED_STEPS; four times as
-## many packed frames of 95-112 ms on the iPhone).
+## (twice as many each frame, up to LOAD_MAX_RENDERED_STEPS: with 16 and a
+## 25 ms budget the iPhone's release build packed frames of 102-110 ms).
 const LOAD_FAST_FRAME_MS := 45.0
-const LOAD_MAX_RENDERED_STEPS := 16
+const LOAD_MAX_RENDERED_STEPS := 4
 ## Share of the loading screen's progress bar for reading and instantiating.
 const LOAD_READ_SHARE := 0.8
 
@@ -251,7 +253,6 @@ func switch_map(definition: MapDefinition) -> bool:
 	_static_bodies.clear()
 	hud.streamer = null
 	var old_id := map_definition.id
-	var started_usec := Time.get_ticks_usec()
 	if threaded_loading:
 		_begin_loading("switch", definition)
 		loading_frames.phase = "unload"
@@ -262,13 +263,14 @@ func switch_map(definition: MapDefinition) -> bool:
 			switching = false
 			return false
 	else:
+		var loading_started := Time.get_ticks_usec()
 		_load_map(definition)
 		if _experiment:
 			apply_runtime_settings(_experiment.runtime)
 		set_quality_profile(quality_profile)
 		_prime_streaming()
 		hud.set_loading(false)
-		_report_loaded_at_once("switch", started_usec, frames)
+		_report_loaded_at_once("switch", loading_started, frames)
 	player.process_mode = Node.PROCESS_MODE_INHERIT
 	_view_index = 0
 	hud.view_name = get_view_names()[0]

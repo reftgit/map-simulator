@@ -93,8 +93,9 @@ func finish(loaded: bool, indicator: Dictionary, load: Dictionary) -> Dictionary
 
 ## The record of a load at once on the main thread (headless runs, the
 ## measurement key "threaded_load": false): the whole load in one frame,
-## `ms` from its start to the first frame drawn with the map, which is all
-## the loading screen (or, at the start, the boot splash) shows meanwhile.
+## `ms` from its start (after a switch's wait for the old map to go, whose
+## `unload_frames` are short) to the first frame drawn with the map, which is
+## all the loading screen (or, at the start, the boot splash) shows meanwhile.
 func finish_at_once(kind: String, map_id: String, ms: float, unload_frames: int, load: Dictionary) -> Dictionary:
 	stop()
 	report = {"map": map_id, "kind": kind, "threaded": false, "loaded": true, "frames": 1 + unload_frames,
