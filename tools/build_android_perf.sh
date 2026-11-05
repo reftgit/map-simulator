@@ -1,8 +1,10 @@
 #!/bin/sh
 # Builds a release-template APK for on-device performance measurements only
-# (an "Android Release Perf*" preset: perf_bench feature, no debug overlay).
-# It is signed with the Godot editor's debug keystore so it can be installed
-# locally; this is not a release signing setup and the APK is never uploaded.
+# (an "Android Release Perf*" preset: perf_bench feature, no debug overlay),
+# or, called by tools/build_release.sh, the local release package ("Android
+# Release"). It is signed with the Godot editor's debug keystore so it can be
+# installed locally; this is not a release signing setup and the APK is never
+# uploaded.
 # The keystore path and password are read from the local editor settings at
 # build time and passed through Godot's GODOT_ANDROID_KEYSTORE_RELEASE_*
 # environment variables, so nothing about the keystore enters the repository.

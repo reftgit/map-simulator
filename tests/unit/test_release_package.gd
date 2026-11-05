@@ -7,6 +7,9 @@ extends "res://tests/test_case.gd"
 ## tools/release_contents.py lists a built package.
 
 const ReleasePackage := preload("res://tools/release_package.gd")
+const MapCells := preload("res://tools/map_import/map_cells.gd")
+const StreamingMap := preload("res://tests/fixtures/streaming_map.gd")
+const DIR := "user://test_release_package"
 const ANDROID_PACKAGE := "com.mirongi.mapsimulator"
 ## The temporary iOS bundle ID and team (D8): the final ID is not registered yet.
 const IOS_BUNDLE := "com.mirongi.mapsimulator.dev"
@@ -90,3 +93,27 @@ func test_release_presets_are_plain_release_builds_with_the_d8_identifiers() -> 
 			check(presets.get_value(section + ".options", "application/export_method_release") == 1, "%s: development export, local testing only (D9)" % name)
 			check(presets.get_value(section + ".options", "application/export_project_only") == true, "%s: the Xcode project only, built without portal access (D9)" % name)
 			check(presets.get_value(section, "export_path") == "build/ios_release/map_simulator.ipa", "%s: its own folder" % name)
+
+
+## What tools/check_release.gd stops an export for, and the command it names.
+func test_the_export_check_wants_current_cells() -> void:
+	var definition := StreamingMap.write(DIR)
+	var model := DIR.path_join("model.scn")
+	definition.required_files.assign([model])
+	check(ReleasePackage.cells_problem(definition).is_empty(), "no index: the map goes whole with its required files")
+	definition.streaming_index_path = DIR.path_join("streaming/stream_test_index.tres")
+	var problem := ReleasePackage.cells_problem(definition)
+	check(problem.contains("no cells written") and problem.contains("res://tools/cell_map.gd -- --map=stream_test"), "no cells yet: stops and names the command (%s)" % problem)
+	var cells := MapCells.new()
+	check(cells.run(definition, DIR.path_join("streaming"), StreamingMap.CELL).is_empty(), "split")
+	check(ReleasePackage.cells_problem(definition).is_empty(), "cells current against the model: ready")
+	var file := FileAccess.open(model, FileAccess.READ_WRITE)
+	file.seek_end()
+	file.store_8(0)
+	file.close()
+	problem = ReleasePackage.cells_problem(definition)
+	check(problem.contains("model.scn changed") and problem.contains("cell_map.gd"), "a changed model: stale, stops (%s)" % problem)
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(model))
+	problem = ReleasePackage.cells_problem(definition)
+	check(problem.contains("the model to compare the cells with"), "no model on the exporting machine: cannot tell, stops (%s)" % problem)
+	check(definition.is_available(), "although the game itself could load the map from its cells")

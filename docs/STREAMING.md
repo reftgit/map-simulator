@@ -64,7 +64,7 @@ The meshes are what costs; their nodes cost about 2 KB each. So what streams is 
 
 A map loads whole, exactly as before, when its definition has no `streaming_index_path`, when the index or one of its files is missing (a fresh clone: the outputs are generated), or when the index is stale (one of the map's binary model files changed size since the split; a warning says to run the cell step again). The measurement key `"runtime": {"streaming": false}` loads any map whole; `"streaming_index"` uses another index (cell size comparisons).
 
-A usable index also makes a map available without its model (`MapDefinition.is_available()`: the required files, or else a usable index; Phase 6d). A model file that is not there cannot make the index stale, so a package that carries a map only as its streaming folder loads it from its cells; such a map streams even with `"streaming": false`. `problem(true)` also wants the model, to compare the cells with it.
+A usable index also makes a map available without its model (`MapDefinition.is_available()`: the required files, or else a usable index; Phase 6d). A model file that is not there cannot make the index stale, so a package that carries a map only as its streaming folder loads it from its cells; such a map streams even with `"streaming": false`. `problem(true)` also wants the model, to compare the cells with it: the release check (`tools/check_release.gd`) uses it on the machine that exports, and stops the export when a release map's cells are missing or stale (`docs/ARCHITECTURE.md`, "Release builds").
 
 | Model (GLB) | Index | Available | Loads |
 |---|---|---|---|
