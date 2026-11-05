@@ -31,14 +31,26 @@ func category_of(node: Node) -> String:
 ## The map's MeshInstance3D nodes under `map_root`, grouped by category
 ## (every category of CATEGORIES is a key; meshes in no category are left out).
 func meshes_by_category(map_root: Node) -> Dictionary:
+	var groups := empty_groups()
+	add_to_groups(groups, map_root.find_children("*", "MeshInstance3D", true, false))
+	return groups
+
+
+## Every category of CATEGORIES, with no meshes yet (add_to_groups()).
+static func empty_groups() -> Dictionary:
 	var groups := {}
 	for category in CATEGORIES:
 		groups[category] = []
-	for node in map_root.find_children("*", "MeshInstance3D", true, false):
+	return groups
+
+
+## Adds `nodes` (MeshInstance3D) to their categories' lists in `groups`; a
+## map's meshes can be grouped a part at a time (Main, behind the loading screen).
+func add_to_groups(groups: Dictionary, nodes: Array) -> void:
+	for node in nodes:
 		var category := category_of(node)
 		if groups.has(category):
 			groups[category].append(node)
-	return groups
 
 
 ## Problems with the rules themselves: unknown categories. Empty when valid.

@@ -4,7 +4,9 @@ extends Node3D
 ## the kill height (at their own spawn, or the map's player spawn) and holds
 ## them inside the playable bounds. Parks the map's vehicles (which reset
 ## themselves) and places its NPCs. A map with a streaming index loads its
-## resident scene and a MapStreamer for its cells (docs/STREAMING.md). Knows
+## resident scene and a MapStreamer for its cells (docs/STREAMING.md). A map
+## loads at once (load_map()) or, behind Main's loading screen, read and
+## instantiated on worker threads (begin_load(), then finish_load()). Knows
 ## nothing about input, camera, or UI.
 
 signal map_loaded(definition: MapDefinition)
@@ -26,9 +28,17 @@ var streamer: MapStreamer
 var streaming := true
 ## Measurement: an index to use instead of the definition's (another cell size).
 var streaming_index_override := ""
-## The last load_map(): whether it streamed, and the milliseconds for the
-## streaming index's check, loading the scene, and instancing it.
+## The last load: whether it streamed and was read on threads, and the
+## milliseconds for the streaming index's check, reading the scene, instancing
+## it (both on a worker thread when threaded), adding it to the tree, and
+## setting up its streamer (MapStreamer.setup(): materials and warm cells).
 var load_report := {}
+## The load begin_load() started, until its scene is added; null otherwise.
+var loading: MapLoad
+## The streaming index of the map begin_load() started, when it streams,
+## until its streamer starts (Main prepares its materials before the map
+## enters the tree); null otherwise.
+var loading_index: MapStreamingIndex
 ## Vehicles placed by spawn_vehicles().
 var vehicles: Array[VehicleController] = []
 ## NPCs placed by spawn_npcs().
@@ -39,26 +49,62 @@ var _tracked: Array[Node3D] = []
 var _spawns := {}
 
 
+## Loads `new_definition` at once on the main thread (headless runs, the
+## tests, and the measurement key "threaded_load": false).
 func load_map(new_definition: MapDefinition) -> void:
+	finish_load(begin_load(new_definition, false))
+
+
+## Unloads the loaded map and starts loading `new_definition`: its streaming
+## index is checked here, and the returned MapLoad reads and instantiates the
+## scene (on worker threads when `threaded`). Poll it until it is finished,
+## then call finish_load(), or add_loaded(), start_streamer(), and end_load()
+## in steps (Main's load behind the loading screen).
+func begin_load(new_definition: MapDefinition, threaded: bool) -> MapLoad:
 	unload_map()
 	definition = new_definition
 	var started := Time.get_ticks_usec()
 	# Without its required files a map can only stream, even with streaming off.
-	var index := _streaming_index() if streaming or not definition.has_required_files() else null
-	var checked := Time.get_ticks_usec()
-	var scene_path := index.resident_scene if index else definition.scene_path
-	var packed := load(scene_path) as PackedScene
-	assert(packed != null, "Map scene failed to load: %s" % scene_path)
-	var loaded := Time.get_ticks_usec()
-	map_root = packed.instantiate()
+	loading_index = _streaming_index() if streaming or not definition.has_required_files() else null
+	load_report = {"streamed": loading_index != null, "threaded": threaded, "index_ms": MapLoad._ms_since(started)}
+	loading = MapLoad.new(loading_index.resident_scene if loading_index else definition.scene_path, threaded, get_world_3d().space)
+	return loading
+
+
+## Adds the scene `job` made to the tree, with a MapStreamer for a streamed map.
+func finish_load(job: MapLoad) -> void:
+	add_loaded(job)
+	start_streamer()
+	end_load()
+
+
+## Adds the scene `job` made to the tree (its map script's _ready() runs).
+func add_loaded(job: MapLoad) -> void:
+	assert(job.step == MapLoad.Step.DONE, "Map scene failed to load: %s (%s)" % [job.path, job.report.get("error", "")])
+	loading = null
+	load_report.merge({"scene_ms": job.report.read_ms, "instantiate_ms": job.report.instantiate_ms, "serve_max_ms": job.report.serve_max_ms}, true)
+	var started := Time.get_ticks_usec()
+	map_root = job.root
 	add_child(map_root)
-	load_report = {"streamed": index != null, "index_ms": snappedf((checked - started) / 1000.0, 0.1),
-			"scene_ms": snappedf((loaded - checked) / 1000.0, 0.1), "instantiate_ms": snappedf((Time.get_ticks_usec() - loaded) / 1000.0, 0.1)}
-	if index:
-		streamer = MapStreamer.new()
-		streamer.name = "MapStreamer"
-		add_child(streamer)
-		streamer.setup(map_root, index)
+	load_report.add_ms = MapLoad._ms_since(started)
+
+
+## The added map's MapStreamer, when it streams (MapStreamer.setup()); with
+## `warm_cells` false the warm cells are left to MapStreamer.warm_next().
+func start_streamer(warm_cells := true) -> void:
+	if loading_index == null:
+		return
+	var started := Time.get_ticks_usec()
+	streamer = MapStreamer.new()
+	streamer.name = "MapStreamer"
+	add_child(streamer)
+	streamer.setup(map_root, loading_index, warm_cells)
+	load_report.setup_ms = MapLoad._ms_since(started)
+	loading_index = null
+
+
+## The map is loaded (map_loaded).
+func end_load() -> void:
 	map_loaded.emit(definition)
 
 
@@ -72,6 +118,11 @@ func _streaming_index() -> MapStreamingIndex:
 
 
 func unload_map() -> void:
+	if loading:
+		loading.cancel()
+		loading.wait()
+		loading = null
+	loading_index = null
 	if streamer:
 		streamer.shutdown()
 		streamer.queue_free()
@@ -87,6 +138,11 @@ func unload_map() -> void:
 		npc.queue_free()
 	npcs.clear()
 	definition = null
+
+
+func _exit_tree() -> void:
+	if loading:
+		unload_map()
 
 
 ## unload_map(), then waits until the map, its vehicles, and its NPCs are

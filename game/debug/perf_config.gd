@@ -23,7 +23,9 @@ const USER_PATH := "user://perf_bench.json"
 ## map that reads them (the shader facade map), the facade material, its
 ## render priority, and a warm-up draw of it after loading; whether a map with
 ## a streaming index streams (false loads it whole) and another index to use
-## (a cell size comparison), both read when a map loads.
+## (a cell size comparison), both read when a map loads; whether maps load on
+## threads behind the loading screen (false: at once, as before Phase 6e),
+## read at the start.
 const RUNTIME_KEYS := {
 	"physics_ticks": TYPE_INT,
 	"physics_interpolation": TYPE_BOOL,
@@ -39,6 +41,7 @@ const RUNTIME_KEYS := {
 	"facade_priority": TYPE_INT,
 	"streaming": TYPE_BOOL,
 	"streaming_index": TYPE_STRING,
+	"threaded_load": TYPE_BOOL,
 }
 const FACADE_MATERIALS := ["shader", "flat", "simple"]
 ## Device scenarios (DeviceScenario) and the keys of a "scenario" section.

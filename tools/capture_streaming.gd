@@ -39,6 +39,8 @@ func _run() -> void:
 		var game: Node = (load("res://game/main.tscn") as PackedScene).instantiate()
 		game.requested_map = map_id
 		game.get_node("WorldManager").streaming = streaming
+		# Loaded at once, as the shots expect it right after this (Main.threaded_loading).
+		game.threaded_loading = false
 		root.add_child(game)
 		for i in 10:
 			await physics_frame

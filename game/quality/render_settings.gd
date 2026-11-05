@@ -32,21 +32,23 @@ var _sun_defaults := {}
 var _environment: Environment
 var _fog_defaults := {}
 var _occluders: Node
+var _loaded_occluders: Node
 
 
 ## `occluders_path` points to a scene of baked OccluderInstance3D nodes
 ## (tools/bake_occluders.gd); when it is empty or missing, occluders are built
 ## from the map's collision on first use and a warning is logged. `rules` (the
 ## map's MapDefinition.category_rules) puts the map's meshes into the render
-## categories; without rules no mesh has a category.
-func _init(map_root: Node, camera: Camera3D, viewport: Viewport, occluders_path := "", rules: CategoryRules = null) -> void:
+## categories; without rules no mesh has a category. `groups`, when given, is
+## that grouping made beforehand (CategoryRules.add_to_groups()).
+func _init(map_root: Node, camera: Camera3D, viewport: Viewport, occluders_path := "", rules: CategoryRules = null, groups := {}) -> void:
 	_map_root = map_root
 	_camera = camera
 	_viewport = viewport
 	_occluders_path = occluders_path
 	if rules == null:
 		rules = CategoryRules.new()
-	_groups = rules.meshes_by_category(map_root)
+	_groups = groups if not groups.is_empty() else rules.meshes_by_category(map_root)
 	_occluder_categories = rules.occluder_categories
 	_sun = map_root.find_child("Sun", false, false) as DirectionalLight3D
 	if _sun:
@@ -139,15 +141,24 @@ func _apply_shadows(mode: String) -> void:
 	_sun.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL if mode == "single" else _sun_defaults.mode
 
 
+## The baked occluders' scene, read and instantiated beforehand (Main, on
+## worker threads behind the loading screen): used instead of loading
+## `occluders_path` when occlusion is first applied.
+func use_loaded_occluders(occluders: Node) -> void:
+	_loaded_occluders = occluders
+
+
 func _ensure_occluders() -> void:
 	if _occluders:
 		return
 	var started := Time.get_ticks_msec()
-	var packed: PackedScene = null
-	if not _occluders_path.is_empty() and ResourceLoader.exists(_occluders_path):
-		packed = load(_occluders_path) as PackedScene
-	if packed:
-		_occluders = packed.instantiate()
+	_occluders = _loaded_occluders
+	_loaded_occluders = null
+	if _occluders == null and not _occluders_path.is_empty() and ResourceLoader.exists(_occluders_path):
+		var packed := load(_occluders_path) as PackedScene
+		if packed:
+			_occluders = packed.instantiate()
+	if _occluders:
 		_map_root.add_child(_occluders)
 		occluder_report.source = "baked"
 	else:

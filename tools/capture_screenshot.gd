@@ -32,6 +32,8 @@ func _run() -> void:
 	if _options.has("release-hud"):
 		BuildFeatures.debug_override = 0
 	var game: Node = (load("res://game/main.tscn") as PackedScene).instantiate()
+	# Loaded at once, as the shot expects it right after this (Main.threaded_loading).
+	game.threaded_loading = false
 	root.add_child(game)
 	if _options.has("safe-area"):
 		var v := str(_options["safe-area"]).split(",")

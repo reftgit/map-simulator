@@ -43,6 +43,8 @@ func _run() -> void:
 	var game: Node = (load("res://game/main.tscn") as PackedScene).instantiate()
 	game.maps = registry
 	game.requested_map = definition.id
+	# Loaded at once, as the shots expect it right after this (Main.threaded_loading).
+	game.threaded_loading = false
 	root.add_child(game)
 	for i in 30:
 		await physics_frame

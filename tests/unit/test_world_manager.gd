@@ -140,3 +140,40 @@ func test_spawns_tracks_and_frees_npcs() -> void:
 	await process_frames(1)
 	check(world.npcs.is_empty() and not is_instance_valid(first), "NPCs go with the map")
 	check(world._tracked.is_empty() and world._spawns.is_empty(), "and are no longer tracked")
+
+
+## Phase 6e: begin_load() on threads, polled, then finish_load(); the same map
+## as load_map().
+func test_loads_a_map_on_threads_in_steps() -> void:
+	await _setup()
+	var loaded: Array[String] = []
+	world.map_loaded.connect(func(loaded_definition: MapDefinition) -> void: loaded.append(loaded_definition.display_name))
+	var job := world.begin_load(definition, true)
+	check(world.map_root == null and world.loading == job and job.step == MapLoad.Step.LOADING, "the old map unloaded, the new one reading")
+	for i in 600:
+		if job.is_finished():
+			break
+		await process_frames(1)
+		job.poll(2.0)
+	check(job.step == MapLoad.Step.DONE, "read and instantiated (%s)" % [job.report])
+	world.finish_load(job)
+	check(world.map_root == job.root and world.map_root.get_parent() == world and world.loading == null, "added under WorldManager")
+	check(world.load_report.threaded and world.load_report.has("add_ms") and world.load_report.has("scene_ms"), "load report (%s)" % [world.load_report])
+	check(loaded == (["Fixture"] as Array[String]), "map_loaded once")
+
+
+func test_unloading_while_a_map_loads_drops_it() -> void:
+	await _setup()
+	var job := world.begin_load(definition, true)
+	world.unload_map()
+	check(world.loading == null and world.map_root == null and world.definition == null, "nothing loading, nothing loaded")
+	check(job.step == MapLoad.Step.CANCELLED and job.root == null, "the load dropped (%s)" % [job.report])
+	check(ResourceLoader.load_threaded_get_status(definition.scene_path) == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE, "its threaded load collected")
+
+
+func test_freeing_the_world_while_a_map_loads() -> void:
+	await _setup()
+	var job := world.begin_load(definition, true)
+	world.free()
+	check(job.step == MapLoad.Step.CANCELLED and job.root == null, "the load dropped with the world (%s)" % [job.report])
+	check(ResourceLoader.load_threaded_get_status(definition.scene_path) == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE, "its threaded load collected")

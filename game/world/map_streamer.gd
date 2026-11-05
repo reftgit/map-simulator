@@ -80,6 +80,8 @@ var _last_position := Vector3.INF
 var _evaluated_at := Vector3.INF
 var _velocity := Vector3.ZERO
 var _dirty := true
+var _priming := false
+var _warm_queue: Array[int] = []
 
 
 func _init() -> void:
@@ -88,8 +90,9 @@ func _init() -> void:
 
 ## Streams `new_index`'s cells into `new_map_root` (the resident scene, in the
 ## tree). Every streamed category starts without a visibility range (all of it
-## wanted) until set_ranges().
-func setup(new_map_root: Node, new_index: MapStreamingIndex) -> void:
+## wanted) until set_ranges(). With `warm` false the warm cells are loaded by
+## warm_next(), one per call, instead of here.
+func setup(new_map_root: Node, new_index: MapStreamingIndex, warm := true) -> void:
 	map_root = new_map_root
 	index = new_index
 	_grid.clear()
@@ -114,11 +117,30 @@ func setup(new_map_root: Node, new_index: MapStreamingIndex) -> void:
 	# so every material is in the scene from the start as with the whole map
 	# (on the Galaxy Tab A7 the first cell bringing a material into the scene
 	# stalled a frame for about 100 ms, the whole map never did).
-	for cell in index.warm_cells:
-		var resource := load(index.cell_paths[cell]) as MapCell
-		if resource:
-			_attach(cell, resource)
-			_pinned[cell] = true
+	_warm_queue.assign(index.warm_cells)
+	if warm:
+		for cell in _warm_queue:
+			_warm(cell, load(index.cell_paths[cell]) as MapCell)
+		_warm_queue.clear()
+
+
+## Loads the next warm cell setup() left, on the main thread; true once none
+## is left. (Requested on a worker thread and checked once per frame, they
+## took three frames each on the iPhone: a load in flight needs the main
+## thread's rendering work, as MapLoad.poll() says.)
+func warm_next() -> bool:
+	if not _warm_queue.is_empty():
+		var cell: int = _warm_queue.pop_front()
+		_warm(cell, load(index.cell_paths[cell]) as MapCell)
+	return _warm_queue.is_empty()
+
+
+func _warm(cell: int, resource: MapCell) -> void:
+	if resource == null:
+		_fail(cell)
+		return
+	_attach(cell, resource)
+	_pinned[cell] = true
 
 
 ## Takes the visibility ranges from RenderSettings' effective settings: a
@@ -208,6 +230,41 @@ func prime(position := Vector3.INF) -> int:
 	return loaded
 
 
+## prime() spread over frames behind the loading screen (Main, a map loaded
+## on threads): loads wanted cells on the main thread, nearest first, until
+## `budget_ms` have passed (at least one cell), and returns true once every
+## cell wanted at the focus is loaded. The first call works out the wanted
+## cells; totals count the whole prime. Call it before this node processes
+## (Main stops its processing from the load until it returns true).
+func prime_some(budget_ms: float) -> bool:
+	if index == null:
+		return true
+	var started := Time.get_ticks_usec()
+	if not _priming:
+		_priming = true
+		_velocity = Vector3.ZERO
+		_last_position = focus_position()
+		_evaluate(_last_position)
+		totals.prime_cells = 0
+		totals.prime_ms = 0.0
+	while not _queue.is_empty():
+		var cell: int = _queue.pop_front()
+		var resource := load(index.cell_paths[cell]) as MapCell
+		if resource == null:
+			_fail(cell)
+		else:
+			_attach(cell, resource)
+			totals.prime_cells += 1
+		if (Time.get_ticks_usec() - started) / 1000.0 >= budget_ms:
+			break
+	totals.prime_ms = snappedf(totals.prime_ms + (Time.get_ticks_usec() - started) / 1000.0, 0.1)
+	if not _queue.is_empty():
+		return false
+	_priming = false
+	totals.primes += 1
+	return true
+
+
 ## Waits for the requests in flight and drops them, and lets go of every cell
 ## and material (the map is being freed). Called before the map is freed and
 ## when this node leaves the tree.
@@ -217,6 +274,7 @@ func shutdown() -> void:
 	_requested.clear()
 	_fetched.clear()
 	_queue.clear()
+	_warm_queue.clear()
 	_loaded.clear()
 	_loaded_now.clear()
 	_pinned.clear()

@@ -27,7 +27,8 @@ extends Node
 ## directly (Main.switch_map()) instead of through every map in between.
 ## "map_switch": holds each map for scenario_hold_s and switches straight to
 ## the next map of scenario_maps (Main.switch_map()), for a host script that
-## samples the app's memory meanwhile (tools/perf/pss_trace.py).
+## samples the app's memory meanwhile (tools/perf/pss_trace.py); each switch's
+## step also gives its loading screen's frames (Main.loading_frames).
 
 signal finished(results: Array)
 
@@ -252,9 +253,12 @@ func _map_switches() -> void:
 		var from_spawn := Vector2(game.player.global_position.x - spawn.x, game.player.global_position.z - spawn.z).length()
 		var count := _node_count()
 		var same_count: bool = not nodes.has(id) or nodes[id] == count
+		var loading: Dictionary = game.loading_frames.report
 		_check("switch_%d" % (i + 1), switched and game.map_definition.id == id and from_spawn < 0.5 and same_count,
-				"%s -> %s in %d ms, player %.2f m from its spawn, nodes %d (earlier on this map: %s), unix %.3f" % [from, game.map_definition.id, took,
-				from_spawn, count, str(nodes.get(id, "-")), Time.get_unix_time_from_system()])
+				"%s -> %s in %d ms, player %.2f m from its spawn, nodes %d (earlier on this map: %s), loading screen %s, unix %.3f" % [from, game.map_definition.id, took,
+				from_spawn, count, str(nodes.get(id, "-")), JSON.stringify({"threaded": loading.get("threaded"), "frames": loading.get("frames"),
+				"longest_ms": loading.get("longest_ms"), "longest_steps": loading.get("longest_steps"), "over_100_ms": loading.get("over_100_ms")}),
+				Time.get_unix_time_from_system()])
 		nodes[id] = count
 		await _seconds(config.scenario_hold_s)
 

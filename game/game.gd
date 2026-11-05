@@ -19,6 +19,22 @@ signal map_changed(definition: MapDefinition)
 ## -Z). Close enough that a punch from the spawn reaches it, and a little to
 ## the right so the camera behind the player sees it.
 const DUMMY_OFFSET := Vector3(0.35, 0.0, -1.3)
+## Loading on threads: main-thread milliseconds of each loading frame given
+## to the loading thread while it reads the map (MapLoad.poll()).
+const LOAD_SERVICE_MS := 25.0
+## Loading on threads: the steps after reading run until they have taken
+## this many milliseconds of a frame; the next one waits for the next frame.
+const LOAD_FRAME_BUDGET_MS := 25.0
+## Loading on threads: milliseconds per frame for grouping the map's meshes
+## into render categories and for loading the first cells.
+const LOAD_STEP_BUDGET_MS := 30.0
+## Loading on threads: a step whose cost comes later in its frame (a material
+## or shader prepared, a part of the map shown for the first time) runs one
+## per frame, or more while the frames stay shorter than LOAD_FAST_FRAME_MS
+## (twice as many each frame, up to LOAD_MAX_RENDERED_STEPS; four times as
+## many packed frames of 95-112 ms on the iPhone).
+const LOAD_FAST_FRAME_MS := 45.0
+const LOAD_MAX_RENDERED_STEPS := 16
 
 ## The loaded map.
 var map_definition: MapDefinition
@@ -32,10 +48,23 @@ var quality_profile := QualityProfiles.NONE
 var startup := {}
 ## Debug builds: punching target near the spawn, toggled from the overlay.
 var training_dummy: TrainingDummy
-## A map switch is in progress (switch_map()).
+## A map switch, or the first map's load on threads, is in progress.
 var switching := false
+## Whether maps load behind the animated loading screen, read and instantiated
+## on worker threads (MapLoad), with the frames going on: with a
+## RenderingDevice, as cells do (MapStreamer.threaded). Headless runs load at
+## once on the main thread as before, and so does the measurement key
+## "threaded_load": false. Set before the node enters the tree to choose.
+var threaded_loading := RenderingServer.get_rendering_device() != null
+## The last load's loading screen (the start or a switch): its frames, the
+## longest, the steps; `loading_frames.report`, printed as a LOADING line.
+var loading_frames := LoadingFrames.new()
 
 var _view_index := 0
+## The first map's load on threads: when the loading screen went and when the
+## first frame without it was drawn (msec since the engine started; STARTUP).
+var _shown_ms := -1
+var _shown_frame_ms := -1
 ## Debug builds: the vehicle the CAR button walked up to last.
 var _car_index := -1
 var _experiment: PerfConfig
@@ -80,12 +109,38 @@ func _ready() -> void:
 		hud.show_fatal_error("Harita yüklenemedi: harita dosyaları eksik.")
 		player.process_mode = Node.PROCESS_MODE_DISABLED
 		return
+	if _experiment and not _experiment.runtime.get("threaded_load", true):
+		threaded_loading = false
+	if threaded_loading:
+		_start_on_threads(definition)
+		return
+	var started := Time.get_ticks_usec()
 	_load_map(definition)
 	if _experiment:
 		apply_runtime_settings(_experiment.runtime)
 	set_quality_profile(_initial_profile())
 	_prime_streaming()
+	_report_loaded_at_once("start", started, 0)
+	_started()
 
+
+## The first map's load on threads, behind the loading screen; then the rest
+## of _ready().
+func _start_on_threads(definition: MapDefinition) -> void:
+	_begin_loading("start", definition)
+	switching = true
+	# Without a map under it the player would fall until the map loads.
+	player.process_mode = Node.PROCESS_MODE_DISABLED
+	var loaded: bool = await _load_behind_screen(definition, _initial_profile())
+	switching = false
+	if loaded:
+		player.process_mode = Node.PROCESS_MODE_INHERIT
+		_started()
+
+
+## The end of _ready() once the first map is loaded: the debug buttons, the
+## STARTUP line, the experiment's benchmark or scenario, map_changed.
+func _started() -> void:
 	if BuildFeatures.is_debug():
 		hud.view_name = get_view_names()[0]
 		hud.debug_view_requested.connect(cycle_debug_view)
@@ -102,30 +157,59 @@ func _ready() -> void:
 	map_changed.emit(map_definition)
 
 
-## Loads `definition`, puts the player at its spawn, parks its vehicles,
-## places its NPCs, and captures its render defaults for the quality profiles.
+## Loads `definition` at once, puts the player at its spawn, parks its
+## vehicles, places its NPCs, and captures its render defaults for the quality
+## profiles.
 func _load_map(definition: MapDefinition) -> void:
-	map_definition = definition
+	_set_streaming_keys()
+	world.load_map(definition)
+	_place_map(definition)
+
+
+func _set_streaming_keys() -> void:
 	if _experiment:
 		world.streaming = _experiment.runtime.get("streaming", true)
 		world.streaming_index_override = _experiment.runtime.get("streaming_index", "")
-	world.load_map(definition)
+
+
+## The loaded map `definition`: the player at its spawn, the camera behind
+## it, the vehicles parked, the NPCs placed, and the render defaults captured.
+func _place_map(definition: MapDefinition) -> void:
+	_place_player(definition)
+	_place_vehicles()
+	_place_npcs()
+	_capture_render_settings(definition)
+
+
+func _place_player(definition: MapDefinition) -> void:
+	map_definition = definition
 	player.teleport(world.get_spawn_transform())
 	camera_rig.snap_behind_target()
 	if world.streamer:
 		world.streamer.focus = camera_rig.camera
+	_car_index = -1
+	hud.map_name = definition.id
+	hud.streamer = world.streamer
+
+
+func _place_vehicles() -> void:
 	if vehicle_scene:
 		for vehicle in world.spawn_vehicles(vehicle_scene):
 			vehicle_interaction.register_vehicle(vehicle)
 			if BuildFeatures.perf_enabled():
 				vehicle.sleep_changed.connect(_log_vehicle_sleep.bind(vehicle))
+
+
+func _place_npcs() -> void:
 	if npc_scene:
 		for npc in world.spawn_npcs(npc_scene):
 			npc.focus = player
-	_car_index = -1
-	render_settings = RenderSettings.new(world.map_root, camera_rig.camera, get_viewport(), definition.occluders_path, definition.category_rules)
-	hud.map_name = definition.id
-	hud.streamer = world.streamer
+
+
+## The map's render defaults for the quality profiles; `groups`: its meshes
+## by render category, when grouped beforehand.
+func _capture_render_settings(definition: MapDefinition, groups := {}) -> void:
+	render_settings = RenderSettings.new(world.map_root, camera_rig.camera, get_viewport(), definition.occluders_path, definition.category_rules, groups)
 
 
 ## With a streamed map: loads the cells the camera needs before the first
@@ -165,21 +249,247 @@ func switch_map(definition: MapDefinition) -> bool:
 	_static_bodies.clear()
 	hud.streamer = null
 	var old_id := map_definition.id
+	var started_usec := Time.get_ticks_usec()
+	if threaded_loading:
+		_begin_loading("switch", definition)
+		loading_frames.phase = "unload"
 	var frames: int = await world.unload_map_and_wait()
 	var freed_ms := Time.get_ticks_msec() - started
-	_load_map(definition)
+	if threaded_loading:
+		if not await _load_behind_screen(definition, quality_profile):
+			switching = false
+			return false
+	else:
+		_load_map(definition)
+		if _experiment:
+			apply_runtime_settings(_experiment.runtime)
+		set_quality_profile(quality_profile)
+		_prime_streaming()
+		hud.set_loading(false)
+		_report_loaded_at_once("switch", started_usec, frames)
 	player.process_mode = Node.PROCESS_MODE_INHERIT
-	if _experiment:
-		apply_runtime_settings(_experiment.runtime)
-	set_quality_profile(quality_profile)
-	_prime_streaming()
 	_view_index = 0
 	hud.view_name = get_view_names()[0]
-	hud.set_loading(false)
 	switching = false
 	print("MAP %s loaded in %d ms (%s freed after %d ms, %d frames)" % [definition.id, Time.get_ticks_msec() - started, old_id, freed_ms, frames])
 	map_changed.emit(definition)
 	return true
+
+
+## Loads `definition` behind the loading screen (shown here if it is not up
+## yet), read and instantiated on worker threads while the screen goes on
+## (MapLoad); then, in steps spread over frames (_steps_after_reading()), adds
+## it, places the player, its vehicles, and NPCs, applies the experiment's
+## runtime keys and `profile_name`, loads the first cells, and shows it a part
+## at a time behind the screen, so the first drawing of each part has a frame
+## of its own. The loading screen goes once the map is ready. Returns false
+## when the map could not be loaded (the screen then says so). The frames are
+## recorded in loading_frames (begun by the caller).
+func _load_behind_screen(definition: MapDefinition, profile_name: String) -> bool:
+	hud.set_loading(true)
+	_set_streaming_keys()
+	loading_frames.phase = "read"
+	var job: MapLoad = loading_frames.run("index", world.begin_load.bind(definition, true))
+	while not job.is_finished():
+		await get_tree().process_frame
+		loading_frames.phase = "read" if job.step == MapLoad.Step.LOADING else "instantiate"
+		loading_frames.run(loading_frames.phase, job.poll.bind(LOAD_SERVICE_MS))
+	if job.step != MapLoad.Step.DONE:
+		push_error("Map %s could not be loaded: %s" % [definition.id, job.report.get("error", "")])
+		world.loading = null
+		hud.show_fatal_error("Harita yüklenemedi.")
+		loading_frames.finish(false, {}, world.load_report)
+		return false
+	loading_frames.phase = ""
+	await _run_loading_steps(_steps_after_reading(job, definition, profile_name))
+	world.end_load()
+	if world.streamer:
+		var stats := world.streamer.stats()
+		print("STREAMING %s primed %d cells in %.0f ms (%s), load %s" % [map_definition.id, stats.prime_cells, stats.prime_ms,
+				JSON.stringify(stats), JSON.stringify(world.load_report)])
+		world.streamer.set_process(true)
+	hud.set_loading(false)
+	_shown_ms = Time.get_ticks_msec()
+	# The first frame without the loading screen counts too.
+	loading_frames.phase = "shown"
+	await get_tree().process_frame
+	_shown_frame_ms = Time.get_ticks_msec()
+	loading_frames.finish(true, {}, world.load_report)
+	return true
+
+
+## Starts recording a loading screen's frames (loading_frames).
+func _begin_loading(kind: String, definition: MapDefinition) -> void:
+	loading_frames.begin(kind, definition.id, get_tree(), get_viewport(), BuildFeatures.perf_enabled())
+
+
+## The steps after the map's scene is read and instantiated, in order: each a
+## {"name", "work": Callable, "rendered": bool}; `work` returns false to run
+## again (a part done per call). "rendered" steps cost mostly after they run
+## (in the frame's material updates or its drawing; _run_loading_steps()).
+##  1. The baked occluders start loading on threads, when the profile uses
+##     occlusion (nothing else loads then; the map's own load is done).
+##  2. A streamed map's materials, one at a time, through its script's
+##     prepare_streamed_materials() (as MapStreamer.setup() does later), and
+##     the shaders its script preloads, each with a material made for it:
+##     the shader each first needs is built then, not all of them in the
+##     frame the map enters the tree.
+##  3. The map enters the tree hidden (its script's _ready() runs), then its
+##     streamer, then its warm cells one at a time.
+##  4. The player and camera at the spawn; the vehicles and NPCs, hidden.
+##  5. The map's meshes grouped into render categories, a part per frame,
+##     then the render settings and the occluders.
+##  6. The profile (QUALITY line, the streamer's ranges), with every category
+##     hidden; the first cells.
+##  7. The map shown: its meshes in no category, then each category, then the
+##     vehicles and NPCs.
+func _steps_after_reading(job: MapLoad, definition: MapDefinition, profile_name: String) -> Array[Dictionary]:
+	var root := job.root
+	var steps: Array[Dictionary] = []
+	var state := {"occluders": null, "prepared": [], "nodes": [], "grouped": 0, "groups": CategoryRules.empty_groups()}
+	var layers := _profile_layers(profile_name)
+	var occlusion: bool = RenderSettings.merge(layers).get("occlusion", false)
+	if occlusion and not definition.occluders_path.is_empty() and ResourceLoader.exists(definition.occluders_path):
+		state.occluders = MapLoad.new(definition.occluders_path, true)
+	if world.loading_index and root.has_method(&"prepare_streamed_materials"):
+		for path in world.loading_index.material_paths:
+			steps.append({"name": "prepare_material", "rendered": true, "work": func() -> void:
+				var material: Material = load(path)
+				state.prepared.append(material)
+				root.prepare_streamed_materials([material])})
+	for shader in _script_shaders(root):
+		steps.append({"name": "prepare_shader", "work": func() -> void:
+			var material := ShaderMaterial.new()
+			material.shader = shader
+			state.prepared.append(material)})
+	steps.append({"name": "add", "rendered": true, "work": func() -> void:
+		if root is Node3D:
+			root.visible = false
+		world.add_loaded(job)
+		state.nodes = root.find_children("*", "MeshInstance3D", true, false)})
+	steps.append({"name": "streamer", "rendered": true, "work": func() -> void:
+		world.start_streamer(false)
+		if world.streamer:
+			# Until its first cells are in: with no camera and no ranges yet
+			# it would want every cell at once.
+			world.streamer.set_process(false)})
+	steps.append({"name": "warm_cell", "rendered": true, "work": func() -> bool: return world.streamer == null or world.streamer.warm_next()})
+	steps.append({"name": "place", "work": _place_player.bind(definition)})
+	steps.append({"name": "vehicles", "work": func() -> void:
+		_place_vehicles()
+		for vehicle in world.vehicles:
+			vehicle.visible = false})
+	steps.append({"name": "npcs", "work": func() -> void:
+		_place_npcs()
+		for npc in world.npcs:
+			npc.visible = false})
+	steps.append({"name": "categories", "work": func() -> bool:
+		var started := Time.get_ticks_usec()
+		var rules := definition.category_rules if definition.category_rules else CategoryRules.new()
+		while state.grouped < state.nodes.size() and (Time.get_ticks_usec() - started) / 1000.0 < LOAD_STEP_BUDGET_MS:
+			rules.add_to_groups(state.groups, state.nodes.slice(state.grouped, state.grouped + 256))
+			state.grouped += 256
+		return state.grouped >= state.nodes.size()})
+	steps.append({"name": "render_settings", "work": func() -> void: _capture_render_settings(definition, state.groups)})
+	steps.append({"name": "occluders", "work": func() -> bool:
+		var occluders: MapLoad = state.occluders
+		if occluders == null:
+			return true
+		if not occluders.is_finished():
+			occluders.poll(LOAD_SERVICE_MS)
+			if not occluders.is_finished():
+				return false
+		if occluders.step == MapLoad.Step.DONE:
+			render_settings.use_loaded_occluders(occluders.root)
+		return true})
+	var hidden: Array[String] = []
+	for category in CategoryRules.CATEGORIES:
+		if not state.groups[category].is_empty():
+			hidden.append(category)
+	steps.append({"name": "profile", "rendered": true, "work": func() -> void:
+		_apply_profile_for_load(profile_name)
+		_hide_categories(layers, hidden)})
+	steps.append({"name": "prime", "work": func() -> bool: return world.streamer == null or world.streamer.prime_some(LOAD_STEP_BUDGET_MS)})
+	steps.append({"name": "show_map", "rendered": true, "work": func() -> void:
+		if root is Node3D:
+			root.visible = true})
+	for category in CategoryRules.CATEGORIES:
+		steps.append({"name": "show_" + category, "rendered": true, "work": func() -> void:
+			if hidden.has(category):
+				hidden.erase(category)
+				_hide_categories(layers, hidden)})
+	steps.append({"name": "show_vehicles", "rendered": true, "work": func() -> void:
+		for vehicle in world.vehicles:
+			vehicle.visible = true
+		for npc in world.npcs:
+			npc.visible = true
+		hidden.clear()
+		_hide_categories(layers, hidden)
+		state.prepared.clear()})
+	return steps
+
+
+## Runs `steps` (_steps_after_reading()) over frames: in each frame until
+## they took LOAD_FRAME_BUDGET_MS, at most `allowance` "rendered" ones; the
+## allowance doubles after a frame shorter than LOAD_FAST_FRAME_MS and goes
+## back to one after a longer one, so a fast device does them in a few frames
+## and a slow one one at a time.
+func _run_loading_steps(steps: Array[Dictionary]) -> void:
+	var allowance := 1
+	while not steps.is_empty():
+		var rendered := 0
+		while not steps.is_empty():
+			var step: Dictionary = steps[0]
+			var result: Variant = loading_frames.run(step.name, step.work)
+			if typeof(result) != TYPE_BOOL or result:
+				steps.pop_front()
+			rendered += int(step.get("rendered", false))
+			if rendered >= allowance or loading_frames.frame_ms() >= LOAD_FRAME_BUDGET_MS:
+				break
+		await get_tree().process_frame
+		allowance = mini(allowance * 2, LOAD_MAX_RENDERED_STEPS) if loading_frames.last_frame_ms() < LOAD_FAST_FRAME_MS else 1
+
+
+func _apply_profile_for_load(profile_name: String) -> void:
+	if _experiment:
+		apply_runtime_settings(_experiment.runtime)
+	set_quality_profile(profile_name)
+
+
+## The effective settings of `layers` with `categories` hidden as well and,
+## while any is, no frame cap, so a frame whose step took little is not held
+## back to the profile's rate (the streamer's ranges stay as
+## set_quality_profile() set them).
+func _hide_categories(layers: Array[Dictionary], categories: Array[String]) -> void:
+	var effective := RenderSettings.merge(layers)
+	var hide: Array = effective.get("hide", []).duplicate()
+	for category in categories:
+		if category not in hide:
+			hide.append(category)
+	var hidden: Array[Dictionary] = layers.duplicate()
+	hidden.append({"hide": hide} if categories.is_empty() else {"hide": hide, "max_fps": 0})
+	render_settings.apply(RenderSettings.merge(hidden))
+
+
+## The shaders `root`'s script (and the scripts it extends) preload.
+static func _script_shaders(root: Node) -> Array[Shader]:
+	var shaders: Array[Shader] = []
+	var script: Script = root.get_script()
+	while script:
+		for value in script.get_script_constant_map().values():
+			if value is Shader and value not in shaders:
+				shaders.append(value)
+		script = script.get_base_script()
+	return shaders
+
+
+## The record of a load at once on the main thread (loading_frames): from
+## `started` (usec) to the first frame drawn with the map. A coroutine with a
+## renderer; returns at once headless.
+func _report_loaded_at_once(kind: String, started: int, unload_frames: int) -> void:
+	if DisplayServer.get_name() != "headless":
+		await RenderingServer.frame_post_draw
+	loading_frames.finish_at_once(kind, map_definition.id, (Time.get_ticks_usec() - started) / 1000.0, unload_frames, world.load_report)
 
 
 ## Debug builds: loads the next map of the registry.
@@ -206,10 +516,7 @@ func _log_vehicle_sleep(asleep: bool, vehicle: VehicleController) -> void:
 ## Applies a quality profile, with the debug experiment (if any) on top.
 func set_quality_profile(profile_name: String) -> Dictionary:
 	quality_profile = profile_name
-	var layers: Array[Dictionary] = [QualityProfiles.settings_for(profile_name)]
-	if _experiment:
-		layers.append(_experiment.settings)
-	var effective := render_settings.apply(RenderSettings.merge(layers))
+	var effective := render_settings.apply(RenderSettings.merge(_profile_layers(profile_name)))
 	if world.streamer:
 		world.streamer.set_ranges(effective)
 	hud.profile_name = profile_name
@@ -217,6 +524,14 @@ func set_quality_profile(profile_name: String) -> Dictionary:
 			_experiment.experiment if _experiment else "none", JSON.stringify(render_settings.occluder_report),
 			JSON.stringify(effective)])
 	return effective
+
+
+## The settings layers of `profile_name`: the profile, the experiment on top.
+func _profile_layers(profile_name: String) -> Array[Dictionary]:
+	var layers: Array[Dictionary] = [QualityProfiles.settings_for(profile_name)]
+	if _experiment:
+		layers.append(_experiment.settings)
+	return layers
 
 
 func cycle_quality_profile() -> void:
@@ -451,15 +766,21 @@ static func physics_engine_name(space_state: PhysicsDirectSpaceState3D) -> Strin
 ## result file shows the conditions it was measured under.
 func _log_startup() -> void:
 	var map_ready_ms := Time.get_ticks_msec()
-	if DisplayServer.get_name() == "headless":
+	var first_frame_ms := _shown_frame_ms
+	if _shown_ms >= 0:
+		# Loaded on threads: ready when the loading screen went.
+		map_ready_ms = _shown_ms
+	elif DisplayServer.get_name() == "headless":
 		# No frame is drawn headless (tests); the first processed frame stands in.
 		await get_tree().process_frame
 	else:
 		await RenderingServer.frame_post_draw
+	if first_frame_ms < 0:
+		first_frame_ms = Time.get_ticks_msec()
 	var physics := physics_engine_name(world.get_world_3d().direct_space_state)
-	startup = {"map_ready_ms": map_ready_ms, "first_frame_ms": Time.get_ticks_msec(), "physics_3d": physics,
+	startup = {"map_ready_ms": map_ready_ms, "first_frame_ms": first_frame_ms, "physics_3d": physics,
 			"map": map_definition.id, "vehicles": hud.vehicle_states(), "npcs": world.npcs.size(),
-			"streaming": world.streamer.stats() if world.streamer else {}, "load": world.load_report}
+			"streaming": world.streamer.stats() if world.streamer else {}, "load": world.load_report, "loading": loading_frames.report}
 	startup.merge(build_info())
 	print("STARTUP map_ready_ms=%d first_frame_ms=%d map=%s profile=%s occluders=%s physics_3d=%s (setting %s) vehicles=%s npcs=%d streaming=%s load=%s build=%s user_dir=%s" % [map_ready_ms,
 			startup.first_frame_ms, map_definition.id, quality_profile, JSON.stringify(render_settings.occluder_report), physics,
