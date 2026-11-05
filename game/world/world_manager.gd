@@ -18,6 +18,9 @@ signal body_respawned(body: Node3D)
 ## rendering device keeps freed meshes and textures until the frames still in
 ## flight (two by default) have finished with them.
 const RELEASE_FRAMES := 3
+## unload_map_and_wait() frees a map's crowded nodes (the children of a node
+## with more than this many) this many per frame before the rest of the map.
+const FREE_PER_FRAME := 512
 
 var definition: MapDefinition
 var map_root: Node
@@ -149,8 +152,22 @@ func _exit_tree() -> void:
 ## freed (queue_free() frees them at the end of the frame) and RELEASE_FRAMES
 ## more frames. A map switch loads the next map only after this, so two maps
 ## are never in memory at once (loading one beside the other got the app
-## killed for memory on a 3 GB tablet). Returns the frames it waited.
+## killed for memory on a 3 GB tablet). The map's crowded nodes (a model's
+## thousands of meshes) go first, FREE_PER_FRAME a frame, after its streamer
+## stops: freed in one frame they took 60-125 ms on the Mac behind the
+## loading screen (Phase 6e). Returns the frames it waited.
 func unload_map_and_wait() -> int:
+	var frames := 0
+	if streamer:
+		streamer.shutdown()
+	if map_root:
+		for parent in _crowded(map_root):
+			var children := parent.get_children()
+			for i in range(0, children.size(), FREE_PER_FRAME):
+				for child in children.slice(i, i + FREE_PER_FRAME):
+					child.queue_free()
+				await get_tree().process_frame
+				frames += 1
 	var freed := []
 	freed.append_array(vehicles)
 	freed.append_array(npcs)
@@ -160,7 +177,6 @@ func unload_map_and_wait() -> int:
 		freed.append(streamer)
 	var id := definition.id if definition else ""
 	unload_map()
-	var frames := 0
 	while freed.any(func(node: Variant) -> bool: return is_instance_valid(node)):
 		await get_tree().process_frame
 		frames += 1
@@ -168,6 +184,18 @@ func unload_map_and_wait() -> int:
 		await get_tree().process_frame
 	map_unloaded.emit(id)
 	return frames + RELEASE_FRAMES
+
+
+## The nodes under `root` with more than FREE_PER_FRAME children (not looking
+## further down under those).
+static func _crowded(root: Node) -> Array[Node]:
+	var found: Array[Node] = []
+	for child in root.get_children():
+		if child.get_child_count() > FREE_PER_FRAME:
+			found.append(child)
+		else:
+			found.append_array(_crowded(child))
+	return found
 
 
 ## Parks a vehicle at each of the map's vehicle spawns: the spawn's type
