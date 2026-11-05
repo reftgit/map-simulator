@@ -1,0 +1,8 @@
+build_release_android.log:RELEASE Android Release: ready; maps ["istanbul_halic_cells_shader"]; 2707 project files
+build_release_android.log:Signed
+build_release_ios.log:RELEASE iOS Release: ready; maps ["istanbul_halic_cells_shader"]; 2707 project files
+build_release_ios.log:** BUILD SUCCEEDED **
+build_release_ios.log:Identifier=com.mirongi.mapsimulator.dev
+build_release_ios.log:TeamIdentifier=8N7RYA42S6
+build_release_ios.log:App installed:
+build_release_ios.log:• bundleID: com.mirongi.mapsimulator.dev

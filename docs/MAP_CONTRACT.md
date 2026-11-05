@@ -190,6 +190,7 @@ The meshes of the four visibility-range categories (`facade_detail`, `trees`, `l
 - **Categories decide memory:** detail in the right categories is loaded only near the camera; detail classified as `buildings` (or in no category) is always loaded and always drawn (R1).
 - **A mesh used by several objects** (instanced pieces) is loaded once for all cells that use it; one also used by a building or the ground stays resident.
 - **Nothing to stream:** a map without meshes in those categories (the Apollo relief: one ground mesh) loads whole, as does any map whose cells were not written (they are generated on each machine, not kept in Git).
+- **In a release package** (Phase 6d) a streamed map goes as its cells alone, without its model: it is available when its index can be used (`MapDefinition.is_available()`). A map ships in the release when it is listed in `game/world/maps_release.tres` and the release presets pack its files; `tests/unit/test_release_package.gd` names any file they pack or leave out wrongly (`docs/ARCHITECTURE.md`, "Release builds").
 
 ## Adding a map (user steps)
 

@@ -1,0 +1,14 @@
+{
+ "thermal_intervals": [
+  {
+   "start": "00:00.000.000",
+   "duration": "3.73 s",
+   "state": "Nominal"
+  }
+ ],
+ "thermal_start": "Nominal",
+ "thermal_end": "Nominal",
+ "thermal_max": "Nominal",
+ "footprint_peak_mib": 566,
+ "footprint_samples": 4
+}

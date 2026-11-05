@@ -1,0 +1,6 @@
+         1793856981.975   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793856981.979   555   555 I lmkd    : Reclaim 'android:drmService' (26034), uid 1000, oom_score_adj 999, state 10 to free 14228kB rss, 41440kB swap; reason: min2x watermark is breached and swap is low (2119956kB < 786428kB)
+         1793856982.034   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793856982.037   555   555 I lmkd    : Reclaim 'com.google.android.apps.turbo' (18938), uid 10155, oom_score_adj 999, state 19 to free 27936kB rss, 39984kB swap; reason: min2x watermark is breached even after kill
+         1793856982.231   555   555 I lmkd    : cached 0, sandbox(not0) 0
+         1793856982.234   555   555 I lmkd    : Reclaim 'com.samsung.android.mdx.kit' (19068), uid 5025, oom_score_adj 999, state 19 to free 34348kB rss, 32900kB swap; reason: min2x watermark is breached and swap is low (2125960kB < 786428kB)

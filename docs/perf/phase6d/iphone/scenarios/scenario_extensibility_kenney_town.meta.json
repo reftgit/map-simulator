@@ -1,0 +1,28 @@
+{
+ "experiment": "scenario_extensibility_kenney_town",
+ "device": "ios",
+ "wall_s": 51,
+ "cooldown_s": 0,
+ "app_args": "",
+ "thermal_start": "Nominal",
+ "thermal_end": "Nominal",
+ "thermal_max": "Nominal",
+ "footprint_peak_mib": 311,
+ "probes": [
+  {
+   "t": 0,
+   "thermal": "Nominal",
+   "footprint_mib": null
+  },
+  {
+   "t": 40,
+   "thermal": "Nominal",
+   "footprint_mib": 311
+  },
+  {
+   "t": 51,
+   "thermal": "Nominal",
+   "footprint_mib": null
+  }
+ ]
+}

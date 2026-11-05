@@ -1,0 +1,21 @@
+# Clean clones (git clone of the local repository at each commit; no GLB, no test import, no cells), 2026-11-05
+# <commit> full|unit|check_release exit <code> <RESULT line or RELEASE lines>; c202e4f_index_only: the default map's streaming folder copied in, no GLB
+ddaf573 full exit 2 RESULT 318 passed, 0 failed, 89 skipped 0 FAIL lines
+ddaf573 unit exit 0 RESULT 258 passed, 0 failed, 0 skipped
+cc16d76 full exit 2 RESULT 323 passed, 0 failed, 89 skipped 0 FAIL lines
+cc16d76 unit exit 0 RESULT 263 passed, 0 failed, 0 skipped
+dd8f785 full exit 2 RESULT 324 passed, 0 failed, 89 skipped 0 FAIL lines
+dd8f785 unit exit 0 RESULT 264 passed, 0 failed, 0 skipped
+dd8f785 check_release exit 1 RELEASE istanbul_halic_cells_shader: no cells written (res://maps/istanbul_halic_cells_shader/streaming/istanbul_halic_cells_shader_index.tres missing). Write them: godot --headless --path . --script res://tools/cell_map.gd -- --map=istanbul_halic_cells_shader, then godot --headless --path . --import RELEASE Android Release: not ready to export (1 problems) 
+c202e4f full exit 2 RESULT 324 passed, 0 failed, 89 skipped 0 FAIL lines
+c202e4f unit exit 0 RESULT 264 passed, 0 failed, 0 skipped
+c202e4f check_release exit 1 RELEASE istanbul_halic_cells_shader: no cells written (res://maps/istanbul_halic_cells_shader/streaming/istanbul_halic_cells_shader_index.tres missing). Write them: godot --headless --path . --script res://tools/cell_map.gd -- --map=istanbul_halic_cells_shader, then godot --headless --path . --import RELEASE Android Release: not ready to export (1 problems) 
+c202e4f_index_only full exit 2 RESULT 325 passed, 0 failed, 88 skipped 0 FAIL lines
+c202e4f_index_only unit exit 0 RESULT 264 passed, 0 failed, 0 skipped
+c202e4f_index_only check_release exit 1 RELEASE istanbul_halic_cells_shader: its cells cannot be packed (missing res://.godot/imported/istanbul_halic_cells_shader.glb-d15a8457060d477c7ec18d6abf364e7d.scn, the model to compare the cells with). Write them: godot --headless --path . --script res://tools/cell_map.gd -- --map=istanbul_halic_cells_shader, then godot --headless --path . --import RELEASE Android Release: not ready to export (1 problems) 
+
+# This checkout (every GLB, the test imports, every map's cells), full suite and unit suite per commit
+ddaf573: RESULT 407 passed, 0 failed, 0 skipped | full exit 0 | unit RESULT 258 passed, 0 failed, 0 skipped | unit exit 0
+cc16d76: RESULT 412 passed, 0 failed, 0 skipped | full exit 0 | unit RESULT 263 passed, 0 failed, 0 skipped | unit exit 0
+dd8f785: RESULT 413 passed, 0 failed, 0 skipped | full exit 0 | unit RESULT 264 passed, 0 failed, 0 skipped | unit exit 0
+c202e4f: RESULT 413 passed, 0 failed, 0 skipped | full exit 0 | unit RESULT 264 passed, 0 failed, 0 skipped | unit exit 0

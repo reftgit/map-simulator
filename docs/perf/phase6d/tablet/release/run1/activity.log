@@ -1,0 +1,4 @@
+         1793856976.687  1450  2609 I ActivityTaskManager: START u0 {flg=0x10000000 cmp=com.mirongi.mapsimulator/com.godot.game.GodotAppLauncher} from uid 2000
+         1793856976.777  1450  1713 I ActivityManager: Start proc 19526:com.mirongi.mapsimulator/u0a240 for pre-top-activity {com.mirongi.mapsimulator/com.godot.game.GodotAppLauncher}
+         1793856976.789  1450  3730 I ActivityManager: DSS OFF for com.mirongi.mapsimulator
+         1793856977.427  1450  1700 I ActivityTaskManager: Displayed com.mirongi.mapsimulator/com.godot.game.GodotAppLauncher: +703ms

@@ -419,6 +419,7 @@ godot --headless --path . --import
 godot --headless --path . --script res://tools/cell_map.gd -- --all      # streaming cells (docs/STREAMING.md)
 godot --headless --path . --import
 godot --path .                                                            # starts on istanbul_halic_cells_shader
+tools/build_release.sh android                                            # optional: the release package ("Release builds")
 ```
 
 ## Testing
@@ -565,7 +566,7 @@ python3 -I tools/perf/median.py build/perf/<task>/android/run1 build/perf/<task>
 |---|---|---|
 | Debug (editor, debug export templates) | yes | yes |
 | Release with custom feature `perf_bench` (the `* Release Perf*` presets only) | no | yes |
-| Normal release | no | no |
+| Normal release (the "Android Release" and "iOS Release" presets, Phase 6d) | no | no |
 
 Tests force both answers with `BuildFeatures.debug_override` / `perf_feature_override` (`test_build_features.gd`, `test_release_perf_build_runs_benchmarks_without_debug_ui`, `test_normal_release_ignores_experiments`). `test_perf_bench_only_in_release_perf_presets` reads `export_presets.cfg`: only presets named "… Release Perf …" carry `perf_bench`, keystore fields are empty, and no option holds a personal path.
 

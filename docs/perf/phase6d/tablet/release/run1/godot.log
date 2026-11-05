@@ -1,0 +1,6 @@
+--------- beginning of main
+         1793856977.368 19526 19555 I godot   : Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+         1793856977.490 19526 19555 I godot   : Vulkan 1.1.128 - Forward Mobile - Using Device #0: Qualcomm - Adreno (TM) 610
+         1793856977.965 19526 19555 I godot   : 
+         1793856981.747 19526 19555 I godot   : QUALITY profile=low experiment=none occluders={"ms":95,"occluders":643,"source":"baked","triangles":317518} effective={"camera_far":400.0,"fog":true,"hide":[],"lod_threshold":4.0,"max_fps":30,"occlusion":true,"render_scale":0.6,"scaling_mode":"bilinear","shadows":"off","visibility_end":{"decor":100.0,"facade_detail":100.0,"lamps":100.0,"trees":100.0}}
+         1793856981.763 19526 19555 I godot   : STREAMING istanbul_halic_cells_shader primed 6 cells in 16 ms ({"attach_max_ms":0.0,"cells":2612,"failed":0,"loaded":12,"loaded_mb":0.1,"loads":12,"meshes":16,"pending":0,"prime_cells":6,"prime_ms":15.6,"primes":1,"unloads":0}), load {"index_ms":32.8,"instantiate_ms":240.8,"scene_ms":1697.3,"streamed":true}
