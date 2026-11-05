@@ -1,0 +1,1 @@
+{"experiment": "c_streaming_shader_high_off", "profile": "high", "map": "istanbul_halic_cells_shader", "runtime": {"streaming": false}, "bench": {"trace": true}}

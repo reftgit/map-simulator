@@ -6,7 +6,8 @@
 # below this temperature before starting; default: no wait), COOL_TIMEOUT_S,
 # SAMPLE_PSS=0 (skip `dumpsys meminfo` sampling, which can cause frame hitches).
 # Output in <out>: <name>.json (app results), <name>.log (engine log),
-# <name>.meta.json (temperatures, thermal status, peak PSS, cool-down wait), shots/*.jpg.
+# <name>.meta.json (temperatures, thermal status, battery level, charge current, and
+# power source at start and end, peak PSS, cool-down wait), shots/*.jpg.
 # A debug APK is reached with `run-as` (user://). A release perf APK is not
 # debuggable, so the experiment and the results go through the app-specific
 # external folder instead (PerfConfig.external_dir()); the app creates that
@@ -21,6 +22,14 @@ mkdir -p "$OUT/shots"
 
 battery_c() { adb shell dumpsys battery | awk -F': ' '/temperature/ { printf "%.1f", $2 / 10; exit }'; }
 thermal_status() { adb shell dumpsys thermalservice | awk -F': ' '/Thermal Status/ { print $2; exit }'; }
+# Battery level (%), charging status (2 charging, 3 discharging, 5 full), the
+# current into the battery (mA, negative while it drains), and the power source.
+battery_state() {
+	adb shell dumpsys battery | awk -F': ' '
+		/^  AC powered/ { ac = $2 } /^  USB powered/ { usb = $2 } /^  level/ { level = $2 }
+		/^  status/ { status = $2 } /^  current now/ { current = $2 }
+		END { printf "{\"level\": %d, \"status\": %d, \"current_ma\": %d, \"source\": \"%s\"}", level, status, current / 1000, (ac == "true") ? "ac" : ((usb == "true") ? "usb" : "none") }'
+}
 
 waited=0
 if [ -n "${COOL_MAX_C:-}" ]; then
@@ -51,6 +60,7 @@ fi
 adb logcat -c
 start_c=$(battery_c)
 start_status=$(thermal_status)
+start_battery=$(battery_state)
 started=$(date +%s)
 adb shell input keyevent KEYCODE_WAKEUP
 adb shell am start -n "$PKG/com.godot.game.GodotAppLauncher" > /dev/null
@@ -92,6 +102,7 @@ fi
 cat > "$OUT/$NAME.meta.json" << EOF
 {"experiment": "$NAME", "device": "android", "battery_c_start": $start_c, "battery_c_end": $(battery_c),
  "thermal_status_start": "$start_status", "thermal_status_end": "$(thermal_status)",
+ "battery_start": $start_battery, "battery_end": $(battery_state),
  "pss_peak_kb": $peak_pss, "wall_s": $(( $(date +%s) - started )), "started": "$(date -r "$started" '+%Y-%m-%d %H:%M:%S')",
  "cool_wait_s": $waited, "cool_target_c": "${COOL_MAX_C:-}"}
 EOF

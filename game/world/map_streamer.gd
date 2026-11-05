@@ -58,6 +58,9 @@ var totals := {"loads": 0, "unloads": 0, "primes": 0, "prime_cells": 0, "prime_m
 ## Cells given their meshes in the last processed frame, and the main-thread time it took.
 var frame_attached := 0
 var frame_attach_ms := 0.0
+## Cells requested (loads started) and freed in the last processed frame (benchmark traces).
+var frame_requested := 0
+var frame_detached := 0
 
 var _radius := {}  # category -> visibility range (m): INF without one, -1.0 hidden
 var _grid := {}  # "category:i:j" -> cell
@@ -141,6 +144,8 @@ func focus_position() -> Vector3:
 func _process(delta: float) -> void:
 	frame_attached = 0
 	frame_attach_ms = 0.0
+	frame_requested = 0
+	frame_detached = 0
 	if index == null or focus == null:
 		return
 	var position := focus_position()
@@ -339,6 +344,7 @@ func _poll() -> void:
 ## Starts loading a cell (a threaded request, or at once on the main thread).
 func _begin_load(cell: int) -> void:
 	_requested[cell] = true
+	frame_requested += 1
 	if threaded:
 		ResourceLoader.load_threaded_request(index.cell_paths[cell])
 	else:
@@ -402,6 +408,7 @@ func _detach(cell: int) -> void:
 			instance.mesh = null
 	_loaded.erase(cell)
 	totals.unloads += 1
+	frame_detached += 1
 	cell_detached.emit(cell)
 
 

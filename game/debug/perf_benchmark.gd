@@ -12,7 +12,7 @@ extends Node
 ## each result records the cells loaded, freed, and given their meshes, the
 ## longest main-thread time for that in a frame, and (on a route) the frames
 ## in which a cell the camera needed was missing; a trace also lists the
-## frames in which cells got their meshes.
+## frames in which cells got their meshes, were requested, and were freed.
 ## Writes user://bench_results.json, logs one "BENCH {json}" line per result,
 ## saves screenshots under user://bench/, and quits the app when done (unless
 ## quit_when_done is false). On Android the results and screenshots also go to
@@ -223,10 +223,13 @@ func _sample(seconds: float, check_missing := false) -> Dictionary:
 	var pipelines_before := pipeline_compilations()
 	var pipelines_last := pipelines_before
 	# Streaming: frames in which cells got their meshes ([frame, cells, ms]),
-	# the longest such time, frames with a needed cell missing.
+	# the longest such time, frames with a needed cell missing; with trace,
+	# frames in which cells were requested or freed ([frame, cells]).
 	var streamer: MapStreamer = game.world.streamer
 	var totals_before: Dictionary = streamer.totals.duplicate() if streamer else {}
 	var attach_events := []
+	var request_events := []
+	var free_events := []
 	var attach_max := 0.0
 	var missing_frames := 0
 	var start := Time.get_ticks_usec()
@@ -251,6 +254,10 @@ func _sample(seconds: float, check_missing := false) -> Dictionary:
 			if streamer.frame_attached > 0:
 				attach_events.append([frame_us.size() - 1, streamer.frame_attached, snappedf(streamer.frame_attach_ms, 0.01)])
 				attach_max = maxf(attach_max, streamer.frame_attach_ms)
+			if config.trace and streamer.frame_requested > 0:
+				request_events.append([frame_us.size() - 1, streamer.frame_requested])
+			if config.trace and streamer.frame_detached > 0:
+				free_events.append([frame_us.size() - 1, streamer.frame_detached])
 			if check_missing and streamer.missing_cells() > 0:
 				missing_frames += 1
 		physics_us.append(roundi(Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1e6))
@@ -295,7 +302,7 @@ func _sample(seconds: float, check_missing := false) -> Dictionary:
 			compiled.append(pipelines_last[k] - pipelines_before[k])
 		stats["pipelines"] = compiled
 		stats["trace"] = {"frame_ms": _joined_ms(frame_us), "gpu_ms": _joined_ms(gpu_us), "render_cpu_ms": _joined_ms(render_cpu_us),
-				"pipelines": pipeline_events, "cells": attach_events}
+				"pipelines": pipeline_events, "cells": attach_events, "requested": request_events, "freed": free_events}
 	return stats
 
 

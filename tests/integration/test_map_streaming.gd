@@ -147,6 +147,7 @@ func test_route_benchmark_records_streaming() -> void:
 		check(streaming.get("loads", 0) > 0 and streaming.get("unloads", 0) > 0, "%s: cells loaded and freed on the way (%s)" % [result.view, streaming])
 		check(streaming.get("missing_frames", -1) == 0, "%s: no frame with a needed cell missing" % result.view)
 		check(not (result.trace.cells as Array).is_empty(), "%s: the trace lists the frames with attached cells" % result.view)
+		check(not (result.trace.requested as Array).is_empty() and not (result.trace.freed as Array).is_empty(), "%s: and the frames with requested and freed cells" % result.view)
 	check(game.player.global_position.distance_to(Vector3(-95, 0.5, 30)) < 2.0, "the player ends where the route began")
 	check(game.player.is_physics_processing(), "the player's physics is back on")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(PerfBenchmark.RESULTS_PATH))
