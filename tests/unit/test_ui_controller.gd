@@ -28,3 +28,44 @@ func test_desktop_hud_uses_edge_margin_only() -> void:
 	check_near(safe.get_global_rect().position.x, hud.edge_margin, 0.01, "left margin")
 	check_near(safe.get_global_rect().end.x, view.x - hud.edge_margin, 0.01, "right margin")
 	check_near(safe.get_global_rect().end.y, view.y - hud.edge_margin, 0.01, "bottom margin")
+
+
+## Phase 6e: the loading screen's turning arc moves on every frame it is
+## shown, and only then; its bar shows the load's progress; the error screen
+## has neither.
+func test_loading_screen_indicator_moves_every_frame() -> void:
+	var hud: UIController = instantiate("res://game/ui/hud.tscn")
+	await process_frames(1)
+	var spinner: LoadingSpinner = hud.get_node("LoadingScreen/Spinner")
+	hud.reset_loading_indicator()
+	await process_frames(3)
+	check(hud.loading_indicator_report().spinner_frames == 0, "still while the screen is hidden")
+	hud.set_loading(true)
+	var angles: Array[float] = []
+	for i in 5:
+		await process_frames(1)
+		angles.append(spinner.angle)
+	check(hud.loading_indicator_report().spinner_frames == 5, "turned in each of 5 frames (%s)" % [hud.loading_indicator_report()])
+	var moved := true
+	for i in range(1, angles.size()):
+		moved = moved and not is_equal_approx(angles[i], angles[i - 1])
+	check(moved, "a new angle each frame (%s)" % [angles])
+	for value in [0.0, 0.25, 0.25, 0.8, 1.0]:
+		hud.set_loading_progress(value)
+	check(is_equal_approx(hud.get_loading_progress(), 1.0) and hud.loading_indicator_report().progress_changes == 3, "the bar follows the load (%s)" % [hud.loading_indicator_report()])
+	hud.set_loading(false)
+	await process_frames(2)
+	check(hud.loading_indicator_report().spinner_frames == 5, "still again once the screen goes")
+	hud.show_fatal_error("Harita yüklenemedi.")
+	check(not spinner.visible and not hud.get_node("LoadingScreen/Progress").visible, "the error screen shows no indicator")
+
+
+func test_loading_screen_turns_while_the_game_is_paused() -> void:
+	var hud: UIController = instantiate("res://game/ui/hud.tscn")
+	await process_frames(1)
+	hud.reset_loading_indicator()
+	hud.set_loading(true)
+	tree.paused = true
+	await process_frames(3)
+	tree.paused = false
+	check(hud.loading_indicator_report().spinner_frames == 3, "turned in the 3 paused frames (%s)" % [hud.loading_indicator_report()])

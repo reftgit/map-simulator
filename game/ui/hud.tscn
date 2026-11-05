@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3]
+[gd_scene load_steps=14 format=3]
 
 [ext_resource type="Script" path="res://game/ui/ui_controller.gd" id="1_ui"]
 [ext_resource type="Script" path="res://game/input/mobile_input_controller.gd" id="2_input"]
@@ -12,6 +12,7 @@
 [ext_resource type="Texture2D" path="res://game/ui/icons/throttle.svg" id="11_throttle_icon"]
 [ext_resource type="Texture2D" path="res://game/ui/icons/brake.svg" id="12_brake_icon"]
 [ext_resource type="Texture2D" path="res://game/ui/icons/exit.svg" id="13_exit_icon"]
+[ext_resource type="Script" path="res://game/ui/loading_spinner.gd" id="14_spinner"]
 
 [node name="HUD" type="CanvasLayer"]
 script = ExtResource("1_ui")
@@ -321,6 +322,7 @@ text = "FPS"
 wait_time = 0.5
 
 [node name="LoadingScreen" type="ColorRect" parent="."]
+process_mode = 3
 visible = false
 layout_mode = 3
 anchors_preset = 15
@@ -350,3 +352,37 @@ theme_override_font_sizes/font_size = 40
 text = "Yükleniyor..."
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="Spinner" type="Control" parent="LoadingScreen"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -36.0
+offset_top = -130.0
+offset_right = 36.0
+offset_bottom = -58.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("14_spinner")
+
+[node name="Progress" type="ProgressBar" parent="LoadingScreen"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -200.0
+offset_top = 50.0
+offset_right = 200.0
+offset_bottom = 62.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+max_value = 1.0
+step = 0.0
+show_percentage = false

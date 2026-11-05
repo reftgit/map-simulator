@@ -35,6 +35,8 @@ const LOAD_STEP_BUDGET_MS := 30.0
 ## many packed frames of 95-112 ms on the iPhone).
 const LOAD_FAST_FRAME_MS := 45.0
 const LOAD_MAX_RENDERED_STEPS := 16
+## Share of the loading screen's progress bar for reading and instantiating.
+const LOAD_READ_SHARE := 0.8
 
 ## The loaded map.
 var map_definition: MapDefinition
@@ -287,10 +289,12 @@ func switch_map(definition: MapDefinition) -> bool:
 ## recorded in loading_frames (begun by the caller).
 func _load_behind_screen(definition: MapDefinition, profile_name: String) -> bool:
 	hud.set_loading(true)
+	hud.set_loading_progress(0.0)
 	_set_streaming_keys()
 	loading_frames.phase = "read"
 	var job: MapLoad = loading_frames.run("index", world.begin_load.bind(definition, true))
 	while not job.is_finished():
+		hud.set_loading_progress(job.progress * LOAD_READ_SHARE)
 		await get_tree().process_frame
 		loading_frames.phase = "read" if job.step == MapLoad.Step.LOADING else "instantiate"
 		loading_frames.run(loading_frames.phase, job.poll.bind(LOAD_SERVICE_MS))
@@ -298,7 +302,7 @@ func _load_behind_screen(definition: MapDefinition, profile_name: String) -> boo
 		push_error("Map %s could not be loaded: %s" % [definition.id, job.report.get("error", "")])
 		world.loading = null
 		hud.show_fatal_error("Harita yüklenemedi.")
-		loading_frames.finish(false, {}, world.load_report)
+		loading_frames.finish(false, hud.loading_indicator_report(), world.load_report)
 		return false
 	loading_frames.phase = ""
 	await _run_loading_steps(_steps_after_reading(job, definition, profile_name))
@@ -314,13 +318,14 @@ func _load_behind_screen(definition: MapDefinition, profile_name: String) -> boo
 	loading_frames.phase = "shown"
 	await get_tree().process_frame
 	_shown_frame_ms = Time.get_ticks_msec()
-	loading_frames.finish(true, {}, world.load_report)
+	loading_frames.finish(true, hud.loading_indicator_report(), world.load_report)
 	return true
 
 
-## Starts recording a loading screen's frames (loading_frames).
+## Starts recording a loading screen's frames (loading_frames) and its indicator.
 func _begin_loading(kind: String, definition: MapDefinition) -> void:
 	loading_frames.begin(kind, definition.id, get_tree(), get_viewport(), BuildFeatures.perf_enabled())
+	hud.reset_loading_indicator()
 
 
 ## The steps after the map's scene is read and instantiated, in order: each a
@@ -433,8 +438,9 @@ func _steps_after_reading(job: MapLoad, definition: MapDefinition, profile_name:
 ## they took LOAD_FRAME_BUDGET_MS, at most `allowance` "rendered" ones; the
 ## allowance doubles after a frame shorter than LOAD_FAST_FRAME_MS and goes
 ## back to one after a longer one, so a fast device does them in a few frames
-## and a slow one one at a time.
+## and a slow one one at a time. The progress bar goes on from LOAD_READ_SHARE.
 func _run_loading_steps(steps: Array[Dictionary]) -> void:
+	var total := steps.size()
 	var allowance := 1
 	while not steps.is_empty():
 		var rendered := 0
@@ -446,6 +452,7 @@ func _run_loading_steps(steps: Array[Dictionary]) -> void:
 			rendered += int(step.get("rendered", false))
 			if rendered >= allowance or loading_frames.frame_ms() >= LOAD_FRAME_BUDGET_MS:
 				break
+		hud.set_loading_progress(LOAD_READ_SHARE + (1.0 - LOAD_READ_SHARE) * (total - steps.size()) / total)
 		await get_tree().process_frame
 		allowance = mini(allowance * 2, LOAD_MAX_RENDERED_STEPS) if loading_frames.last_frame_ms() < LOAD_FAST_FRAME_MS else 1
 

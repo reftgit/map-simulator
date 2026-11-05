@@ -50,11 +50,17 @@ func test_the_start_loads_behind_a_moving_loading_screen() -> void:
 	check(game.switching and game.hud.is_loading() and not game.hud.input.visible, "the loading screen is up from the first frame, no controls")
 	check(game.world.loading != null and game.world.map_root == null, "the map is read on threads, not there yet")
 	check(game.player.process_mode == Node.PROCESS_MODE_DISABLED, "the player waits (it would fall without a map)")
+	var progress: Array[float] = []
 	var frames := 0
 	while game.switching and frames < MAX_FRAMES:
+		progress.append(game.hud.get_loading_progress())
 		await process_frames(1)
 		frames += 1
 	check(not game.switching and game.map_definition.id == "fixture_a", "loaded (%d frames)" % frames)
+	var increasing := true
+	for i in range(1, progress.size()):
+		increasing = increasing and progress[i] >= progress[i - 1]
+	check(increasing and progress.size() >= 2, "the bar only moves forward (%s)" % [progress])
 	await process_frames(2)
 	check(not game.hud.is_loading() and game.hud.input.visible, "the loading screen gone, the controls back")
 	check(game.player.process_mode == Node.PROCESS_MODE_INHERIT and game.player.global_position.distance_to(Vector3(2, 0.1, 3)) < 0.5, "the player at the spawn (%s)" % game.player.global_position)
@@ -62,6 +68,7 @@ func test_the_start_loads_behind_a_moving_loading_screen() -> void:
 	check(changed == (["fixture_a"] as Array[String]), "map_changed once (%s)" % [changed])
 	var report: Dictionary = game.loading_frames.report
 	check(report.kind == "start" and report.threaded and report.loaded and report.frames >= 1, "LOADING record (%s)" % [report])
+	check(report.indicator.spinner_frames >= report.frames, "the indicator moved in every frame of the screen (%s)" % [report.indicator])
 	check(report.steps_ms.has("read") and report.steps_ms.has("add") and report.steps_ms.has("profile") and report.steps_ms.has("show_map"), "the steps ran (%s)" % [report.steps_ms])
 	check(game.startup.get("loading", {}).get("kind", "") == "start", "STARTUP carries the record")
 
@@ -87,7 +94,7 @@ func test_a_switch_loads_behind_the_screen_with_one_map_at_a_time() -> void:
 	check(not game.hud.is_loading() and game.hud.input.visible, "the loading screen gone")
 	check(game.player.global_position.distance_to(Vector3(-4, 0.1, -5)) < 0.5, "the player at the new spawn (%s)" % game.player.global_position)
 	var report: Dictionary = game.loading_frames.report
-	check(report.kind == "switch" and report.map == "fixture_b", "LOADING record of the switch (%s)" % [report])
+	check(report.kind == "switch" and report.map == "fixture_b" and report.indicator.spinner_frames >= report.frames - 1, "LOADING record of the switch: the indicator moved in every frame of the screen (%s)" % [report])
 
 
 func test_the_start_is_refused_a_switch_and_finishes_when_paused() -> void:
@@ -101,4 +108,5 @@ func test_the_start_is_refused_a_switch_and_finishes_when_paused() -> void:
 	tree.paused = false
 	game.propagate_notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
 	await process_frames(2)
+	check(game.loading_frames.report.indicator.spinner_frames >= game.loading_frames.report.frames, "the indicator turned while paused (%s)" % [game.loading_frames.report])
 	check(not game.hud.is_loading() and game.hud.input.visible and game.player.process_mode == Node.PROCESS_MODE_INHERIT, "playable after")

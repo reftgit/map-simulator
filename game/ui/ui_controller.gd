@@ -4,8 +4,9 @@ extends CanvasLayer
 ## corners, home indicator, cutouts, navigation bars; from a SafeAreaSource,
 ## re-applied when it changes), fades the roll button while the bound player's
 ## roll is on cooldown and the exit button while the bound vehicle is too fast
-## to get out, shows a loading screen while a map loads (or an error when no
-## map can be loaded), and, in debug builds
+## to get out, shows a loading screen while a map loads (a turning arc that
+## moves on every frame and a bar with the load's progress; or an error when
+## no map can be loaded), and, in debug builds
 ## only, shows a performance overlay (with the player's or the driven
 ## vehicle's speed and whether each vehicle is awake or asleep), logs the same
 ## numbers as "PERF" lines (readable from adb logcat or the Xcode console),
@@ -69,6 +70,10 @@ var _safe_area_check_in := SAFE_AREA_CHECK_INTERVAL
 @onready var _debug_map_button: TouchButton = $SafeArea/Controls/DebugMapButton
 @onready var _debug_timer: Timer = $DebugTimer
 @onready var _loading_screen: Control = $LoadingScreen
+@onready var _loading_spinner: LoadingSpinner = $LoadingScreen/Spinner
+@onready var _loading_progress: ProgressBar = $LoadingScreen/Progress
+
+var _progress_changes := 0
 
 
 func _ready() -> void:
@@ -100,9 +105,9 @@ func bind_vehicle(vehicle: VehicleController) -> void:
 	_vehicle = vehicle
 
 
-## While a map loads (Main.switch_map()): shows the loading screen over
-## everything and hides and stops the controls, releasing every finger (and
-## again when they come back).
+## While a map loads (Main: the start on threads, switch_map()): shows the
+## loading screen over everything and hides and stops the controls, releasing
+## every finger (and again when they come back).
 func set_loading(on: bool) -> void:
 	_loading_screen.visible = on
 	input.release_all_touches()
@@ -114,11 +119,36 @@ func is_loading() -> bool:
 	return _loading_screen.visible
 
 
+## The loading screen's bar: how far the load is (0..1; Main).
+func set_loading_progress(value: float) -> void:
+	if not is_equal_approx(_loading_progress.value, value):
+		_loading_progress.value = value
+		_progress_changes += 1
+
+
+func get_loading_progress() -> float:
+	return _loading_progress.value
+
+
+## Starts counting the frames the turning arc moved in and the bar's changes.
+func reset_loading_indicator() -> void:
+	_loading_spinner.reset()
+	_progress_changes = 0
+
+
+## Frames the arc moved in and how often the bar changed since
+## reset_loading_indicator() (the LOADING line).
+func loading_indicator_report() -> Dictionary:
+	return {"spinner_frames": _loading_spinner.frames, "progress_changes": _progress_changes}
+
+
 ## When the game cannot start (Main: no map available): the loading screen
 ## with `message` in place of its text, and no controls.
 func show_fatal_error(message: String) -> void:
 	set_loading(true)
 	(_loading_screen.get_node("Label") as Label).text = message
+	_loading_spinner.visible = false
+	_loading_progress.visible = false
 
 
 func _process(delta: float) -> void:
