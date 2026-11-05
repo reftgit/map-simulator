@@ -1,4 +1,4 @@
-extends RefCounted
+extends SceneTree
 ## What a release package carries (the export presets "Android Release" and
 ## "iOS Release"; docs/ARCHITECTURE.md, "Release builds"): the game and the
 ## maps of the release registry (MapRegistry.RELEASE_PATH) in the form they
@@ -10,6 +10,13 @@ extends RefCounted
 ## project that ResourceLoader recognises, outside hidden and .gdignore
 ## folders, minus the preset's exclude filter, matched as Godot matches it
 ## (the path with and without "res://", String.matchn()).
+##
+## The release presets' exclude filter is written from the release registry
+## (exclude_patterns(), Phase 6e), so no map is named by hand: a map that is
+## not in the release registry is left out whole once the filter is written
+## again, which tools/build_release.sh does before every export.
+##   godot --headless --path . --script res://tools/release_package.gd -- --write   # writes it into export_presets.cfg
+##   godot --headless --path . --script res://tools/release_package.gd -- --check   # exit 1 when it is not current
 
 const PRESETS := "res://export_presets.cfg"
 const RELEASE_PRESETS: Array[String] = ["Android Release", "iOS Release"]
@@ -19,6 +26,99 @@ const MAP_FOLDERS: Array[String] = ["res://maps/", "res://assets/", "res://scrip
 ## A file name no exclude pattern spells out: a pattern that matches
 ## <folder>/PROBE leaves out every file under the folder.
 const PROBE := "\u0001\u0002\u0003\u0004\u0005\u0006\u0007\u0008"
+## What a release leaves out besides the maps: the development folders, every
+## comparison split (streaming_<size>/), and the registry naming every map.
+const BASE_EXCLUDE: Array[String] = ["tests/*", "tools/*", "docs/*", "maps/*/streaming_*"]
+const WRITE_COMMAND := "godot --headless --path . --script res://tools/release_package.gd -- --write"
+
+
+func _initialize() -> void:
+	_run.call_deferred()
+
+
+## The command: --write writes the generated exclude filter into the release
+## presets, --check exits 1 when it differs from theirs.
+func _run() -> void:
+	var args := OS.get_cmdline_user_args()
+	if args != PackedStringArray(["--write"]) and args != PackedStringArray(["--check"]):
+		printerr("usage: -- --write | --check")
+		quit(2)
+		return
+	var patterns := exclude_patterns(MapRegistry.load_release(), MapRegistry.load_default())
+	var stale: Array[String] = []
+	for name in RELEASE_PRESETS:
+		if preset(name).get("exclude", []) != patterns:
+			stale.append(name)
+	if args[0] == "--check":
+		for name in stale:
+			printerr("RELEASE %s: its exclude filter is not the one generated from %s. Write it: %s" % [name, MapRegistry.RELEASE_PATH, WRITE_COMMAND])
+		print("RELEASE exclude filter %s: %s" % ["stale" if not stale.is_empty() else "current", ", ".join(patterns)])
+		quit(1 if not stale.is_empty() else 0)
+		return
+	if not stale.is_empty():
+		var error := write_exclude_filter(patterns)
+		if error != OK:
+			printerr("RELEASE cannot write %s (%s)" % [PRESETS, error_string(error)])
+			quit(1)
+			return
+	print("RELEASE exclude filter %s (%s): %s" % ["written" if not stale.is_empty() else "already current", ", ".join(RELEASE_PRESETS), ", ".join(patterns)])
+	quit(0)
+
+
+## The exclude filter of a release package carrying the maps of `release`:
+## BASE_EXCLUDE and the full registry, then everything under the map folders
+## (MAP_FOLDERS) and every scene at the top of the project that those maps do
+## not need (needed()), a whole folder where none of it is needed; and the
+## streaming folder of every map of `every` that `release` leaves out, which
+## is generated on each machine and may not be on this one. Reading the
+## folders, a model's ".import" file stands for the model, which may be
+## missing too; folders with a .gdignore file are not exported anyway. The
+## same tracked files give the same filter on every machine.
+static func exclude_patterns(release: MapRegistry, every: MapRegistry) -> Array[String]:
+	var wanted := needed(release)
+	var patterns: Array[String] = BASE_EXCLUDE.duplicate()
+	patterns.append(MapRegistry.PATH.trim_prefix("res://"))
+	var found: Array[String] = []
+	for definition in every.definitions:
+		var folder := definition.streaming_index_path.get_base_dir()
+		if release.find(definition.id) == null and not folder.is_empty() and not wanted.folders.has(folder + "/"):
+			found.append(folder.trim_prefix("res://") + "/*")
+	for dir in MAP_FOLDERS:
+		_unneeded(dir.trim_suffix("/"), wanted, found)
+	for file in DirAccess.get_files_at("res://"):
+		if file.get_extension() in ["tscn", "scn"] and not wanted.files.has("res://" + file):
+			found.append(file)
+	found.sort()
+	for pattern in found:
+		if pattern not in patterns and not excluded("res://" + pattern.trim_suffix("/*").path_join(PROBE) if pattern.ends_with("/*") else "res://" + pattern, patterns):
+			patterns.append(pattern)
+	return patterns
+
+
+## Writes `patterns` as the exclude filter of both release presets (the line
+## in each preset's section of export_presets.cfg; nothing else changes).
+static func write_exclude_filter(patterns: Array[String]) -> Error:
+	var file := FileAccess.open(PRESETS, FileAccess.READ)
+	if file == null:
+		return FileAccess.get_open_error()
+	var lines := file.get_as_text().split("\n")
+	file.close()
+	var section := ""
+	var release := false
+	for i in lines.size():
+		var line := lines[i]
+		if line.begins_with("["):
+			section = line
+			release = false
+		elif line.begins_with("name=") and not section.ends_with(".options]"):
+			release = line.trim_prefix("name=").trim_prefix("\"").trim_suffix("\"") in RELEASE_PRESETS
+		elif release and line.begins_with("exclude_filter="):
+			lines[i] = "exclude_filter=\"%s\"" % ", ".join(patterns)
+	file = FileAccess.open(PRESETS, FileAccess.WRITE)
+	if file == null:
+		return FileAccess.get_open_error()
+	file.store_string("\n".join(lines))
+	return OK
 
 
 ## The preset called `name`: its section, custom features, export filter, and
@@ -91,8 +191,9 @@ static func needed(registry: MapRegistry) -> Dictionary:
 
 
 ## Why the preset `name` would not pack exactly what the release maps need
-## (empty when it would). With `cells`, also every release map's cells: written,
-## complete, and current against its model on this machine.
+## (empty when it would), its exclude filter first: the one exclude_patterns()
+## writes. With `cells`, also every release map's cells: written, complete,
+## and current against its model on this machine.
 static func problems(name: String, cells: bool) -> Array[String]:
 	var found: Array[String] = []
 	var settings := preset(name)
@@ -103,6 +204,8 @@ static func problems(name: String, cells: bool) -> Array[String]:
 		found.append("%s carries perf_bench (debug tools and experiments)" % name)
 	if settings.filter != "all_resources":
 		found.append("%s exports %s, not all resources" % [name, settings.filter])
+	if exclude != exclude_patterns(MapRegistry.load_release(), MapRegistry.load_default()):
+		found.append("%s: its exclude filter is not the one generated from %s. Write it: %s" % [name, MapRegistry.RELEASE_PATH, WRITE_COMMAND])
 	if excluded(MapRegistry.RELEASE_PATH, exclude):
 		found.append("%s leaves out the release registry %s" % [name, MapRegistry.RELEASE_PATH])
 	if not excluded(MapRegistry.PATH, exclude):
@@ -154,6 +257,33 @@ static func _add_closure(path: String, id: String, files: Dictionary, skip: Arra
 			next.append(found.get_string(1))
 	for dependency in next:
 		_add_closure(dependency, id, files, skip)
+
+
+## Adds to `found` the patterns for what under `dir` (a res:// folder, no
+## trailing slash) the release maps do not need: the folder, when nothing in
+## it is needed, else each unneeded file and, folder by folder, the rest.
+static func _unneeded(dir: String, wanted: Dictionary, found: Array[String]) -> void:
+	if FileAccess.file_exists(dir.path_join(".gdignore")) or wanted.folders.has(dir + "/"):
+		return
+	var inside := dir + "/"
+	var any_needed: bool = wanted.files.keys().any(func(path: String) -> bool: return path.begins_with(inside)) \
+			or wanted.folders.keys().any(func(folder: String) -> bool: return folder.begins_with(inside))
+	if not any_needed:
+		found.append(inside.trim_prefix("res://") + "*")
+		return
+	var files := {}
+	for file in DirAccess.get_files_at(dir):
+		if file.get_extension() == "import":
+			files[file.trim_suffix(".import")] = true
+		elif file.get_extension() != "uid":
+			files[file] = true
+	for file: String in files:
+		var path := dir.path_join(file)
+		if not wanted.files.has(path) and ResourceLoader.exists(path):
+			found.append(path.trim_prefix("res://"))
+	for sub in DirAccess.get_directories_at(dir):
+		if not sub.begins_with("."):
+			_unneeded(dir.path_join(sub), wanted, found)
 
 
 static func _dependencies(path: String) -> Array[String]:

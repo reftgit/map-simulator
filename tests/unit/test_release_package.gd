@@ -3,7 +3,8 @@ extends "res://tests/test_case.gd"
 ## and only the maps of the release registry, a streamed map as its cells
 ## without its GLB; no perf_bench; the identifiers of D8 and no keystore
 ## values (test_export_presets.gd and test_build_features.gd check those for
-## every preset too). tools/release_package.gd simulates the export;
+## every preset too). tools/release_package.gd simulates the export and writes
+## the presets' exclude filter from the release registry (Phase 6e);
 ## tools/release_contents.py lists a built package.
 
 const ReleasePackage := preload("res://tools/release_package.gd")
@@ -68,6 +69,51 @@ func test_release_presets_leave_out_the_other_maps_and_the_models() -> void:
 			check(ReleasePackage.excluded(path, exclude), "%s leaves out %s" % [name, path])
 		for path in [MapRegistry.RELEASE_PATH, "res://game/main.tscn", "res://game/debug/build_features.gd", "res://icon.svg"]:
 			check(not ReleasePackage.excluded(path, exclude), "%s packs %s" % [name, path])
+
+
+## Phase 6e: the presets' exclude filter is the one written from the release
+## registry, so no map is named by hand.
+func test_release_presets_use_the_filter_written_from_the_release_registry() -> void:
+	var patterns := ReleasePackage.exclude_patterns(MapRegistry.load_release(), MapRegistry.load_default())
+	for name in ReleasePackage.RELEASE_PRESETS:
+		var exclude: Array[String] = ReleasePackage.preset(name).exclude
+		check(exclude == patterns, "%s: the generated filter (write it: %s)\n  preset:    %s\n  generated: %s" % [name, ReleasePackage.WRITE_COMMAND, exclude, patterns])
+	for id in MapRegistry.load_default().ids():
+		check(id not in str(ReleasePackage.BASE_EXCLUDE), "no map named in the fixed part (%s)" % id)
+
+
+## Phase 6e: a map folder that appears (a map imported, not in the release
+## registry) is left out whole by the generated filter, and the package does
+## not change; its streaming folder, not written on this machine, too.
+func test_a_new_map_folder_is_left_out_and_the_package_does_not_change() -> void:
+	var release := MapRegistry.load_release()
+	var every := MapRegistry.load_default()
+	var before := ReleasePackage.exclude_patterns(release, every)
+	var packed_before := ReleasePackage.packed_files(before)
+	var folder := "res://maps/zz_release_filter_test"
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(folder))
+	var scene := PackedScene.new()
+	var root := Node3D.new()
+	root.name = "ZzReleaseFilterTest"
+	scene.pack(root)
+	root.free()
+	check(ResourceSaver.save(scene, folder.path_join("zz_release_filter_test.tscn")) == OK, "fake map scene written")
+	var definition := MapDefinition.new()
+	definition.id = "zz_release_filter_test"
+	definition.scene_path = folder.path_join("zz_release_filter_test.tscn")
+	definition.streaming_index_path = folder.path_join("streaming/zz_release_filter_test_index.tres")
+	check(ResourceSaver.save(definition, folder.path_join("zz_release_filter_test.tres")) == OK, "fake map definition written")
+	var with_new := MapRegistry.new()
+	with_new.definitions.assign(every.definitions + [definition])
+	var after := ReleasePackage.exclude_patterns(release, with_new)
+	var packed_after := ReleasePackage.packed_files(after)
+	var packed_with_old_filter := ReleasePackage.packed_files(before)
+	for file in ["zz_release_filter_test.tscn", "zz_release_filter_test.tres"]:
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(folder.path_join(file)))
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(folder))
+	check("maps/zz_release_filter_test/*" in after and after.size() == before.size() + 1, "the folder left out whole, nothing else changed\n  before: %s\n  after:  %s" % [before, after])
+	check(packed_after == packed_before, "the package holds the same files (%d / %d)" % [packed_after.size(), packed_before.size()])
+	check(packed_with_old_filter.has(definition.scene_path), "without writing the filter again the new map would be packed (the check stops the export)")
 
 
 func test_release_presets_are_plain_release_builds_with_the_d8_identifiers() -> void:

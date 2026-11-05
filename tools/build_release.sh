@@ -3,7 +3,9 @@
 # or "iOS Release" preset: the game and only the maps of the release registry
 # (game/world/maps_release.tres), streamed maps as their cells without their
 # GLB, no perf_bench (no debug overlay, MAP button, experiments, or
-# benchmarks). First checks the preset and that every release map's cells are
+# benchmarks). First writes the presets' exclude filter from the release
+# registry (tools/release_package.gd; commit export_presets.cfg when it
+# changes), then checks the preset and that every release map's cells are
 # written and current (tools/check_release.gd); when they are not, nothing is
 # exported and the check names the command that writes them. Afterwards lists
 # what the package holds and compares it with what it should hold
@@ -28,6 +30,9 @@ PLATFORM=$1
 mkdir -p build/release
 LIST=$(pwd)/build/release/$PLATFORM.expected.txt
 
+# The release presets' exclude filter, written from the release registry
+# (tools/release_package.gd): a map added to the full registry only stays out.
+godot --headless --path . --script res://tools/release_package.gd -- --write
 if ! godot --headless --path . --script res://tools/check_release.gd -- "$PRESET" --list="$LIST"; then
 	echo "$PRESET: not exported (see RELEASE lines above)" >&2
 	exit 1

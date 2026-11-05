@@ -1,9 +1,10 @@
 extends SceneTree
 ## Checks a release preset before tools/build_release.sh exports it
-## (tools/release_package.gd): it packs exactly what the maps of the release
-## registry need, without perf_bench, and every release map's cells are
-## written and current against its model on this machine. When they are not,
-## it says which command writes them.
+## (tools/release_package.gd): its exclude filter is the one written from the
+## release registry, it packs exactly what the maps of the release registry
+## need, without perf_bench, and every release map's cells are written and
+## current against its model on this machine. When they are not, it says
+## which command writes them.
 ##   godot --headless --path . --script res://tools/check_release.gd -- "Android Release" [--list=<file>]
 ## --list=<file> (a path on disk) writes the project files the package should
 ## hold, one res:// path per line, for tools/release_contents.py to compare
