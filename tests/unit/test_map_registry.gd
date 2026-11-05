@@ -39,8 +39,7 @@ func test_registry_lists_the_maps() -> void:
 		var spawn := definition.player_spawn_position
 		check(definition.bounds.has_point(Vector2(spawn.x, spawn.z)), "%s: spawn inside the bounds" % definition.id)
 		check(definition.kill_height < spawn.y, "%s: kill height below the spawn" % definition.id)
-	var main := FileAccess.get_file_as_string("res://game/main.tscn")
-	check(main.contains(MapRegistry.PATH), "the game scene uses the registry")
+	check(MapRegistry.for_build().resource_path == MapRegistry.PATH, "debug builds (the tests) load this registry (Main takes MapRegistry.for_build())")
 
 
 func test_find_next_and_arguments() -> void:

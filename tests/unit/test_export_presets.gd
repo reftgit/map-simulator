@@ -33,7 +33,7 @@ func test_presets_load() -> void:
 	var platforms := {}
 	for section in _sections():
 		platforms[presets.get_value(section, "platform")] = true
-	check(_sections().size() == 6 and platforms.has("Android") and platforms.has("iOS"), "six presets for Android and iOS (%d)" % _sections().size())
+	check(_sections().size() == 8 and platforms.has("Android") and platforms.has("iOS"), "eight presets for Android and iOS (%d)" % _sections().size())
 
 
 func test_every_preset_leaves_out_tests_tools_and_docs() -> void:

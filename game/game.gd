@@ -4,6 +4,8 @@ extends Node
 ## other up; they are wired here.
 
 ## The maps the game can load; the first available is the default (MapRegistry).
+## Empty in main.tscn: _ready() takes MapRegistry.for_build() (every map, or in
+## a normal release build the release maps); tests and tools set their own.
 @export var maps: MapRegistry
 ## Parked at each of the map's vehicle spawns.
 @export var vehicle_scene: PackedScene
@@ -52,6 +54,8 @@ var _static_bodies := []  # [StaticBody3D, AABB] pairs, built on first use
 
 
 func _ready() -> void:
+	if maps == null:
+		maps = MapRegistry.for_build()
 	if BuildFeatures.perf_enabled():
 		_experiment = _load_perf_experiment()
 	world.track(player)

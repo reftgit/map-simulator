@@ -1,7 +1,7 @@
 extends "res://tests/test_case.gd"
 ## Debug / perf_bench feature gating and the export presets that carry it.
 
-const NORMAL_PRESETS := ["Android Debug", "iOS Debug", "Android Debug Compatibility"]
+const NORMAL_PRESETS := ["Android Debug", "iOS Debug", "Android Debug Compatibility", "Android Release", "iOS Release"]
 
 
 func cleanup() -> void:
