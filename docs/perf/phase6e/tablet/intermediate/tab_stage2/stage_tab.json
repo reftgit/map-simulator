@@ -1,0 +1,1221 @@
+{
+  "config": {
+    "experiment": "p6e_stage_low",
+    "map": "istanbul_halic_cells_shader",
+    "profile": "low",
+    "runtime": {},
+    "settings": {}
+  },
+  "occluders": {
+    "ms": 4,
+    "occluders": 643,
+    "source": "baked",
+    "triangles": 317518
+  },
+  "profile": "low",
+  "results": [
+    {
+      "avg_fps": 30.06,
+      "draw_calls": 81,
+      "experiment": "p6e_stage_low",
+      "frame_hist_ms": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        3,
+        8,
+        6,
+        6,
+        16,
+        8,
+        2,
+        8,
+        3,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "frame_p50_ms": 33.42,
+      "frame_p90_ms": 36.44,
+      "frame_p99_ms": 37.9,
+      "frames": 61,
+      "in_vehicle": false,
+      "long_frames": 0,
+      "low1_fps": 26.39,
+      "min_fps": 26.39,
+      "npcs": 2,
+      "npcs_near": 0.0,
+      "objects": 81,
+      "physics_ms": 4.451,
+      "physics_p99_ms": 5.372,
+      "primitives": 48190,
+      "process_ms": 30.423,
+      "process_p99_ms": 32.881,
+      "profile": "low",
+      "renderer": "mobile",
+      "static_mem_mb": 0,
+      "static_peak_mb": 0,
+      "streaming": {
+        "attach_frames": 0,
+        "attach_max_ms": 0.0,
+        "loaded": 13,
+        "loaded_mb": 0.3,
+        "loads": 0,
+        "missing_frames": -1,
+        "pending": 0,
+        "primes": 0,
+        "unloads": 0
+      },
+      "vehicles_asleep": 1.0,
+      "video_mem_mb": 127,
+      "view": "Spawn",
+      "window": "(2000, 1200)"
+    }
+  ],
+  "startup": {
+    "android_frame_pacing": true,
+    "debug_build": false,
+    "display_refresh_rate": 60.0000038146973,
+    "first_frame_ms": 4906,
+    "ios_allow_high_refresh_rate": false,
+    "load": {
+      "add_ms": 55.3,
+      "index_ms": 31.8,
+      "instantiate_ms": 82.7,
+      "scene_ms": 1453.5,
+      "serve_max_ms": 148.3,
+      "setup_ms": 21.2,
+      "streamed": true,
+      "threaded": true
+    },
+    "loading": {
+      "boot_ms": 321.7,
+      "frame_detail": [
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 47.9
+          },
+          "ms": 144.6,
+          "pipelines": 0,
+          "render_cpu_ms": 0.0,
+          "steps": "boot"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 167.1,
+            "post_draw": 111.3,
+            "pre_draw": 13.7
+          },
+          "ms": 177.1,
+          "pipelines": 4,
+          "render_cpu_ms": 1.1,
+          "steps": "boot"
+        },
+        {
+          "gpu_ms": 42.0,
+          "marks": {
+            "physics": 34.5,
+            "post_draw": 24.8,
+            "pre_draw": 22.1
+          },
+          "ms": 42.4,
+          "pipelines": 0,
+          "render_cpu_ms": 82.7,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 19.6,
+          "marks": {
+            "physics": 15.4,
+            "post_draw": 15.3,
+            "pre_draw": 13.0
+          },
+          "ms": 15.7,
+          "pipelines": 0,
+          "render_cpu_ms": 0.6,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 19.3,
+          "marks": {
+            "physics": 34.3,
+            "post_draw": 34.1,
+            "pre_draw": 12.9
+          },
+          "ms": 34.6,
+          "pipelines": 0,
+          "render_cpu_ms": 0.4,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 18.8,
+          "marks": {
+            "physics": 16.8,
+            "post_draw": 16.7,
+            "pre_draw": 13.2
+          },
+          "ms": 17.0,
+          "pipelines": 0,
+          "render_cpu_ms": 0.5,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 19.4,
+          "marks": {
+            "physics": 33.9,
+            "post_draw": 33.7,
+            "pre_draw": 13.0
+          },
+          "ms": 34.2,
+          "pipelines": 0,
+          "render_cpu_ms": 0.4,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 18.9,
+          "marks": {
+            "physics": 16.5,
+            "post_draw": 16.4,
+            "pre_draw": 13.2
+          },
+          "ms": 16.7,
+          "pipelines": 0,
+          "render_cpu_ms": 0.4,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 18.8,
+          "marks": {
+            "physics": 33.5,
+            "post_draw": 33.4,
+            "pre_draw": 13.3
+          },
+          "ms": 33.8,
+          "pipelines": 0,
+          "render_cpu_ms": 0.4,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 18.8,
+          "marks": {
+            "physics": 16.3,
+            "post_draw": 16.2,
+            "pre_draw": 13.4
+          },
+          "ms": 16.5,
+          "pipelines": 0,
+          "render_cpu_ms": 0.4,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 18.9,
+          "marks": {
+            "physics": 33.3,
+            "post_draw": 33.1,
+            "pre_draw": 13.3
+          },
+          "ms": 33.5,
+          "pipelines": 0,
+          "render_cpu_ms": 0.4,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 19.5,
+          "marks": {
+            "physics": 16.0,
+            "post_draw": 15.9,
+            "pre_draw": 13.3
+          },
+          "ms": 16.2,
+          "pipelines": 0,
+          "render_cpu_ms": 0.4,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 19.9,
+          "marks": {
+            "physics": 33.2,
+            "post_draw": 33.1,
+            "pre_draw": 13.0
+          },
+          "ms": 33.5,
+          "pipelines": 0,
+          "render_cpu_ms": 0.4,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 19.6,
+          "marks": {
+            "physics": 15.7,
+            "post_draw": 15.6,
+            "pre_draw": 13.2
+          },
+          "ms": 15.9,
+          "pipelines": 0,
+          "render_cpu_ms": 0.4,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 20.0,
+          "marks": {
+            "physics": 32.8,
+            "post_draw": 32.6,
+            "pre_draw": 13.0
+          },
+          "ms": 33.3,
+          "pipelines": 0,
+          "render_cpu_ms": 0.4,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 20.2,
+          "marks": {
+            "physics": 15.3,
+            "post_draw": 15.2,
+            "pre_draw": 13.0
+          },
+          "ms": 15.5,
+          "pipelines": 0,
+          "render_cpu_ms": 0.5,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 19.3,
+          "marks": {
+            "physics": 32.7,
+            "post_draw": 32.6,
+            "pre_draw": 13.3
+          },
+          "ms": 33.1,
+          "pipelines": 0,
+          "render_cpu_ms": 0.4,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 19.6,
+          "marks": {
+            "physics": 15.6,
+            "post_draw": 15.5,
+            "pre_draw": 13.3
+          },
+          "ms": 15.8,
+          "pipelines": 0,
+          "render_cpu_ms": 0.4,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 19.5,
+          "marks": {
+            "physics": 33.3,
+            "post_draw": 33.2,
+            "pre_draw": 13.1
+          },
+          "ms": 33.6,
+          "pipelines": 0,
+          "render_cpu_ms": 0.4,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 19.5,
+          "marks": {
+            "physics": 15.5,
+            "post_draw": 15.3,
+            "pre_draw": 12.8
+          },
+          "ms": 15.7,
+          "pipelines": 0,
+          "render_cpu_ms": 0.5,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 18.8,
+          "marks": {
+            "physics": 33.3,
+            "post_draw": 33.2,
+            "pre_draw": 13.5
+          },
+          "ms": 33.6,
+          "pipelines": 0,
+          "render_cpu_ms": 0.4,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 18.9,
+          "marks": {
+            "physics": 16.4,
+            "post_draw": 16.2,
+            "pre_draw": 13.2
+          },
+          "ms": 16.5,
+          "pipelines": 0,
+          "render_cpu_ms": 0.4,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 18.9,
+          "marks": {
+            "physics": 33.8,
+            "post_draw": 33.7,
+            "pre_draw": 13.3
+          },
+          "ms": 34.1,
+          "pipelines": 0,
+          "render_cpu_ms": 0.4,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 19.0,
+          "marks": {
+            "physics": 16.5,
+            "post_draw": 16.4,
+            "pre_draw": 13.4
+          },
+          "ms": 16.7,
+          "pipelines": 0,
+          "render_cpu_ms": 0.4,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 19.2,
+          "marks": {
+            "physics": 34.0,
+            "post_draw": 33.9,
+            "pre_draw": 13.0
+          },
+          "ms": 34.3,
+          "pipelines": 0,
+          "render_cpu_ms": 0.4,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 18.8,
+          "marks": {
+            "physics": 16.4,
+            "post_draw": 16.3,
+            "pre_draw": 13.3
+          },
+          "ms": 16.6,
+          "pipelines": 0,
+          "render_cpu_ms": 0.4,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 19.5,
+          "marks": {
+            "physics": 33.7,
+            "post_draw": 33.6,
+            "pre_draw": 13.2
+          },
+          "ms": 34.0,
+          "pipelines": 0,
+          "render_cpu_ms": 0.4,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 18.8,
+          "marks": {
+            "physics": 16.5,
+            "post_draw": 16.4,
+            "pre_draw": 12.8
+          },
+          "ms": 16.7,
+          "pipelines": 0,
+          "render_cpu_ms": 0.4,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 18.7,
+          "marks": {
+            "physics": 33.6,
+            "post_draw": 33.5,
+            "pre_draw": 12.8
+          },
+          "ms": 33.9,
+          "pipelines": 0,
+          "render_cpu_ms": 0.4,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 18.9,
+          "marks": {
+            "physics": 16.5,
+            "post_draw": 16.4,
+            "pre_draw": 13.3
+          },
+          "ms": 16.7,
+          "pipelines": 0,
+          "render_cpu_ms": 0.4,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 19.4,
+          "marks": {
+            "physics": 33.1,
+            "post_draw": 32.9,
+            "pre_draw": 13.1
+          },
+          "ms": 33.4,
+          "pipelines": 0,
+          "render_cpu_ms": 0.4,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 19.0,
+          "marks": {
+            "physics": 32.2,
+            "post_draw": 18.9,
+            "pre_draw": 16.8
+          },
+          "ms": 32.5,
+          "pipelines": 0,
+          "render_cpu_ms": 0.6,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 19.7,
+          "marks": {
+            "physics": 22.6,
+            "post_draw": 14.8,
+            "pre_draw": 12.8
+          },
+          "ms": 24.0,
+          "pipelines": 0,
+          "render_cpu_ms": 0.4,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 19.7,
+          "marks": {
+            "physics": 25.4,
+            "post_draw": 15.4,
+            "pre_draw": 13.3
+          },
+          "ms": 25.9,
+          "pipelines": 0,
+          "render_cpu_ms": 0.4,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 20.0,
+          "marks": {
+            "physics": 23.3,
+            "post_draw": 19.3,
+            "pre_draw": 17.1
+          },
+          "ms": 23.6,
+          "pipelines": 0,
+          "render_cpu_ms": 0.4,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 19.7,
+          "marks": {
+            "physics": 40.1,
+            "post_draw": 26.5,
+            "pre_draw": 14.0
+          },
+          "ms": 40.4,
+          "pipelines": 0,
+          "render_cpu_ms": 0.4,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 20.0,
+          "marks": {
+            "physics": 30.8,
+            "post_draw": 16.5,
+            "pre_draw": 14.3
+          },
+          "ms": 32.3,
+          "pipelines": 0,
+          "render_cpu_ms": 0.7,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 20.2,
+          "marks": {
+            "physics": 19.2,
+            "post_draw": 17.4,
+            "pre_draw": 15.3
+          },
+          "ms": 19.9,
+          "pipelines": 0,
+          "render_cpu_ms": 0.4,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 20.3,
+          "marks": {
+            "physics": 50.4,
+            "post_draw": 32.9,
+            "pre_draw": 14.0
+          },
+          "ms": 51.3,
+          "pipelines": 0,
+          "render_cpu_ms": 0.4,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 20.3,
+          "marks": {
+            "physics": 17.6,
+            "post_draw": 15.4,
+            "pre_draw": 13.1
+          },
+          "ms": 18.1,
+          "pipelines": 0,
+          "render_cpu_ms": 0.5,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 20.1,
+          "marks": {
+            "physics": 175.7,
+            "post_draw": 174.4,
+            "pre_draw": 165.0
+          },
+          "ms": 180.4,
+          "pipelines": 0,
+          "render_cpu_ms": 2.7,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 21.7,
+          "marks": {
+            "physics": 17.9,
+            "post_draw": 17.2,
+            "pre_draw": 1.7
+          },
+          "ms": 20.5,
+          "pipelines": 0,
+          "render_cpu_ms": 7.1,
+          "steps": "instantiate"
+        },
+        {
+          "gpu_ms": 21.0,
+          "marks": {
+            "physics": 31.0,
+            "post_draw": 30.6,
+            "pre_draw": 1.1
+          },
+          "ms": 33.2,
+          "pipelines": 0,
+          "render_cpu_ms": 5.6,
+          "steps": "instantiate"
+        },
+        {
+          "gpu_ms": 19.2,
+          "marks": {
+            "physics": 85.0,
+            "post_draw": 84.9,
+            "pre_draw": 71.8
+          },
+          "ms": 85.4,
+          "pipelines": 0,
+          "render_cpu_ms": 7.3,
+          "steps": "instantiate,prepare_material"
+        },
+        {
+          "gpu_ms": 40.1,
+          "marks": {
+            "physics": 61.8,
+            "post_draw": 61.6,
+            "pre_draw": 1.6
+          },
+          "ms": 62.3,
+          "pipelines": 0,
+          "render_cpu_ms": 11.1,
+          "steps": "prepare_material"
+        },
+        {
+          "gpu_ms": 40.7,
+          "marks": {
+            "physics": 31.6,
+            "post_draw": 31.5,
+            "pre_draw": 2.3
+          },
+          "ms": 31.8,
+          "pipelines": 0,
+          "render_cpu_ms": 7.1,
+          "steps": "prepare_material"
+        },
+        {
+          "gpu_ms": 40.1,
+          "marks": {
+            "physics": 50.6,
+            "post_draw": 50.3,
+            "pre_draw": 1.3
+          },
+          "ms": 51.5,
+          "pipelines": 0,
+          "render_cpu_ms": 0.8,
+          "steps": "prepare_material"
+        },
+        {
+          "gpu_ms": 31.2,
+          "marks": {
+            "physics": 32.7,
+            "post_draw": 32.4,
+            "pre_draw": 5.1
+          },
+          "ms": 33.4,
+          "pipelines": 0,
+          "render_cpu_ms": 0.4,
+          "steps": "prepare_material"
+        },
+        {
+          "gpu_ms": 25.4,
+          "marks": {
+            "physics": 31.6,
+            "post_draw": 31.4,
+            "pre_draw": 3.5
+          },
+          "ms": 31.9,
+          "pipelines": 0,
+          "render_cpu_ms": 0.6,
+          "steps": "prepare_material"
+        },
+        {
+          "gpu_ms": 21.8,
+          "marks": {
+            "physics": 93.3,
+            "post_draw": 93.2,
+            "pre_draw": 91.5
+          },
+          "ms": 93.7,
+          "pipelines": 0,
+          "render_cpu_ms": 0.5,
+          "steps": "prepare_shader"
+        },
+        {
+          "gpu_ms": 41.2,
+          "marks": {
+            "physics": 67.3,
+            "post_draw": 67.2,
+            "pre_draw": 64.3
+          },
+          "ms": 67.5,
+          "pipelines": 0,
+          "render_cpu_ms": 0.3,
+          "steps": "prepare_shader"
+        },
+        {
+          "gpu_ms": 42.3,
+          "marks": {
+            "physics": 65.8,
+            "post_draw": 65.7,
+            "pre_draw": 63.1
+          },
+          "ms": 66.1,
+          "pipelines": 0,
+          "render_cpu_ms": 0.4,
+          "steps": "prepare_shader"
+        },
+        {
+          "gpu_ms": 41.2,
+          "marks": {
+            "physics": 97.2,
+            "post_draw": 97.1,
+            "pre_draw": 68.8
+          },
+          "ms": 99.3,
+          "pipelines": 1,
+          "render_cpu_ms": 5.2,
+          "steps": "add"
+        },
+        {
+          "gpu_ms": 112.2,
+          "marks": {
+            "physics": 111.5,
+            "post_draw": 111.3,
+            "pre_draw": 23.5
+          },
+          "ms": 112.1,
+          "pipelines": 0,
+          "render_cpu_ms": 19.4,
+          "steps": "streamer,warm_cell"
+        },
+        {
+          "gpu_ms": 46.0,
+          "marks": {
+            "physics": 102.6,
+            "post_draw": 102.5,
+            "pre_draw": 99.9
+          },
+          "ms": 103.2,
+          "pipelines": 0,
+          "render_cpu_ms": 0.7,
+          "steps": "warm_cell"
+        },
+        {
+          "gpu_ms": 34.0,
+          "marks": {
+            "physics": 68.9,
+            "post_draw": 68.7,
+            "pre_draw": 65.6
+          },
+          "ms": 69.4,
+          "pipelines": 0,
+          "render_cpu_ms": 0.7,
+          "steps": "warm_cell"
+        },
+        {
+          "gpu_ms": 29.5,
+          "marks": {
+            "physics": 33.9,
+            "post_draw": 33.8,
+            "pre_draw": 1.8
+          },
+          "ms": 34.3,
+          "pipelines": 0,
+          "render_cpu_ms": 0.5,
+          "steps": "warm_cell"
+        },
+        {
+          "gpu_ms": 28.1,
+          "marks": {
+            "physics": 34.7,
+            "post_draw": 34.5,
+            "pre_draw": 3.0
+          },
+          "ms": 35.2,
+          "pipelines": 0,
+          "render_cpu_ms": 0.8,
+          "steps": "warm_cell"
+        },
+        {
+          "gpu_ms": 26.7,
+          "marks": {
+            "physics": 83.5,
+            "post_draw": 83.4,
+            "pre_draw": 78.8
+          },
+          "ms": 83.9,
+          "pipelines": 0,
+          "render_cpu_ms": 1.2,
+          "steps": "warm_cell"
+        },
+        {
+          "gpu_ms": 28.0,
+          "marks": {
+            "physics": 67.5,
+            "post_draw": 67.4,
+            "pre_draw": 64.4
+          },
+          "ms": 72.1,
+          "pipelines": 0,
+          "render_cpu_ms": 0.7,
+          "steps": "place,vehicles"
+        },
+        {
+          "gpu_ms": 27.5,
+          "marks": {
+            "physics": 38.1,
+            "post_draw": 37.8,
+            "pre_draw": 35.4
+          },
+          "ms": 41.3,
+          "pipelines": 0,
+          "render_cpu_ms": 0.7,
+          "steps": "npcs,categories"
+        },
+        {
+          "gpu_ms": 27.9,
+          "marks": {
+            "physics": 35.5,
+            "post_draw": 35.3,
+            "pre_draw": 32.9
+          },
+          "ms": 36.9,
+          "pipelines": 0,
+          "render_cpu_ms": 0.5,
+          "steps": "categories"
+        },
+        {
+          "gpu_ms": 28.6,
+          "marks": {
+            "physics": 34.9,
+            "post_draw": 34.6,
+            "pre_draw": 32.6
+          },
+          "ms": 35.9,
+          "pipelines": 0,
+          "render_cpu_ms": 0.4,
+          "steps": "categories"
+        },
+        {
+          "gpu_ms": 29.1,
+          "marks": {
+            "physics": 71.9,
+            "post_draw": 71.6,
+            "pre_draw": 40.8
+          },
+          "ms": 75.1,
+          "pipelines": 1,
+          "render_cpu_ms": 1.1,
+          "steps": "render_settings,occluders,profile"
+        },
+        {
+          "gpu_ms": 15.2,
+          "marks": {
+            "physics": 75.0,
+            "post_draw": 74.8,
+            "pre_draw": 26.1
+          },
+          "ms": 81.6,
+          "pipelines": 3,
+          "render_cpu_ms": 31.4,
+          "steps": "prime,show_map"
+        },
+        {
+          "gpu_ms": 31.7,
+          "marks": {
+            "physics": 43.5,
+            "post_draw": 43.1,
+            "pre_draw": 0.9
+          },
+          "ms": 49.2,
+          "pipelines": 0,
+          "render_cpu_ms": 40.2,
+          "steps": "show_facade_detail"
+        },
+        {
+          "gpu_ms": 54.3,
+          "marks": {
+            "physics": 43.5,
+            "post_draw": 43.2,
+            "pre_draw": 0.8
+          },
+          "ms": 47.3,
+          "pipelines": 0,
+          "render_cpu_ms": 2.1,
+          "steps": "show_decor"
+        },
+        {
+          "gpu_ms": 29.8,
+          "marks": {
+            "physics": 29.2,
+            "post_draw": 28.9,
+            "pre_draw": 0.8
+          },
+          "ms": 31.9,
+          "pipelines": 0,
+          "render_cpu_ms": 2.3,
+          "steps": "show_lamps"
+        },
+        {
+          "gpu_ms": 27.1,
+          "marks": {
+            "physics": 31.1,
+            "post_draw": 30.7,
+            "pre_draw": 0.9
+          },
+          "ms": 32.8,
+          "pipelines": 0,
+          "render_cpu_ms": 4.1,
+          "steps": "show_trees"
+        },
+        {
+          "gpu_ms": 25.5,
+          "marks": {
+            "physics": 31.7,
+            "post_draw": 31.5,
+            "pre_draw": 0.7
+          },
+          "ms": 33.6,
+          "pipelines": 0,
+          "render_cpu_ms": 1.9,
+          "steps": "show_buildings"
+        },
+        {
+          "gpu_ms": 25.4,
+          "marks": {
+            "physics": 32.3,
+            "post_draw": 32.0,
+            "pre_draw": 4.0
+          },
+          "ms": 36.3,
+          "pipelines": 0,
+          "render_cpu_ms": 2.4,
+          "steps": "show_ground"
+        },
+        {
+          "gpu_ms": 23.8,
+          "marks": {
+            "physics": 30.2,
+            "post_draw": 29.7,
+            "pre_draw": 1.0
+          },
+          "ms": 32.6,
+          "pipelines": 0,
+          "render_cpu_ms": 3.6,
+          "steps": "show_water"
+        },
+        {
+          "gpu_ms": 24.0,
+          "marks": {
+            "physics": 31.6,
+            "post_draw": 31.4,
+            "pre_draw": 1.0
+          },
+          "ms": 33.9,
+          "pipelines": 2,
+          "render_cpu_ms": 1.9,
+          "steps": "show_vehicles"
+        },
+        {
+          "gpu_ms": 23.7,
+          "marks": {
+            "physics": 28.9,
+            "post_draw": 28.6,
+            "pre_draw": 4.1
+          },
+          "ms": 31.1,
+          "pipelines": 1,
+          "render_cpu_ms": 27.6,
+          "steps": "shown"
+        }
+      ],
+      "frame_ms": [
+        144.6,
+        177.1,
+        42.4,
+        15.7,
+        34.6,
+        17.0,
+        34.2,
+        16.7,
+        33.8,
+        16.5,
+        33.5,
+        16.2,
+        33.5,
+        15.9,
+        33.3,
+        15.5,
+        33.1,
+        15.8,
+        33.6,
+        15.7,
+        33.6,
+        16.5,
+        34.1,
+        16.7,
+        34.3,
+        16.6,
+        34.0,
+        16.7,
+        33.9,
+        16.7,
+        33.4,
+        32.5,
+        24.0,
+        25.9,
+        23.6,
+        40.4,
+        32.3,
+        19.9,
+        51.3,
+        18.1,
+        180.4,
+        20.5,
+        33.2,
+        85.4,
+        62.3,
+        31.8,
+        51.5,
+        33.4,
+        31.9,
+        93.7,
+        67.5,
+        66.1,
+        99.3,
+        112.1,
+        103.2,
+        69.4,
+        34.3,
+        35.2,
+        83.9,
+        72.1,
+        41.3,
+        36.9,
+        35.9,
+        75.1,
+        81.6,
+        49.2,
+        47.3,
+        31.9,
+        32.8,
+        33.6,
+        36.3,
+        32.6,
+        33.9,
+        31.1
+      ],
+      "frames": 72,
+      "indicator": {
+        "progress_changes": 65,
+        "spinner_frames": 72
+      },
+      "kind": "start",
+      "load": {
+        "add_ms": 55.3,
+        "index_ms": 31.8,
+        "instantiate_ms": 82.7,
+        "scene_ms": 1453.5,
+        "serve_max_ms": 148.3,
+        "setup_ms": 21.2,
+        "streamed": true,
+        "threaded": true
+      },
+      "loaded": true,
+      "longest_ms": 180.4,
+      "longest_steps": "read",
+      "map": "istanbul_halic_cells_shader",
+      "over_100_ms": 3,
+      "steps_ms": {
+        "add": 63.7,
+        "categories": 95.4,
+        "index": 46.4,
+        "instantiate": 1.4,
+        "npcs": 3.2,
+        "occluders": 0.8,
+        "place": 0.1,
+        "prepare_material": 6.4,
+        "prepare_shader": 216.4,
+        "prime": 18.6,
+        "profile": 26.5,
+        "read": 657.0,
+        "render_settings": 4.5,
+        "show_buildings": 0.0,
+        "show_decor": 0.0,
+        "show_facade_detail": 0.0,
+        "show_ground": 0.0,
+        "show_lamps": 0.0,
+        "show_map": 6.4,
+        "show_trees": 0.0,
+        "show_vehicles": 0.1,
+        "show_water": 0.0,
+        "streamer": 21.2,
+        "vehicles": 63.4,
+        "warm_cell": 246.5
+      },
+      "threaded": true,
+      "total_ms": 2978.2
+    },
+    "map": "istanbul_halic_cells_shader",
+    "map_ready_ms": 4875,
+    "max_fps": 30,
+    "npcs": 2,
+    "perf_feature": true,
+    "physics_3d": "GodotPhysics3D",
+    "physics_engine_setting": "DEFAULT",
+    "physics_interpolation": true,
+    "physics_ticks": 60,
+    "screen_refresh_rate": 60.0000038146973,
+    "streaming": {
+      "attach_max_ms": 0.0,
+      "cells": 2612,
+      "failed": 0,
+      "loaded": 13,
+      "loaded_mb": 0.3,
+      "loads": 13,
+      "meshes": 17,
+      "pending": 0,
+      "prime_cells": 7,
+      "prime_ms": 18.6,
+      "primes": 1,
+      "unloads": 0
+    },
+    "vehicles": "awake",
+    "vsync_mode": 1
+  }
+}

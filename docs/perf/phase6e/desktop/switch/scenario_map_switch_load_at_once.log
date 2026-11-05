@@ -1,0 +1,74 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+Metal 4.0 - Forward Mobile - Using Device #0: Apple - Apple M5 (Apple9)
+
+SAFE_AREA window=(960, 540) safe=[P: (0, 0), S: (0, 0)] canvas=[P: (0.0, 0.0), S: (1600.0, 900.0)] viewport=(1600.0, 900.0)
+RUNTIME {"threaded_load":false}
+QUALITY profile=none experiment=scenario_map_switch_load_at_once occluders={} effective={"camera_far":1500.0,"fog":false,"hide":[],"lod_threshold":1.0,"max_fps":0,"occlusion":false,"render_scale":1.0,"scaling_mode":"bilinear","shadows":"default","visibility_end":{}}
+STREAMING istanbul_halic_cells_shader primed 2606 cells in 877 ms ({"attach_max_ms":0.0,"cells":2612,"failed":0,"loaded":2612,"loaded_mb":67.2,"loads":2612,"meshes":4726,"pending":0,"prime_cells":2606,"prime_ms":876.6,"primes":1,"unloads":0}), load {"add_ms":15.4,"index_ms":80.7,"instantiate_ms":71.9,"scene_ms":238.7,"serve_max_ms":0.0,"setup_ms":11.2,"streamed":true,"threaded":false}
+SCENARIO step=start result=INFO t=0.0 scenario=map_switch rotate_hold_s=0
+SCENARIO step=hold_istanbul_halic_cells_shader result=INFO t=0.0 unix 1793905093.245
+LOADING {"frames":1,"kind":"start","loaded":true,"longest_ms":1350.2,"longest_steps":"all","map":"istanbul_halic_cells_shader","over_100_ms":1,"threaded":false,"total_ms":1350.2}
+LOADING_LOAD istanbul_halic_cells_shader {"add_ms":15.4,"index_ms":80.7,"instantiate_ms":71.9,"scene_ms":238.7,"serve_max_ms":0.0,"setup_ms":11.2,"streamed":true,"threaded":false}
+STARTUP map_ready_ms=1731 first_frame_ms=1770 map=istanbul_halic_cells_shader profile=none occluders={} physics_3d=GodotPhysics3D (setting DEFAULT) vehicles=awake npcs=2 streaming={"attach_max_ms":0.0,"cells":2612,"failed":0,"loaded":2612,"loaded_mb":67.2,"loads":2612,"meshes":4726,"pending":0,"prime_cells":2606,"prime_ms":876.6,"primes":1,"unloads":0} load={"add_ms":15.4,"index_ms":80.7,"instantiate_ms":71.9,"scene_ms":238.7,"serve_max_ms":0.0,"setup_ms":11.2,"streamed":true,"threaded":false} build={"android_frame_pacing":true,"debug_build":true,"display_refresh_rate":60.0,"ios_allow_high_refresh_rate":false,"max_fps":0,"perf_feature":false,"physics_engine_setting":"DEFAULT","physics_interpolation":true,"physics_ticks":60,"screen_refresh_rate":60.0,"vsync_mode":1} user_dir=~/Library/Application Support/Godot/app_userdata/İstanbul • Haliç
+PERF map=istanbul_halic_cells_shader profile=none view="Spawn" fps=120 draw_calls=2236 primitives=748297 objects=2557 video_mem_mb=341 static_mem_mb=250 static_peak_mb=250 vehicles=awake cells=2612 pending=0 cell_mb=67.2
+VEHICLE PlaceholderCar asleep
+PERF map=istanbul_halic_cells_shader profile=none view="Spawn" fps=120 draw_calls=2236 primitives=748301 objects=2559 video_mem_mb=341 static_mem_mb=250 static_peak_mb=250 vehicles=asleep cells=2612 pending=0 cell_mb=67.2
+PERF map=istanbul_halic_cells_shader profile=none view="Spawn" fps=120 draw_calls=2238 primitives=748793 objects=2561 video_mem_mb=341 static_mem_mb=250 static_peak_mb=250 vehicles=asleep cells=2612 pending=0 cell_mb=67.2
+PERF map=istanbul_halic_cells_shader profile=none view="Spawn" fps=120 draw_calls=2238 primitives=748793 objects=2561 video_mem_mb=341 static_mem_mb=250 static_peak_mb=250 vehicles=asleep cells=2612 pending=0 cell_mb=67.2
+SCENARIO step=switch_1_start result=INFO t=8.0 istanbul_halic_cells_shader -> istanbul_halic, nodes 7908, unix 1793905101.252
+VEHICLE PlaceholderCar awake
+RUNTIME {"threaded_load":false}
+QUALITY profile=none experiment=scenario_map_switch_load_at_once occluders={} effective={"camera_far":1500.0,"fog":false,"hide":[],"lod_threshold":1.0,"max_fps":0,"occlusion":false,"render_scale":1.0,"scaling_mode":"bilinear","shadows":"default","visibility_end":{}}
+STREAMING istanbul_halic primed 1051 cells in 1110 ms ({"attach_max_ms":0.0,"cells":1056,"failed":0,"loaded":1056,"loaded_mb":155.3,"loads":1056,"meshes":1652,"pending":0,"prime_cells":1051,"prime_ms":1110.1,"primes":1,"unloads":0}), load {"add_ms":2.4,"index_ms":35.4,"instantiate_ms":69.2,"scene_ms":236.3,"serve_max_ms":0.0,"setup_ms":14.2,"streamed":true,"threaded":false}
+MAP istanbul_halic loaded in 1700 ms (istanbul_halic_cells_shader freed after 222 ms, 16 frames)
+LOADING {"frames":17,"kind":"switch","loaded":true,"longest_ms":1487.5,"longest_steps":"all","map":"istanbul_halic","over_100_ms":1,"threaded":false,"total_ms":1487.5}
+LOADING_LOAD istanbul_halic {"add_ms":2.4,"index_ms":35.4,"instantiate_ms":69.2,"scene_ms":236.3,"serve_max_ms":0.0,"setup_ms":14.2,"streamed":true,"threaded":false}
+SCENARIO step=switch_1 result=PASS t=10.7 istanbul_halic_cells_shader -> istanbul_halic in 1700 ms, player 0.00 m from its spawn, nodes 4834 (earlier on this map: -), loading screen {"frames":17,"longest_ms":1487.5,"longest_steps":"all","over_100_ms":1,"threaded":false}, unix 1793905103.953
+PERF map=istanbul_halic profile=none view="Spawn" fps=62 draw_calls=1135 primitives=2313602 objects=1430 video_mem_mb=564 static_mem_mb=197 static_peak_mb=250 vehicles=awake cells=1056 pending=0 cell_mb=155.3
+VEHICLE PlaceholderCar asleep
+PERF map=istanbul_halic profile=none view="Spawn" fps=120 draw_calls=1135 primitives=2313610 objects=1434 video_mem_mb=564 static_mem_mb=197 static_peak_mb=250 vehicles=asleep cells=1056 pending=0 cell_mb=155.3
+PERF map=istanbul_halic profile=none view="Spawn" fps=120 draw_calls=1136 primitives=2314090 objects=1435 video_mem_mb=564 static_mem_mb=197 static_peak_mb=250 vehicles=asleep cells=1056 pending=0 cell_mb=155.3
+PERF map=istanbul_halic profile=none view="Spawn" fps=120 draw_calls=1137 primitives=2314102 objects=1436 video_mem_mb=564 static_mem_mb=197 static_peak_mb=250 vehicles=asleep cells=1056 pending=0 cell_mb=155.3
+SCENARIO step=switch_2_start result=INFO t=18.7 istanbul_halic -> istanbul_halic_cells_shader, nodes 4834, unix 1793905111.960
+RUNTIME {"threaded_load":false}
+QUALITY profile=none experiment=scenario_map_switch_load_at_once occluders={} effective={"camera_far":1500.0,"fog":false,"hide":[],"lod_threshold":1.0,"max_fps":0,"occlusion":false,"render_scale":1.0,"scaling_mode":"bilinear","shadows":"default","visibility_end":{}}
+STREAMING istanbul_halic_cells_shader primed 2606 cells in 1002 ms ({"attach_max_ms":0.0,"cells":2612,"failed":0,"loaded":2612,"loaded_mb":67.2,"loads":2612,"meshes":4726,"pending":0,"prime_cells":2606,"prime_ms":1002.2,"primes":1,"unloads":0}), load {"add_ms":5.4,"index_ms":83.9,"instantiate_ms":70.8,"scene_ms":225.8,"serve_max_ms":0.0,"setup_ms":15.1,"streamed":true,"threaded":false}
+MAP istanbul_halic_cells_shader loaded in 1544 ms (istanbul_halic freed after 125 ms, 10 frames)
+LOADING {"frames":11,"kind":"switch","loaded":true,"longest_ms":1435.4,"longest_steps":"all","map":"istanbul_halic_cells_shader","over_100_ms":1,"threaded":false,"total_ms":1435.4}
+LOADING_LOAD istanbul_halic_cells_shader {"add_ms":5.4,"index_ms":83.9,"instantiate_ms":70.8,"scene_ms":225.8,"serve_max_ms":0.0,"setup_ms":15.1,"streamed":true,"threaded":false}
+PERF map=istanbul_halic_cells_shader profile=none view="Spawn" fps=65 draw_calls=2237 primitives=748417 objects=2536 video_mem_mb=341 static_mem_mb=251 static_peak_mb=251 vehicles=awake cells=2612 pending=0 cell_mb=67.2
+SCENARIO step=switch_2 result=PASS t=21.3 istanbul_halic -> istanbul_halic_cells_shader in 1544 ms, player 0.00 m from its spawn, nodes 7908 (earlier on this map: 7908), loading screen {"frames":11,"longest_ms":1435.4,"longest_steps":"all","over_100_ms":1,"threaded":false}, unix 1793905114.512
+PERF map=istanbul_halic_cells_shader profile=none view="Spawn" fps=120 draw_calls=2236 primitives=748297 objects=2557 video_mem_mb=341 static_mem_mb=251 static_peak_mb=251 vehicles=awake cells=2612 pending=0 cell_mb=67.2
+VEHICLE PlaceholderCar asleep
+PERF map=istanbul_halic_cells_shader profile=none view="Spawn" fps=120 draw_calls=2236 primitives=748301 objects=2559 video_mem_mb=341 static_mem_mb=251 static_peak_mb=251 vehicles=asleep cells=2612 pending=0 cell_mb=67.2
+PERF map=istanbul_halic_cells_shader profile=none view="Spawn" fps=120 draw_calls=2238 primitives=748793 objects=2561 video_mem_mb=341 static_mem_mb=251 static_peak_mb=251 vehicles=asleep cells=2612 pending=0 cell_mb=67.2
+PERF map=istanbul_halic_cells_shader profile=none view="Spawn" fps=120 draw_calls=2238 primitives=748793 objects=2561 video_mem_mb=341 static_mem_mb=251 static_peak_mb=251 vehicles=asleep cells=2612 pending=0 cell_mb=67.2
+SCENARIO step=switch_3_start result=INFO t=29.3 istanbul_halic_cells_shader -> istanbul_halic_cells, nodes 7908, unix 1793905122.520
+RUNTIME {"threaded_load":false}
+QUALITY profile=none experiment=scenario_map_switch_load_at_once occluders={} effective={"camera_far":1500.0,"fog":false,"hide":[],"lod_threshold":1.0,"max_fps":0,"occlusion":false,"render_scale":1.0,"scaling_mode":"bilinear","shadows":"default","visibility_end":{}}
+STREAMING istanbul_halic_cells primed 2608 cells in 1805 ms ({"attach_max_ms":0.0,"cells":2613,"failed":0,"loaded":2613,"loaded_mb":161.7,"loads":2613,"meshes":4726,"pending":0,"prime_cells":2608,"prime_ms":1805.3,"primes":1,"unloads":0}), load {"add_ms":4.1,"index_ms":88.2,"instantiate_ms":70.9,"scene_ms":228.1,"serve_max_ms":0.0,"setup_ms":11.4,"streamed":true,"threaded":false}
+MAP istanbul_halic_cells loaded in 2423 ms (istanbul_halic_cells_shader freed after 199 ms, 16 frames)
+LOADING {"frames":17,"kind":"switch","loaded":true,"longest_ms":2243.4,"longest_steps":"all","map":"istanbul_halic_cells","over_100_ms":1,"threaded":false,"total_ms":2243.4}
+LOADING_LOAD istanbul_halic_cells {"add_ms":4.1,"index_ms":88.2,"instantiate_ms":70.9,"scene_ms":228.1,"serve_max_ms":0.0,"setup_ms":11.4,"streamed":true,"threaded":false}
+PERF map=istanbul_halic_cells profile=none view="Spawn" fps=60 draw_calls=2236 primitives=1306731 objects=2543 video_mem_mb=723 static_mem_mb=259 static_peak_mb=259 vehicles=awake cells=2613 pending=0 cell_mb=161.7
+SCENARIO step=switch_3 result=PASS t=32.7 istanbul_halic_cells_shader -> istanbul_halic_cells in 2423 ms, player 0.00 m from its spawn, nodes 7908 (earlier on this map: -), loading screen {"frames":17,"longest_ms":2243.4,"longest_steps":"all","over_100_ms":1,"threaded":false}, unix 1793905125.943
+VEHICLE PlaceholderCar asleep
+PERF map=istanbul_halic_cells profile=none view="Spawn" fps=120 draw_calls=2236 primitives=1306735 objects=2545 video_mem_mb=723 static_mem_mb=259 static_peak_mb=259 vehicles=asleep cells=2613 pending=0 cell_mb=161.7
+PERF map=istanbul_halic_cells profile=none view="Spawn" fps=120 draw_calls=2236 primitives=1306739 objects=2547 video_mem_mb=723 static_mem_mb=259 static_peak_mb=259 vehicles=asleep cells=2613 pending=0 cell_mb=161.7
+PERF map=istanbul_halic_cells profile=none view="Spawn" fps=119 draw_calls=2238 primitives=1307231 objects=2549 video_mem_mb=723 static_mem_mb=259 static_peak_mb=259 vehicles=asleep cells=2613 pending=0 cell_mb=161.7
+PERF map=istanbul_halic_cells profile=none view="Spawn" fps=121 draw_calls=2239 primitives=1307711 objects=2550 video_mem_mb=723 static_mem_mb=259 static_peak_mb=259 vehicles=asleep cells=2613 pending=0 cell_mb=161.7
+SCENARIO step=switch_4_start result=INFO t=40.7 istanbul_halic_cells -> istanbul_halic_cells_shader, nodes 7908, unix 1793905133.951
+RUNTIME {"threaded_load":false}
+QUALITY profile=none experiment=scenario_map_switch_load_at_once occluders={} effective={"camera_far":1500.0,"fog":false,"hide":[],"lod_threshold":1.0,"max_fps":0,"occlusion":false,"render_scale":1.0,"scaling_mode":"bilinear","shadows":"default","visibility_end":{}}
+STREAMING istanbul_halic_cells_shader primed 2606 cells in 997 ms ({"attach_max_ms":0.0,"cells":2612,"failed":0,"loaded":2612,"loaded_mb":67.2,"loads":2612,"meshes":4726,"pending":0,"prime_cells":2606,"prime_ms":997.2,"primes":1,"unloads":0}), load {"add_ms":5.4,"index_ms":81.9,"instantiate_ms":71.3,"scene_ms":231.0,"serve_max_ms":0.0,"setup_ms":12.2,"streamed":true,"threaded":false}
+MAP istanbul_halic_cells_shader loaded in 1650 ms (istanbul_halic_cells freed after 235 ms, 16 frames)
+LOADING {"frames":17,"kind":"switch","loaded":true,"longest_ms":1431.4,"longest_steps":"all","map":"istanbul_halic_cells_shader","over_100_ms":1,"threaded":false,"total_ms":1431.4}
+LOADING_LOAD istanbul_halic_cells_shader {"add_ms":5.4,"index_ms":81.9,"instantiate_ms":71.3,"scene_ms":231.0,"serve_max_ms":0.0,"setup_ms":12.2,"streamed":true,"threaded":false}
+SCENARIO step=switch_4 result=PASS t=43.4 istanbul_halic_cells -> istanbul_halic_cells_shader in 1650 ms, player 0.00 m from its spawn, nodes 7908 (earlier on this map: 7908), loading screen {"frames":17,"longest_ms":1431.4,"longest_steps":"all","over_100_ms":1,"threaded":false}, unix 1793905136.607
+PERF map=istanbul_halic_cells_shader profile=none view="Spawn" fps=106 draw_calls=2236 primitives=748297 objects=2557 video_mem_mb=341 static_mem_mb=253 static_peak_mb=259 vehicles=awake cells=2612 pending=0 cell_mb=67.2
+VEHICLE PlaceholderCar asleep
+PERF map=istanbul_halic_cells_shader profile=none view="Spawn" fps=120 draw_calls=2236 primitives=748301 objects=2559 video_mem_mb=341 static_mem_mb=253 static_peak_mb=259 vehicles=asleep cells=2612 pending=0 cell_mb=67.2
+PERF map=istanbul_halic_cells_shader profile=none view="Spawn" fps=120 draw_calls=2237 primitives=748781 objects=2560 video_mem_mb=341 static_mem_mb=253 static_peak_mb=259 vehicles=asleep cells=2612 pending=0 cell_mb=67.2
+PERF map=istanbul_halic_cells_shader profile=none view="Spawn" fps=120 draw_calls=2238 primitives=748793 objects=2561 video_mem_mb=341 static_mem_mb=253 static_peak_mb=259 vehicles=asleep cells=2612 pending=0 cell_mb=67.2
+SCENARIO step=done result=PASS t=51.4 passed=4 failed=0
+BENCH_DONE

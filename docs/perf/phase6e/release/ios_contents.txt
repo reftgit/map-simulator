@@ -1,0 +1,23 @@
+build/ios_release/map_simulator.pck: 2800 files, 106.4 MB stored
+  maps/istanbul_halic_cells_shader/streaming                     2621 files     103.4 MB
+  maps/istanbul_halic_cells                                         1 files       2.3 MB
+  .godot/exported                                                  18 files       0.5 MB
+  game/debug                                                       13 files       0.0 MB
+  game/world                                                       19 files       0.0 MB
+  game                                                              3 files       0.0 MB
+  game/player                                                      31 files       0.0 MB
+  game/vehicle                                                     20 files       0.0 MB
+  .godot/imported                                                   9 files       0.0 MB
+  .godot                                                            2 files       0.0 MB
+  (root)                                                            3 files       0.0 MB
+  game/quality                                                      8 files       0.0 MB
+  game/ui                                                          15 files       0.0 MB
+  maps/istanbul_halic_cells_shader                                  5 files       0.0 MB
+  game/input                                                        8 files       0.0 MB
+  game/npc                                                          7 files       0.0 MB
+  game/camera                                                       7 files       0.0 MB
+  game/platform                                                     2 files       0.0 MB
+  maps/istanbul_halic                                               3 files       0.0 MB
+  game/combat                                                       4 files       0.0 MB
+  scripts                                                           1 files       0.0 MB
+2710 project files packed, 2710 expected: 0 unexpected, 0 missing, 0 orphaned converted or imported files

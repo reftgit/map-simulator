@@ -1,0 +1,519 @@
+{
+  "config": {
+    "experiment": "e_load_start_high",
+    "map": "istanbul_halic_cells_shader",
+    "profile": "high",
+    "runtime": {},
+    "settings": {}
+  },
+  "occluders": {
+    "ms": 1,
+    "occluders": 643,
+    "source": "baked",
+    "triangles": 317518
+  },
+  "profile": "high",
+  "results": [
+    {
+      "avg_fps": 60.0,
+      "draw_calls": 259,
+      "experiment": "e_load_start_high",
+      "frame_hist_ms": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        13,
+        75,
+        29,
+        1,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "frame_p50_ms": 16.72,
+      "frame_p90_ms": 17.37,
+      "frame_p99_ms": 18.49,
+      "frames": 120,
+      "in_vehicle": false,
+      "long_frames": 1,
+      "low1_fps": 54.07,
+      "min_fps": 47.56,
+      "npcs": 2,
+      "npcs_near": 0.0,
+      "objects": 259,
+      "physics_ms": 1.537,
+      "physics_p99_ms": 1.565,
+      "primitives": 181861,
+      "process_ms": 18.859,
+      "process_p99_ms": 19.683,
+      "profile": "high",
+      "renderer": "mobile",
+      "static_mem_mb": 0,
+      "static_peak_mb": 0,
+      "streaming": {
+        "attach_frames": 0,
+        "attach_max_ms": 0.0,
+        "loaded": 44,
+        "loaded_mb": 0.8,
+        "loads": 0,
+        "missing_frames": -1,
+        "pending": 0,
+        "primes": 0,
+        "unloads": 0
+      },
+      "vehicles_asleep": 0.742,
+      "video_mem_mb": 286,
+      "view": "Spawn",
+      "window": "(2532, 1170)"
+    }
+  ],
+  "startup": {
+    "android_frame_pacing": true,
+    "debug_build": false,
+    "display_refresh_rate": 60.0,
+    "first_frame_ms": 844,
+    "ios_allow_high_refresh_rate": false,
+    "load": {
+      "add_ms": 8.2,
+      "index_ms": 9.4,
+      "instantiate_ms": 19.3,
+      "scene_ms": 264.8,
+      "serve_max_ms": 34.2,
+      "setup_ms": 2.5,
+      "streamed": true,
+      "threaded": true
+    },
+    "loading": {
+      "boot_ms": 105.5,
+      "frame_detail": [
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 58.5
+          },
+          "ms": 65.7,
+          "pipelines": 2,
+          "render_cpu_ms": 0.0,
+          "steps": "boot"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 39.7,
+            "post_draw": 39.4,
+            "pre_draw": 12.2
+          },
+          "ms": 39.8,
+          "pipelines": 6,
+          "render_cpu_ms": 0.2,
+          "steps": "boot"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 20.1,
+            "post_draw": 13.4,
+            "pre_draw": 12.3
+          },
+          "ms": 20.2,
+          "pipelines": 0,
+          "render_cpu_ms": 0.0,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 16.6,
+            "post_draw": 13.2,
+            "pre_draw": 12.2
+          },
+          "ms": 16.6,
+          "pipelines": 0,
+          "render_cpu_ms": 0.1,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 16.6,
+            "post_draw": 13.3,
+            "pre_draw": 12.2
+          },
+          "ms": 16.7,
+          "pipelines": 0,
+          "render_cpu_ms": 0.1,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 16.6,
+            "post_draw": 12.8,
+            "pre_draw": 12.7
+          },
+          "ms": 16.7,
+          "pipelines": 0,
+          "render_cpu_ms": 0.1,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 17.2,
+            "post_draw": 12.3,
+            "pre_draw": 12.2
+          },
+          "ms": 17.2,
+          "pipelines": 0,
+          "render_cpu_ms": 0.0,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 17.0,
+            "post_draw": 15.3,
+            "pre_draw": 15.1
+          },
+          "ms": 17.0,
+          "pipelines": 0,
+          "render_cpu_ms": 0.0,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 18.3,
+            "post_draw": 18.0,
+            "pre_draw": 17.9
+          },
+          "ms": 18.3,
+          "pipelines": 0,
+          "render_cpu_ms": 0.0,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 64.6,
+            "post_draw": 49.4,
+            "pre_draw": 47.9
+          },
+          "ms": 65.3,
+          "pipelines": 0,
+          "render_cpu_ms": 0.3,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 15.5,
+            "post_draw": 5.0,
+            "pre_draw": 2.6
+          },
+          "ms": 15.6,
+          "pipelines": 1,
+          "render_cpu_ms": 1.2,
+          "steps": "instantiate,prepare_material"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 16.7,
+            "post_draw": 2.3,
+            "pre_draw": 0.5
+          },
+          "ms": 16.7,
+          "pipelines": 0,
+          "render_cpu_ms": 1.9,
+          "steps": "prepare_material"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 17.5,
+            "post_draw": 17.4,
+            "pre_draw": 14.3
+          },
+          "ms": 17.8,
+          "pipelines": 2,
+          "render_cpu_ms": 1.9,
+          "steps": "prepare_material,prepare_shader,add"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 15.3,
+            "post_draw": 10.6,
+            "pre_draw": 5.4
+          },
+          "ms": 15.4,
+          "pipelines": 4,
+          "render_cpu_ms": 2.0,
+          "steps": "streamer,warm_cell"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 20.0,
+            "post_draw": 19.8,
+            "pre_draw": 18.4
+          },
+          "ms": 67.1,
+          "pipelines": 4,
+          "render_cpu_ms": 0.2,
+          "steps": "warm_cell,place,vehicles,npcs,categories"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 16.3,
+            "post_draw": 13.6,
+            "pre_draw": 11.4
+          },
+          "ms": 18.1,
+          "pipelines": 0,
+          "render_cpu_ms": 0.3,
+          "steps": "render_settings,occluders,profile"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 16.2,
+            "post_draw": 15.8,
+            "pre_draw": 11.7
+          },
+          "ms": 18.2,
+          "pipelines": 10,
+          "render_cpu_ms": 2.4,
+          "steps": "prime,show_map,show_facade_detail"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 16.3,
+            "post_draw": 16.0,
+            "pre_draw": 0.2
+          },
+          "ms": 16.4,
+          "pipelines": 0,
+          "render_cpu_ms": 2.8,
+          "steps": "show_decor,show_lamps,show_trees,show_buildings"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 14.8,
+            "post_draw": 14.6,
+            "pre_draw": 3.5
+          },
+          "ms": 15.3,
+          "pipelines": 2,
+          "render_cpu_ms": 1.8,
+          "steps": "show_ground,show_water,show_vehicles"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 16.4,
+            "post_draw": 16.2,
+            "pre_draw": 8.4
+          },
+          "ms": 16.5,
+          "pipelines": 1,
+          "render_cpu_ms": 0.6,
+          "steps": "shown"
+        }
+      ],
+      "frame_ms": [
+        65.7,
+        39.8,
+        20.2,
+        16.6,
+        16.7,
+        16.7,
+        17.2,
+        17.0,
+        18.3,
+        65.3,
+        15.6,
+        16.7,
+        17.8,
+        15.4,
+        67.1,
+        18.1,
+        18.2,
+        16.4,
+        15.3,
+        16.5
+      ],
+      "frames": 18,
+      "indicator": {
+        "progress_changes": 18,
+        "spinner_frames": 18
+      },
+      "kind": "start",
+      "load": {
+        "add_ms": 8.2,
+        "index_ms": 9.4,
+        "instantiate_ms": 19.3,
+        "scene_ms": 264.8,
+        "serve_max_ms": 34.2,
+        "setup_ms": 2.5,
+        "streamed": true,
+        "threaded": true
+      },
+      "loaded": true,
+      "longest_ms": 67.1,
+      "longest_steps": "warm_cell,place,vehicles,npcs,categories",
+      "map": "istanbul_halic_cells_shader",
+      "over_100_ms": 0,
+      "steps_ms": {
+        "add": 9.5,
+        "categories": 15.0,
+        "index": 13.1,
+        "instantiate": 0.1,
+        "npcs": 0.3,
+        "occluders": 0.0,
+        "place": 0.0,
+        "prepare_material": 0.7,
+        "prepare_shader": 3.6,
+        "prime": 10.0,
+        "profile": 5.5,
+        "read": 152.2,
+        "render_settings": 0.0,
+        "show_buildings": 0.0,
+        "show_decor": 0.0,
+        "show_facade_detail": 0.0,
+        "show_ground": 0.0,
+        "show_lamps": 0.0,
+        "show_map": 1.5,
+        "show_trees": 0.0,
+        "show_vehicles": 3.2,
+        "show_water": 0.0,
+        "streamer": 2.5,
+        "vehicles": 1.4,
+        "warm_cell": 4.3
+      },
+      "threaded": true,
+      "total_ms": 405.1
+    },
+    "map": "istanbul_halic_cells_shader",
+    "map_ready_ms": 828,
+    "max_fps": 60,
+    "npcs": 2,
+    "perf_feature": true,
+    "physics_3d": "GodotPhysics3D",
+    "physics_engine_setting": "DEFAULT",
+    "physics_interpolation": true,
+    "physics_ticks": 60,
+    "screen_refresh_rate": 120.0,
+    "streaming": {
+      "attach_max_ms": 0.0,
+      "cells": 2612,
+      "failed": 0,
+      "loaded": 44,
+      "loaded_mb": 0.8,
+      "loads": 44,
+      "meshes": 72,
+      "pending": 0,
+      "prime_cells": 38,
+      "prime_ms": 10.0,
+      "primes": 1,
+      "unloads": 0
+    },
+    "vehicles": "awake",
+    "vsync_mode": 1
+  }
+}

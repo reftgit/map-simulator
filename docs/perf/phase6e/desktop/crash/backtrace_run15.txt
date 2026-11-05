@@ -1,0 +1,23 @@
+handle_crash: Program crashed with signal 11
+Engine version: Godot Engine v4.7.2.stable.official (ed1daf0bf001b61586d9930840f2f1394092c079)
+Dumping the backtrace. Please include this when reporting the bug on: https://github.com/godotengine/godot/issues
+Load address: 104fd8000
+
+[1] 183b05744 (libsystem_platform.dylib+3744) - _sigtramp + 56
+[2] 109307b24 (main+432fb24) - SDL_GetPerformanceFrequency + 39252616
+[3] 10915703c (main+417f03c) - SDL_GetPerformanceFrequency + 37480352
+[4] 108ad95b4 (main+3b015b4) - SDL_GetPerformanceFrequency + 30674200
+[5] 108202204 (main+322a204) - SDL_GetPerformanceFrequency + 21404008
+[6] 108201c30 (main+3229c30) - SDL_GetPerformanceFrequency + 21402516
+[7] 109d54248 (main+4d7c248) - ZSTD_decompressStream_simpleArgs + 6472164
+[8] 109d675b4 (main+4d8f5b4) - ZSTD_decompressStream_simpleArgs + 6550864
+[9] 1099964f0 (main+49be4f0) - ZSTD_decompressStream_simpleArgs + 2548876
+[10] 109999c04 (main+49c1c04) - ZSTD_decompressStream_simpleArgs + 2562976
+[11] 1099b30d0 (main+49db0d0) - ZSTD_decompressStream_simpleArgs + 2666604
+[12] 1099b4e20 (main+49dce20) - ZSTD_decompressStream_simpleArgs + 2674108
+[13] 109db79a0 (main+4ddf9a0) - ZSTD_decompressStream_simpleArgs + 6879548
+[14] 10b5e81ac (main+66101ac) - GL_ShadingRateQCOM + 22837192
+[15] 106a327f8 (main+1a5a7f8) - WebPGetColorPalette + 542628
+[16] 183afbc58 (libsystem_pthread.dylib+6c58) - _pthread_start + 136
+[17] 183af6c1c (libsystem_pthread.dylib+1c1c) - thread_start + 8
+-- END OF C++ BACKTRACE --

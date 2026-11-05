@@ -1,0 +1,5 @@
+{"experiment": "stage_tab", "device": "android", "battery_c_start": 37.5, "battery_c_end": 37.0,
+ "thermal_status_start": "0", "thermal_status_end": "0",
+ "battery_start": {"level": 17, "status": 2, "current_ma": -836, "source": "ac"}, "battery_end": {"level": 17, "status": 2, "current_ma": -855, "source": "ac"},
+ "pss_peak_kb": 0, "wall_s": 16, "started": "2026-11-05 16:33:15",
+ "cool_wait_s": 0, "cool_target_c": ""}

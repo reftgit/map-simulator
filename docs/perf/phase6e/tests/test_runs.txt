@@ -1,0 +1,31 @@
+# Phase 6e test runs (2026-11-05)
+
+## This checkout (every GLB, the test imports, every map's cells)
+c1: RESULT 425 passed, 0 failed, 0 skipped (exit 0); unit RESULT 273 passed, 0 failed, 0 skipped
+c2: RESULT 427 passed, 0 failed, 0 skipped (exit 0); unit RESULT 275 passed, 0 failed, 0 skipped
+c3: RESULT 429 passed, 0 failed, 0 skipped (exit 0); unit RESULT 277 passed, 0 failed, 0 skipped
+c4b: RESULT 429 passed, 0 failed, 0 skipped (exit 0); unit RESULT 277 passed, 0 failed, 0 skipped
+c5: RESULT 429 passed, 0 failed, 0 skipped (exit 0); unit RESULT 277 passed, 0 failed, 0 skipped
+(c1 = 23b4dbd, c2 = 1e7d539, c3 = 9d79333, c4b = a432870, c5 = 4e101fb with the documentation commit's experiments and test rule)
+
+## Clean clones without any GLB, test import, or cells (SKIPs expected, exit 2)
+23b4dbd full exit 2 RESULT 336 passed, 0 failed, 89 skipped 0 FAIL lines
+23b4dbd unit exit 0 RESULT 273 passed, 0 failed, 0 skipped
+23b4dbd check_release exit 1 RELEASE istanbul_halic_cells_shader: no cells written (res://maps/istanbul_halic_cells_shader/streaming/istanbul_halic_cells_shader_index.tres missing). Write them: godot --headless --path . --script res://tools/cell_map.gd -- --map=istanbul_halic_cells_shader, then godot --headless --path . --import RELEASE Android Release: not ready to export (1 problems) 
+1e7d539 full exit 2 RESULT 338 passed, 0 failed, 89 skipped 0 FAIL lines
+1e7d539 unit exit 0 RESULT 275 passed, 0 failed, 0 skipped
+1e7d539 check_release exit 1 RELEASE istanbul_halic_cells_shader: no cells written (res://maps/istanbul_halic_cells_shader/streaming/istanbul_halic_cells_shader_index.tres missing). Write them: godot --headless --path . --script res://tools/cell_map.gd -- --map=istanbul_halic_cells_shader, then godot --headless --path . --import RELEASE Android Release: not ready to export (1 problems) 
+9d79333 full exit 2 RESULT 340 passed, 0 failed, 89 skipped 0 FAIL lines
+9d79333 unit exit 0 RESULT 277 passed, 0 failed, 0 skipped
+9d79333 check_release exit 1 RELEASE istanbul_halic_cells_shader: no cells written (res://maps/istanbul_halic_cells_shader/streaming/istanbul_halic_cells_shader_index.tres missing). Write them: godot --headless --path . --script res://tools/cell_map.gd -- --map=istanbul_halic_cells_shader, then godot --headless --path . --import RELEASE Android Release: not ready to export (1 problems) 
+a432870 full exit 2 RESULT 340 passed, 0 failed, 89 skipped 0 FAIL lines
+a432870 unit exit 0 RESULT 277 passed, 0 failed, 0 skipped
+a432870 check_release exit 1 RELEASE istanbul_halic_cells_shader: no cells written (res://maps/istanbul_halic_cells_shader/streaming/istanbul_halic_cells_shader_index.tres missing). Write them: godot --headless --path . --script res://tools/cell_map.gd -- --map=istanbul_halic_cells_shader, then godot --headless --path . --import RELEASE Android Release: not ready to export (1 problems) 
+4e101fb full exit 2 RESULT 340 passed, 0 failed, 89 skipped 0 FAIL lines
+4e101fb unit exit 0 RESULT 277 passed, 0 failed, 0 skipped
+4e101fb check_release exit 1 RELEASE istanbul_halic_cells_shader: no cells written (res://maps/istanbul_halic_cells_shader/streaming/istanbul_halic_cells_shader_index.tres missing). Write them: godot --headless --path . --script res://tools/cell_map.gd -- --map=istanbul_halic_cells_shader, then godot --headless --path . --import RELEASE Android Release: not ready to export (1 problems) 
+
+## A clean clone of 4e101fb with only the default map's streaming folder copied in (no GLB)
+4e101fb_index_only full exit 2 RESULT 341 passed, 0 failed, 88 skipped 0 FAIL lines
+4e101fb_index_only unit exit 0 RESULT 277 passed, 0 failed, 0 skipped
+4e101fb_index_only check_release exit 1 RELEASE istanbul_halic_cells_shader: its cells cannot be packed (missing res://.godot/imported/istanbul_halic_cells_shader.glb-d15a8457060d477c7ec18d6abf364e7d.scn, the model to compare the cells with). Write them: godot --headless --path . --script res://tools/cell_map.gd -- --map=istanbul_halic_cells_shader, then godot --headless --path . --import RELEASE Android Release: not ready to export (1 

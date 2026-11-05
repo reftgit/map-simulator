@@ -1,0 +1,586 @@
+{
+  "config": {
+    "experiment": "scenario_extensibility",
+    "profile": "",
+    "runtime": {},
+    "scenario": {
+      "name": "extensibility",
+      "rotate_hold_s": 0.0
+    },
+    "settings": {}
+  },
+  "profile": "high",
+  "scenario": [
+    {
+      "detail": "scenario=extensibility rotate_hold_s=0",
+      "result": "INFO",
+      "step": "start",
+      "t": 0.0
+    },
+    {
+      "detail": "loaded after 2.2 s",
+      "result": "INFO",
+      "step": "map_test_district",
+      "t": 3.2
+    },
+    {
+      "detail": "map test_district, player 0.00 m from its spawn, vehicles 2, NPCs 3, nodes 222 (on istanbul_halic_cells_shader: 8552)",
+      "result": "PASS",
+      "step": "map_switch",
+      "t": 4.2
+    },
+    {
+      "detail": "PlaceholderVan (Van (placeholder)), asleep",
+      "result": "PASS",
+      "step": "van_parked",
+      "t": 5.4
+    },
+    {
+      "detail": "beside PlaceholderVan, interact button true",
+      "result": "PASS",
+      "step": "van_walk_up",
+      "t": 6.4
+    },
+    {
+      "detail": "driving PlaceholderVan, awake, camera on it true",
+      "result": "PASS",
+      "step": "van_get_in",
+      "t": 7.0
+    },
+    {
+      "detail": "forward speed 5.0 m/s (max 14)",
+      "result": "PASS",
+      "step": "van_throttle",
+      "t": 8.9
+    },
+    {
+      "detail": "speed when stopped 0.06 m/s",
+      "result": "PASS",
+      "step": "van_get_out",
+      "t": 10.4
+    },
+    {
+      "detail": "PlaceholderVan asleep",
+      "result": "PASS",
+      "step": "van_asleep_after_getting_out",
+      "t": 10.9
+    },
+    {
+      "detail": "Npc3 moved 6.8 m in 3 s, 0 arrivals, state Walk",
+      "result": "PASS",
+      "step": "npc_patrols",
+      "t": 13.9
+    },
+    {
+      "detail": "Npc3 hit after 1 punch(es), state HitReaction",
+      "result": "PASS",
+      "step": "npc_hit_reaction",
+      "t": 16.7
+    },
+    {
+      "detail": "1 hit(s) for the punch that landed",
+      "result": "PASS",
+      "step": "npc_one_hit_per_punch",
+      "t": 17.7
+    },
+    {
+      "detail": "Npc3 state Idle, moved 0.6 m, heading for point 1 (was 0)",
+      "result": "PASS",
+      "step": "npc_patrol_resumes",
+      "t": 21.2
+    },
+    {
+      "detail": "loaded after 6.1 s",
+      "result": "INFO",
+      "step": "map_istanbul_halic_cells_shader",
+      "t": 27.2
+    },
+    {
+      "detail": "map istanbul_halic_cells_shader, player 0.00 m from its spawn, vehicles 1, NPCs 2, nodes 8552 (before the switches 8552)",
+      "result": "PASS",
+      "step": "map_back",
+      "t": 28.2
+    },
+    {
+      "detail": "car asleep",
+      "result": "PASS",
+      "step": "parked_car_asleep",
+      "t": 29.4
+    },
+    {
+      "detail": "distance 2.5 m, car asleep, interact button true",
+      "result": "PASS",
+      "step": "car_button",
+      "t": 30.4
+    },
+    {
+      "detail": "player on a wall true, car awake",
+      "result": "PASS",
+      "step": "walk_into_car_wakes_it",
+      "t": 30.8
+    },
+    {
+      "detail": "after 1.3 s",
+      "result": "PASS",
+      "step": "asleep_after_stopping",
+      "t": 32.1
+    },
+    {
+      "detail": "player touched the car true, distance 1.36 m",
+      "result": "PASS",
+      "step": "stays_asleep_beside_it",
+      "t": 35.1
+    },
+    {
+      "detail": "driving true, car awake",
+      "result": "PASS",
+      "step": "get_in_wakes_it",
+      "t": 35.6
+    },
+    {
+      "detail": "forward speed 5.1 m/s",
+      "result": "PASS",
+      "step": "throttle",
+      "t": 36.8
+    },
+    {
+      "detail": "speed when stopped 0.08 m/s",
+      "result": "PASS",
+      "step": "get_out",
+      "t": 38.2
+    },
+    {
+      "detail": "car asleep",
+      "result": "PASS",
+      "step": "asleep_after_getting_out",
+      "t": 38.7
+    },
+    {
+      "detail": "view Galata street, facing south, ground slope under the car 12.6°",
+      "result": "PASS",
+      "step": "slope_setup",
+      "t": 42.7
+    },
+    {
+      "detail": "player on a wall true, car awake",
+      "result": "PASS",
+      "step": "slope_walk_into_car_wakes_it",
+      "t": 43.4
+    },
+    {
+      "detail": "after 1.8 s",
+      "result": "PASS",
+      "step": "slope_asleep_after_stopping",
+      "t": 45.2
+    },
+    {
+      "detail": "player touched the car true, distance 1.26 m",
+      "result": "PASS",
+      "step": "slope_stays_asleep_beside_it",
+      "t": 48.2
+    },
+    {
+      "detail": "passed=25 failed=0",
+      "result": "PASS",
+      "step": "done",
+      "t": 48.2
+    }
+  ],
+  "startup": {
+    "android_frame_pacing": true,
+    "debug_build": true,
+    "display_refresh_rate": 60.0,
+    "first_frame_ms": 1036,
+    "ios_allow_high_refresh_rate": false,
+    "load": {
+      "add_ms": 9.4,
+      "index_ms": 10.6,
+      "instantiate_ms": 108.2,
+      "scene_ms": 298.9,
+      "serve_max_ms": 35.5,
+      "setup_ms": 2.8,
+      "streamed": true,
+      "threaded": true
+    },
+    "loading": {
+      "boot_ms": 98.4,
+      "frame_detail": [
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 53.7
+          },
+          "ms": 60.5,
+          "pipelines": 2,
+          "render_cpu_ms": 0.0,
+          "steps": "boot"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 37.8,
+            "post_draw": 35.0,
+            "pre_draw": 15.5
+          },
+          "ms": 37.9,
+          "pipelines": 6,
+          "render_cpu_ms": 0.3,
+          "steps": "boot"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 14.8,
+            "post_draw": 13.8,
+            "pre_draw": 12.2
+          },
+          "ms": 14.8,
+          "pipelines": 0,
+          "render_cpu_ms": 0.0,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 16.7,
+            "post_draw": 13.4,
+            "pre_draw": 12.2
+          },
+          "ms": 16.7,
+          "pipelines": 0,
+          "render_cpu_ms": 0.1,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 16.5,
+            "post_draw": 12.3,
+            "pre_draw": 12.2
+          },
+          "ms": 16.6,
+          "pipelines": 0,
+          "render_cpu_ms": 0.1,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 16.6,
+            "post_draw": 12.3,
+            "pre_draw": 12.1
+          },
+          "ms": 16.7,
+          "pipelines": 0,
+          "render_cpu_ms": 0.1,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 16.7,
+            "post_draw": 12.3,
+            "pre_draw": 12.1
+          },
+          "ms": 16.7,
+          "pipelines": 0,
+          "render_cpu_ms": 0.0,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 16.7,
+            "post_draw": 12.3,
+            "pre_draw": 12.2
+          },
+          "ms": 16.7,
+          "pipelines": 0,
+          "render_cpu_ms": 0.0,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 18.3,
+            "post_draw": 12.4,
+            "pre_draw": 12.2
+          },
+          "ms": 18.4,
+          "pipelines": 0,
+          "render_cpu_ms": 0.1,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 24.6,
+            "post_draw": 13.1,
+            "pre_draw": 12.7
+          },
+          "ms": 24.7,
+          "pipelines": 0,
+          "render_cpu_ms": 0.0,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 22.4,
+            "post_draw": 21.7,
+            "pre_draw": 21.5
+          },
+          "ms": 22.4,
+          "pipelines": 0,
+          "render_cpu_ms": 0.0,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 154.9,
+            "post_draw": 51.8,
+            "pre_draw": 50.0
+          },
+          "ms": 155.6,
+          "pipelines": 0,
+          "render_cpu_ms": 0.4,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 12.4,
+            "post_draw": 6.8,
+            "pre_draw": 4.2
+          },
+          "ms": 12.5,
+          "pipelines": 1,
+          "render_cpu_ms": 1.5,
+          "steps": "instantiate,prepare_material"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 16.4,
+            "post_draw": 5.9,
+            "pre_draw": 2.7
+          },
+          "ms": 16.5,
+          "pipelines": 0,
+          "render_cpu_ms": 2.2,
+          "steps": "prepare_material"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 20.3,
+            "post_draw": 20.2,
+            "pre_draw": 17.1
+          },
+          "ms": 20.6,
+          "pipelines": 2,
+          "render_cpu_ms": 2.0,
+          "steps": "prepare_material,prepare_shader,add"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 12.7,
+            "post_draw": 8.8,
+            "pre_draw": 8.0
+          },
+          "ms": 12.7,
+          "pipelines": 4,
+          "render_cpu_ms": 2.1,
+          "steps": "streamer,warm_cell"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 26.1,
+            "post_draw": 26.0,
+            "pre_draw": 25.3
+          },
+          "ms": 76.0,
+          "pipelines": 4,
+          "render_cpu_ms": 0.3,
+          "steps": "warm_cell,place,vehicles,npcs,categories"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 24.1,
+            "post_draw": 12.8,
+            "pre_draw": 10.9
+          },
+          "ms": 24.4,
+          "pipelines": 0,
+          "render_cpu_ms": 0.3,
+          "steps": "render_settings,occluders,profile"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 21.0,
+            "post_draw": 20.8,
+            "pre_draw": 20.2
+          },
+          "ms": 21.1,
+          "pipelines": 2,
+          "render_cpu_ms": 1.5,
+          "steps": "prime"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 11.9,
+            "post_draw": 7.8,
+            "pre_draw": 4.4
+          },
+          "ms": 12.0,
+          "pipelines": 8,
+          "render_cpu_ms": 0.9,
+          "steps": "prime,show_map,show_facade_detail,show_decor,show_lamps"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 18.1,
+            "post_draw": 17.9,
+            "pre_draw": 0.2
+          },
+          "ms": 18.2,
+          "pipelines": 0,
+          "render_cpu_ms": 2.2,
+          "steps": "show_trees,show_buildings,show_ground,show_water"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 16.3,
+            "post_draw": 16.1,
+            "pre_draw": 6.0
+          },
+          "ms": 16.5,
+          "pipelines": 2,
+          "render_cpu_ms": 0.5,
+          "steps": "show_vehicles"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 18.1,
+            "post_draw": 17.9,
+            "pre_draw": 8.3
+          },
+          "ms": 18.2,
+          "pipelines": 1,
+          "render_cpu_ms": 0.5,
+          "steps": "shown"
+        }
+      ],
+      "frame_ms": [
+        60.5,
+        37.9,
+        14.8,
+        16.7,
+        16.6,
+        16.7,
+        16.7,
+        16.7,
+        18.4,
+        24.7,
+        22.4,
+        155.6,
+        12.5,
+        16.5,
+        20.6,
+        12.7,
+        76.0,
+        24.4,
+        21.1,
+        12.0,
+        18.2,
+        16.5,
+        18.2
+      ],
+      "frames": 21,
+      "indicator": {
+        "progress_changes": 20,
+        "spinner_frames": 21
+      },
+      "kind": "start",
+      "load": {
+        "add_ms": 9.4,
+        "index_ms": 10.6,
+        "instantiate_ms": 108.2,
+        "scene_ms": 298.9,
+        "serve_max_ms": 35.5,
+        "setup_ms": 2.8,
+        "streamed": true,
+        "threaded": true
+      },
+      "loaded": true,
+      "longest_ms": 155.6,
+      "longest_steps": "read",
+      "map": "istanbul_halic_cells_shader",
+      "over_100_ms": 1,
+      "steps_ms": {
+        "add": 10.8,
+        "categories": 20.0,
+        "index": 15.2,
+        "instantiate": 0.2,
+        "npcs": 0.3,
+        "occluders": 0.1,
+        "place": 0.0,
+        "prepare_material": 0.7,
+        "prepare_shader": 4.9,
+        "prime": 22.9,
+        "profile": 5.6,
+        "read": 180.7,
+        "render_settings": 0.0,
+        "show_buildings": 0.0,
+        "show_decor": 0.0,
+        "show_facade_detail": 0.0,
+        "show_ground": 0.0,
+        "show_lamps": 0.0,
+        "show_map": 1.5,
+        "show_trees": 0.0,
+        "show_vehicles": 5.7,
+        "show_water": 0.0,
+        "streamer": 2.8,
+        "vehicles": 2.2,
+        "warm_cell": 7.6
+      },
+      "threaded": true,
+      "total_ms": 568.0
+    },
+    "map": "istanbul_halic_cells_shader",
+    "map_ready_ms": 1018,
+    "max_fps": 60,
+    "npcs": 2,
+    "perf_feature": false,
+    "physics_3d": "GodotPhysics3D",
+    "physics_engine_setting": "DEFAULT",
+    "physics_interpolation": true,
+    "physics_ticks": 60,
+    "screen_refresh_rate": 120.0,
+    "streaming": {
+      "attach_max_ms": 0.0,
+      "cells": 2612,
+      "failed": 0,
+      "loaded": 44,
+      "loaded_mb": 0.8,
+      "loads": 44,
+      "meshes": 72,
+      "pending": 0,
+      "prime_cells": 38,
+      "prime_ms": 22.9,
+      "primes": 1,
+      "unloads": 0
+    },
+    "vehicles": "awake",
+    "vsync_mode": 1
+  }
+}

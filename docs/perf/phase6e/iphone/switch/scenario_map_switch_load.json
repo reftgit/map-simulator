@@ -1,0 +1,564 @@
+{
+  "config": {
+    "experiment": "scenario_map_switch_load",
+    "map": "istanbul_halic_cells_shader",
+    "profile": "",
+    "runtime": {},
+    "scenario": {
+      "hold_s": 8.0,
+      "maps": [
+        "istanbul_halic",
+        "istanbul_halic_cells_shader",
+        "istanbul_halic_cells",
+        "istanbul_halic_cells_shader"
+      ],
+      "name": "map_switch",
+      "rotate_hold_s": 0.0
+    },
+    "settings": {}
+  },
+  "profile": "high",
+  "scenario": [
+    {
+      "detail": "scenario=map_switch rotate_hold_s=0",
+      "result": "INFO",
+      "step": "start",
+      "t": 0.0
+    },
+    {
+      "detail": "unix 1793905237.052",
+      "result": "INFO",
+      "step": "hold_istanbul_halic_cells_shader",
+      "t": 0.0
+    },
+    {
+      "detail": "istanbul_halic_cells_shader -> istanbul_halic, nodes 8552, unix 1793905245.055",
+      "result": "INFO",
+      "step": "switch_1_start",
+      "t": 8.0
+    },
+    {
+      "detail": "istanbul_halic_cells_shader -> istanbul_halic in 962 ms, player 0.00 m from its spawn, nodes 5478 (earlier on this map: -), loading screen {\"frames\":47,\"longest_ms\":148.0,\"longest_steps\":\"read\",\"over_100_ms\":1,\"threaded\":true}, unix 1793905247.021",
+      "result": "PASS",
+      "step": "switch_1",
+      "t": 10.0
+    },
+    {
+      "detail": "istanbul_halic -> istanbul_halic_cells_shader, nodes 5478, unix 1793905255.022",
+      "result": "INFO",
+      "step": "switch_2_start",
+      "t": 18.0
+    },
+    {
+      "detail": "istanbul_halic -> istanbul_halic_cells_shader in 846 ms, player 0.00 m from its spawn, nodes 8552 (earlier on this map: 8552), loading screen {\"frames\":40,\"longest_ms\":150.0,\"longest_steps\":\"read\",\"over_100_ms\":1,\"threaded\":true}, unix 1793905256.873",
+      "result": "PASS",
+      "step": "switch_2",
+      "t": 19.8
+    },
+    {
+      "detail": "istanbul_halic_cells_shader -> istanbul_halic_cells, nodes 8552, unix 1793905264.873",
+      "result": "INFO",
+      "step": "switch_3_start",
+      "t": 27.8
+    },
+    {
+      "detail": "istanbul_halic_cells_shader -> istanbul_halic_cells in 979 ms, player 0.00 m from its spawn, nodes 8552 (earlier on this map: -), loading screen {\"frames\":45,\"longest_ms\":149.3,\"longest_steps\":\"read\",\"over_100_ms\":1,\"threaded\":true}, unix 1793905266.856",
+      "result": "PASS",
+      "step": "switch_3",
+      "t": 29.8
+    },
+    {
+      "detail": "istanbul_halic_cells -> istanbul_halic_cells_shader, nodes 8552, unix 1793905274.857",
+      "result": "INFO",
+      "step": "switch_4_start",
+      "t": 37.8
+    },
+    {
+      "detail": "istanbul_halic_cells -> istanbul_halic_cells_shader in 945 ms, player 0.00 m from its spawn, nodes 8552 (earlier on this map: 8552), loading screen {\"frames\":44,\"longest_ms\":151.3,\"longest_steps\":\"read\",\"over_100_ms\":1,\"threaded\":true}, unix 1793905276.803",
+      "result": "PASS",
+      "step": "switch_4",
+      "t": 39.8
+    },
+    {
+      "detail": "passed=4 failed=0",
+      "result": "PASS",
+      "step": "done",
+      "t": 47.8
+    }
+  ],
+  "startup": {
+    "android_frame_pacing": true,
+    "debug_build": true,
+    "display_refresh_rate": 60.0,
+    "first_frame_ms": 1197,
+    "ios_allow_high_refresh_rate": false,
+    "load": {
+      "add_ms": 9.5,
+      "index_ms": 9.8,
+      "instantiate_ms": 106.5,
+      "scene_ms": 393.3,
+      "serve_max_ms": 36.3,
+      "setup_ms": 2.8,
+      "streamed": true,
+      "threaded": true
+    },
+    "loading": {
+      "boot_ms": 97.5,
+      "frame_detail": [
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 39.9
+          },
+          "ms": 48.5,
+          "pipelines": 2,
+          "render_cpu_ms": 0.0,
+          "steps": "boot"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 48.9,
+            "post_draw": 40.9,
+            "pre_draw": 13.2
+          },
+          "ms": 49.0,
+          "pipelines": 6,
+          "render_cpu_ms": 0.3,
+          "steps": "boot"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 14.2,
+            "post_draw": 14.1,
+            "pre_draw": 12.6
+          },
+          "ms": 14.3,
+          "pipelines": 0,
+          "render_cpu_ms": 0.0,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 13.6,
+            "post_draw": 13.5,
+            "pre_draw": 12.2
+          },
+          "ms": 13.6,
+          "pipelines": 0,
+          "render_cpu_ms": 0.1,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 16.5,
+            "post_draw": 16.4,
+            "pre_draw": 12.2
+          },
+          "ms": 16.5,
+          "pipelines": 0,
+          "render_cpu_ms": 0.1,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 16.6,
+            "post_draw": 16.5,
+            "pre_draw": 12.2
+          },
+          "ms": 16.7,
+          "pipelines": 0,
+          "render_cpu_ms": 0.0,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 16.7,
+            "post_draw": 16.5,
+            "pre_draw": 12.3
+          },
+          "ms": 16.7,
+          "pipelines": 0,
+          "render_cpu_ms": 0.1,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 19.0,
+            "post_draw": 16.5,
+            "pre_draw": 12.1
+          },
+          "ms": 19.0,
+          "pipelines": 0,
+          "render_cpu_ms": 0.0,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 14.4,
+            "post_draw": 14.3,
+            "pre_draw": 12.1
+          },
+          "ms": 14.4,
+          "pipelines": 0,
+          "render_cpu_ms": 0.0,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 16.7,
+            "post_draw": 16.0,
+            "pre_draw": 12.1
+          },
+          "ms": 16.7,
+          "pipelines": 0,
+          "render_cpu_ms": 0.0,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 16.4,
+            "post_draw": 16.3,
+            "pre_draw": 12.1
+          },
+          "ms": 16.4,
+          "pipelines": 0,
+          "render_cpu_ms": 0.0,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 16.9,
+            "post_draw": 16.8,
+            "pre_draw": 12.2
+          },
+          "ms": 16.9,
+          "pipelines": 0,
+          "render_cpu_ms": 0.0,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 16.5,
+            "post_draw": 16.4,
+            "pre_draw": 12.1
+          },
+          "ms": 16.6,
+          "pipelines": 0,
+          "render_cpu_ms": 0.0,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 16.6,
+            "post_draw": 16.4,
+            "pre_draw": 12.6
+          },
+          "ms": 16.6,
+          "pipelines": 0,
+          "render_cpu_ms": 0.0,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 17.0,
+            "post_draw": 16.7,
+            "pre_draw": 12.3
+          },
+          "ms": 17.0,
+          "pipelines": 0,
+          "render_cpu_ms": 0.0,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 17.6,
+            "post_draw": 17.1,
+            "pre_draw": 16.9
+          },
+          "ms": 17.6,
+          "pipelines": 0,
+          "render_cpu_ms": 0.0,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 16.1,
+            "post_draw": 15.3,
+            "pre_draw": 13.3
+          },
+          "ms": 16.1,
+          "pipelines": 0,
+          "render_cpu_ms": 0.0,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 16.0,
+            "post_draw": 15.8,
+            "pre_draw": 12.9
+          },
+          "ms": 16.0,
+          "pipelines": 0,
+          "render_cpu_ms": 0.0,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 150.6,
+            "post_draw": 49.2,
+            "pre_draw": 47.4
+          },
+          "ms": 151.3,
+          "pipelines": 0,
+          "render_cpu_ms": 0.4,
+          "steps": "read"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 14.0,
+            "post_draw": 10.9,
+            "pre_draw": 7.0
+          },
+          "ms": 14.1,
+          "pipelines": 1,
+          "render_cpu_ms": 1.5,
+          "steps": "instantiate,prepare_material"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 16.7,
+            "post_draw": 5.8,
+            "pre_draw": 0.5
+          },
+          "ms": 16.7,
+          "pipelines": 0,
+          "render_cpu_ms": 2.1,
+          "steps": "prepare_material"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 21.3,
+            "post_draw": 21.1,
+            "pre_draw": 17.4
+          },
+          "ms": 21.6,
+          "pipelines": 2,
+          "render_cpu_ms": 2.0,
+          "steps": "prepare_material,prepare_shader,add"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 11.7,
+            "post_draw": 8.2,
+            "pre_draw": 7.6
+          },
+          "ms": 11.7,
+          "pipelines": 4,
+          "render_cpu_ms": 2.6,
+          "steps": "streamer,warm_cell"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 26.0,
+            "post_draw": 25.8,
+            "pre_draw": 25.1
+          },
+          "ms": 88.9,
+          "pipelines": 4,
+          "render_cpu_ms": 0.2,
+          "steps": "warm_cell,place,vehicles,npcs,categories"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 27.8,
+            "post_draw": 18.2,
+            "pre_draw": 14.4
+          },
+          "ms": 28.1,
+          "pipelines": 0,
+          "render_cpu_ms": 0.3,
+          "steps": "render_settings,occluders,profile"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 18.1,
+            "post_draw": 17.8,
+            "pre_draw": 13.4
+          },
+          "ms": 18.3,
+          "pipelines": 10,
+          "render_cpu_ms": 3.9,
+          "steps": "prime,show_map,show_facade_detail"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 26.8,
+            "post_draw": 26.6,
+            "pre_draw": 0.4
+          },
+          "ms": 26.9,
+          "pipelines": 0,
+          "render_cpu_ms": 2.7,
+          "steps": "show_decor,show_lamps,show_trees,show_buildings"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 7.9,
+            "post_draw": 7.6,
+            "pre_draw": 3.8
+          },
+          "ms": 8.2,
+          "pipelines": 2,
+          "render_cpu_ms": 0.8,
+          "steps": "show_ground,show_water,show_vehicles"
+        },
+        {
+          "gpu_ms": 0.0,
+          "marks": {
+            "physics": 15.5,
+            "post_draw": 15.3,
+            "pre_draw": 9.0
+          },
+          "ms": 15.6,
+          "pipelines": 1,
+          "render_cpu_ms": 0.6,
+          "steps": "shown"
+        }
+      ],
+      "frame_ms": [
+        48.5,
+        49.0,
+        14.3,
+        13.6,
+        16.5,
+        16.7,
+        16.7,
+        19.0,
+        14.4,
+        16.7,
+        16.4,
+        16.9,
+        16.6,
+        16.6,
+        17.0,
+        17.6,
+        16.1,
+        16.0,
+        151.3,
+        14.1,
+        16.7,
+        21.6,
+        11.7,
+        88.9,
+        28.1,
+        18.3,
+        26.9,
+        8.2,
+        15.6
+      ],
+      "frames": 27,
+      "indicator": {
+        "progress_changes": 27,
+        "spinner_frames": 27
+      },
+      "kind": "start",
+      "load": {
+        "add_ms": 9.5,
+        "index_ms": 9.8,
+        "instantiate_ms": 106.5,
+        "scene_ms": 393.3,
+        "serve_max_ms": 36.3,
+        "setup_ms": 2.8,
+        "streamed": true,
+        "threaded": true
+      },
+      "loaded": true,
+      "longest_ms": 151.3,
+      "longest_steps": "read",
+      "map": "istanbul_halic_cells_shader",
+      "over_100_ms": 1,
+      "steps_ms": {
+        "add": 11.0,
+        "categories": 20.1,
+        "index": 13.8,
+        "instantiate": 0.1,
+        "npcs": 0.3,
+        "occluders": 0.2,
+        "place": 0.0,
+        "prepare_material": 0.7,
+        "prepare_shader": 5.2,
+        "prime": 11.9,
+        "profile": 8.9,
+        "read": 258.6,
+        "render_settings": 0.1,
+        "show_buildings": 0.0,
+        "show_decor": 0.0,
+        "show_facade_detail": 0.0,
+        "show_ground": 0.0,
+        "show_lamps": 0.0,
+        "show_map": 1.4,
+        "show_trees": 0.0,
+        "show_vehicles": 3.6,
+        "show_water": 0.0,
+        "streamer": 2.8,
+        "vehicles": 2.4,
+        "warm_cell": 6.9
+      },
+      "threaded": true,
+      "total_ms": 662.5
+    },
+    "map": "istanbul_halic_cells_shader",
+    "map_ready_ms": 1181,
+    "max_fps": 60,
+    "npcs": 2,
+    "perf_feature": false,
+    "physics_3d": "GodotPhysics3D",
+    "physics_engine_setting": "DEFAULT",
+    "physics_interpolation": true,
+    "physics_ticks": 60,
+    "screen_refresh_rate": 120.0,
+    "streaming": {
+      "attach_max_ms": 0.0,
+      "cells": 2612,
+      "failed": 0,
+      "loaded": 44,
+      "loaded_mb": 0.8,
+      "loads": 44,
+      "meshes": 72,
+      "pending": 0,
+      "prime_cells": 38,
+      "prime_ms": 11.9,
+      "primes": 1,
+      "unloads": 0
+    },
+    "vehicles": "awake",
+    "vsync_mode": 1
+  }
+}

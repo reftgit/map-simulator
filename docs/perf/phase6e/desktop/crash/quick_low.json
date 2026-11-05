@@ -1,0 +1,1 @@
+{"experiment": "probe_quick", "profile": "low", "map": "istanbul_halic_cells_shader", "bench": {"views": ["Spawn"], "warmup_s": 0.2, "measure_s": 0.2, "screenshots": false}}

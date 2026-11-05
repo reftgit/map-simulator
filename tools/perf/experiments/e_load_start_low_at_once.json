@@ -1,0 +1,1 @@
+{"experiment": "e_load_start_low_at_once", "profile": "low", "map": "istanbul_halic_cells_shader", "runtime": {"threaded_load": false}, "bench": {"views": ["Spawn"], "warmup_s": 2, "measure_s": 2, "screenshots": false}}

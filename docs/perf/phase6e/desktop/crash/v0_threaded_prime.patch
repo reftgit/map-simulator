@@ -1,0 +1,20 @@
+--- a/game/world/map_streamer.gd
++++ b/game/world/map_streamer.gd
+@@ -189,13 +189,15 @@ func prime(position := Vector3.INF) -> int:
+ 		elif _wanted.has(cell):
+ 			_attach(cell, resource)
+ 			loaded += 1
+-	for cell in missing:
+-		var resource := load(index.cell_paths[cell]) as MapCell
++	for cell in missing:
++		ResourceLoader.load_threaded_request(index.cell_paths[cell])
++	for cell in missing:
++		var resource := ResourceLoader.load_threaded_get(index.cell_paths[cell]) as MapCell
+ 		if resource == null:
+ 			_fail(cell)
+ 		else:
+ 			_attach(cell, resource)
+ 			loaded += 1
+ 	for cell in _fetched.keys():
+ 		if _wanted.has(cell):
+ 			_attach(cell, _fetched[cell])

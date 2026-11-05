@@ -38,7 +38,7 @@ func test_experiment_files_parse() -> void:
 			check(config != null and (config.bench or (scenario and not config.scenario.is_empty())), "%s parses and has a bench (or scenario) section (%s)" % [file, PerfConfig.last_error])
 			check(config == null or config.experiment == file.get_basename(), "%s: experiment name matches the file" % file)
 			var platform_default := file.begins_with("profile_default") or file.begins_with("session_profile")
-			var device_specific := file.begins_with("c_") or file.begins_with("pacing_") or file.begins_with("jolt_") or file.begins_with("session_pacing_")
+			var device_specific := file.begins_with("c_") or file.begins_with("e_") or file.begins_with("pacing_") or file.begins_with("jolt_") or file.begins_with("session_pacing_")
 			if config and device_specific:
 				check(config.profile in ["low", "high"], "%s: Phase 4 experiments name the device profile they were measured with" % file)
 			elif config and scenario:

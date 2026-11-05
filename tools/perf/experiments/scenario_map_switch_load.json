@@ -1,0 +1,1 @@
+{"experiment": "scenario_map_switch_load", "map": "istanbul_halic_cells_shader", "scenario": {"name": "map_switch", "hold_s": 8, "maps": ["istanbul_halic", "istanbul_halic_cells_shader", "istanbul_halic_cells", "istanbul_halic_cells_shader"]}}
